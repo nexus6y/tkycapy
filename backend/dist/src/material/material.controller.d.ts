@@ -22,12 +22,12 @@ export declare class MaterialController {
             tenantId: string;
             sortOrder: number;
             categoryId: string;
+            unitId: string;
             specification: string | null;
             externalCode: string | null;
             materialType: import("@prisma/client").$Enums.MaterialType;
             materialProperty: string | null;
             productCategory: string | null;
-            unitId: string;
             unifiedUnit: boolean;
             remark: string | null;
             defaultSupplier: string | null;
@@ -88,12 +88,12 @@ export declare class MaterialController {
         tenantId: string;
         sortOrder: number;
         categoryId: string;
+        unitId: string;
         specification: string | null;
         externalCode: string | null;
         materialType: import("@prisma/client").$Enums.MaterialType;
         materialProperty: string | null;
         productCategory: string | null;
-        unitId: string;
         unifiedUnit: boolean;
         remark: string | null;
         defaultSupplier: string | null;
@@ -131,15 +131,6 @@ export declare class MaterialController {
         approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
     }>;
     create(dto: CreateMaterialDto): Promise<{
-        category: {
-            code: string;
-            name: string;
-        };
-        unit: {
-            code: string;
-            name: string;
-        };
-    } & {
         id: string;
         code: string;
         name: string;
@@ -150,12 +141,12 @@ export declare class MaterialController {
         tenantId: string;
         sortOrder: number;
         categoryId: string;
+        unitId: string;
         specification: string | null;
         externalCode: string | null;
         materialType: import("@prisma/client").$Enums.MaterialType;
         materialProperty: string | null;
         productCategory: string | null;
-        unitId: string;
         unifiedUnit: boolean;
         remark: string | null;
         defaultSupplier: string | null;
@@ -193,15 +184,6 @@ export declare class MaterialController {
         approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
     }>;
     update(id: string, dto: UpdateMaterialDto): Promise<{
-        category: {
-            code: string;
-            name: string;
-        };
-        unit: {
-            code: string;
-            name: string;
-        };
-    } & {
         id: string;
         code: string;
         name: string;
@@ -212,12 +194,12 @@ export declare class MaterialController {
         tenantId: string;
         sortOrder: number;
         categoryId: string;
+        unitId: string;
         specification: string | null;
         externalCode: string | null;
         materialType: import("@prisma/client").$Enums.MaterialType;
         materialProperty: string | null;
         productCategory: string | null;
-        unitId: string;
         unifiedUnit: boolean;
         remark: string | null;
         defaultSupplier: string | null;
