@@ -1,0 +1,94 @@
+import { PrismaService } from '../prisma/prisma.service';
+export declare class SalesOrderController {
+    private prisma;
+    constructor(prisma: PrismaService);
+    private tid;
+    findAll(status?: string, bizStatus?: string, code?: string, name?: string, page?: number, pageSize?: number): Promise<{
+        items: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            deletedAt: Date | null;
+            tenantId: string;
+            remark: string | null;
+            approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
+            customerName: string | null;
+            totalAmount: import("@prisma/client/runtime/client").Decimal | null;
+            customerId: string | null;
+            orderNo: string;
+            orderName: string;
+            contractName: string | null;
+            projectName: string | null;
+            orderType: string | null;
+            orderDate: Date;
+            deliveryDate: Date | null;
+            businessStatus: string;
+        }[];
+        total: number;
+        page: number;
+        pageSize: number;
+    }>;
+    create(dto: any): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        deletedAt: Date | null;
+        tenantId: string;
+        remark: string | null;
+        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
+        customerName: string | null;
+        totalAmount: import("@prisma/client/runtime/client").Decimal | null;
+        customerId: string | null;
+        orderNo: string;
+        orderName: string;
+        contractName: string | null;
+        projectName: string | null;
+        orderType: string | null;
+        orderDate: Date;
+        deliveryDate: Date | null;
+        businessStatus: string;
+    }>;
+    update(id: string, dto: any): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        deletedAt: Date | null;
+        tenantId: string;
+        remark: string | null;
+        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
+        customerName: string | null;
+        totalAmount: import("@prisma/client/runtime/client").Decimal | null;
+        customerId: string | null;
+        orderNo: string;
+        orderName: string;
+        contractName: string | null;
+        projectName: string | null;
+        orderType: string | null;
+        orderDate: Date;
+        deliveryDate: Date | null;
+        businessStatus: string;
+    }>;
+    remove(id: string): Promise<{
+        message: string;
+    }>;
+    submit(id: string): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        deletedAt: Date | null;
+        tenantId: string;
+        remark: string | null;
+        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
+        customerName: string | null;
+        totalAmount: import("@prisma/client/runtime/client").Decimal | null;
+        customerId: string | null;
+        orderNo: string;
+        orderName: string;
+        contractName: string | null;
+        projectName: string | null;
+        orderType: string | null;
+        orderDate: Date;
+        deliveryDate: Date | null;
+        businessStatus: string;
+    }>;
+}

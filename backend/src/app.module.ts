@@ -10,8 +10,19 @@ import { ProjectModule } from './project/project.module';
 import { ContractModule } from './contract/contract.module';
 import { CustomerModule } from './customer/customer.module';
 import { QuotationModule } from './quotation/quotation.module';
+import { PreOrderModule } from './pre-order/pre-order.module';
+import { SalesOrderModule } from './sales-order/sales-order.module';
+import { SalesShipmentModule } from './sales-shipment/sales-shipment.module';
+import { SalesReturnModule } from './sales-return/sales-return.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, MaterialCategoryModule, MaterialModule, MeasurementUnitModule, MaterialParamModule, MaterialApprovalModule, ProjectModule, ContractModule, CustomerModule, QuotationModule],
+  imports: [
+    PrismaModule, AuthModule,
+    MaterialCategoryModule, MaterialModule, MeasurementUnitModule,
+    MaterialParamModule, MaterialApprovalModule,
+    ProjectModule, ContractModule,
+    CustomerModule, QuotationModule, PreOrderModule,
+    SalesOrderModule, SalesShipmentModule, SalesReturnModule,
+  ],
 })
 export class AppModule {}

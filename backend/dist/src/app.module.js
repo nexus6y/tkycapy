@@ -19,12 +19,23 @@ const project_module_1 = require("./project/project.module");
 const contract_module_1 = require("./contract/contract.module");
 const customer_module_1 = require("./customer/customer.module");
 const quotation_module_1 = require("./quotation/quotation.module");
+const pre_order_module_1 = require("./pre-order/pre-order.module");
+const sales_order_module_1 = require("./sales-order/sales-order.module");
+const sales_shipment_module_1 = require("./sales-shipment/sales-shipment.module");
+const sales_return_module_1 = require("./sales-return/sales-return.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
-        imports: [prisma_module_1.PrismaModule, auth_module_1.AuthModule, material_category_module_1.MaterialCategoryModule, material_module_1.MaterialModule, measurement_unit_module_1.MeasurementUnitModule, material_param_module_1.MaterialParamModule, material_approval_module_1.MaterialApprovalModule, project_module_1.ProjectModule, contract_module_1.ContractModule, customer_module_1.CustomerModule, quotation_module_1.QuotationModule],
+        imports: [
+            prisma_module_1.PrismaModule, auth_module_1.AuthModule,
+            material_category_module_1.MaterialCategoryModule, material_module_1.MaterialModule, measurement_unit_module_1.MeasurementUnitModule,
+            material_param_module_1.MaterialParamModule, material_approval_module_1.MaterialApprovalModule,
+            project_module_1.ProjectModule, contract_module_1.ContractModule,
+            customer_module_1.CustomerModule, quotation_module_1.QuotationModule, pre_order_module_1.PreOrderModule,
+            sales_order_module_1.SalesOrderModule, sales_shipment_module_1.SalesShipmentModule, sales_return_module_1.SalesReturnModule,
+        ],
     })
 ], AppModule);
 //# sourceMappingURL=app.module.js.map
