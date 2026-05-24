@@ -22,12 +22,12 @@ export declare class MaterialController {
             tenantId: string;
             sortOrder: number;
             categoryId: string;
+            unitId: string;
             specification: string | null;
             externalCode: string | null;
             materialType: import("@prisma/client").$Enums.MaterialType;
             materialProperty: string | null;
             productCategory: string | null;
-            unitId: string;
             remark: string | null;
         }[];
         total: number;
@@ -54,12 +54,12 @@ export declare class MaterialController {
         tenantId: string;
         sortOrder: number;
         categoryId: string;
+        unitId: string;
         specification: string | null;
         externalCode: string | null;
         materialType: import("@prisma/client").$Enums.MaterialType;
         materialProperty: string | null;
         productCategory: string | null;
-        unitId: string;
         remark: string | null;
     }>;
     create(dto: CreateMaterialDto): Promise<{
@@ -82,12 +82,12 @@ export declare class MaterialController {
         tenantId: string;
         sortOrder: number;
         categoryId: string;
+        unitId: string;
         specification: string | null;
         externalCode: string | null;
         materialType: import("@prisma/client").$Enums.MaterialType;
         materialProperty: string | null;
         productCategory: string | null;
-        unitId: string;
         remark: string | null;
     }>;
     update(id: string, dto: UpdateMaterialDto): Promise<{
@@ -110,12 +110,12 @@ export declare class MaterialController {
         tenantId: string;
         sortOrder: number;
         categoryId: string;
+        unitId: string;
         specification: string | null;
         externalCode: string | null;
         materialType: import("@prisma/client").$Enums.MaterialType;
         materialProperty: string | null;
         productCategory: string | null;
-        unitId: string;
         remark: string | null;
     }>;
     remove(id: string): Promise<{

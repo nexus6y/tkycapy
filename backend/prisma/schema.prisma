@@ -99,6 +99,7 @@ model Tenant {
   materialCategories MaterialCategory[]
   measurementUnits   MeasurementUnit[]
   materials          Material[]
+  materialParam      MaterialParam?
 
   @@map("tenant")
 }
@@ -324,6 +325,22 @@ model MaterialCategory {
   @@index([tenantId])
   @@index([parentId])
   @@map("material_category")
+}
+
+model MaterialParam {
+  id              String   @id @default(cuid())
+  tenantId        String
+  codeFormat      String?  // 物料编码格式，如 "MAT{yyyyMM}{seq:4}"
+  allowDuplicateName Boolean @default(false)
+  autoApproval    Boolean  @default(false)
+  defaultStatus   CommonStatus @default(ACTIVE)
+  updatedAt       DateTime @updatedAt
+  createdAt       DateTime @default(now())
+
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId])
+  @@map("material_param")
 }
 
 model MeasurementUnit {

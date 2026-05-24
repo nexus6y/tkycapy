@@ -4,8 +4,9 @@ import { AuthModule } from './auth/auth.module';
 import { MaterialCategoryModule } from './material-category/material-category.module';
 import { MaterialModule } from './material/material.module';
 import { MeasurementUnitModule } from './measurement-unit/measurement-unit.module';
+import { MaterialParamModule } from './material-param/material-param.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, MaterialCategoryModule, MaterialModule, MeasurementUnitModule],
+  imports: [PrismaModule, AuthModule, MaterialCategoryModule, MaterialModule, MeasurementUnitModule, MaterialParamModule],
 })
 export class AppModule {}
