@@ -5,13 +5,13 @@ export declare class MaterialParamController {
     private getTenantId;
     get(): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         tenantId: string;
         codeFormat: string | null;
         allowDuplicateName: boolean;
         autoApproval: boolean;
         defaultStatus: import("@prisma/client").$Enums.CommonStatus;
-        updatedAt: Date;
-        createdAt: Date;
     }>;
     update(dto: {
         codeFormat?: string;
@@ -20,12 +20,12 @@ export declare class MaterialParamController {
         defaultStatus?: string;
     }): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         tenantId: string;
         codeFormat: string | null;
         allowDuplicateName: boolean;
         autoApproval: boolean;
         defaultStatus: import("@prisma/client").$Enums.CommonStatus;
-        updatedAt: Date;
-        createdAt: Date;
     }>;
 }

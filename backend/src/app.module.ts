@@ -5,8 +5,9 @@ import { MaterialCategoryModule } from './material-category/material-category.mo
 import { MaterialModule } from './material/material.module';
 import { MeasurementUnitModule } from './measurement-unit/measurement-unit.module';
 import { MaterialParamModule } from './material-param/material-param.module';
+import { MaterialApprovalModule } from './material-approval/material-approval.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, MaterialCategoryModule, MaterialModule, MeasurementUnitModule, MaterialParamModule],
+  imports: [PrismaModule, AuthModule, MaterialCategoryModule, MaterialModule, MeasurementUnitModule, MaterialParamModule, MaterialApprovalModule],
 })
 export class AppModule {}

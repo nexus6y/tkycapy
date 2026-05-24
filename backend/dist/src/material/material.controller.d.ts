@@ -29,6 +29,7 @@ export declare class MaterialController {
             materialProperty: string | null;
             productCategory: string | null;
             remark: string | null;
+            approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
         }[];
         total: number;
         page: number;
@@ -61,6 +62,7 @@ export declare class MaterialController {
         materialProperty: string | null;
         productCategory: string | null;
         remark: string | null;
+        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
     }>;
     create(dto: CreateMaterialDto): Promise<{
         category: {
@@ -89,6 +91,7 @@ export declare class MaterialController {
         materialProperty: string | null;
         productCategory: string | null;
         remark: string | null;
+        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
     }>;
     update(id: string, dto: UpdateMaterialDto): Promise<{
         category: {
@@ -117,6 +120,7 @@ export declare class MaterialController {
         materialProperty: string | null;
         productCategory: string | null;
         remark: string | null;
+        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
     }>;
     remove(id: string): Promise<{
         message: string;

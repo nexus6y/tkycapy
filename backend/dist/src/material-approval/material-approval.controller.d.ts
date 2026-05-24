@@ -1,16 +1,13 @@
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateMaterialDto, UpdateMaterialDto, QueryMaterialDto } from './dto/material.dto';
-export declare class MaterialService {
+export declare class MaterialApprovalController {
     private prisma;
     constructor(prisma: PrismaService);
-    private getTenantId;
-    findAll(query: QueryMaterialDto): Promise<{
+    findAll(status?: string, code?: string, page?: number, pageSize?: number): Promise<{
         items: {
             categoryCode: string;
             categoryName: string;
             unitCode: string;
             unitName: string;
-            unitSymbol: string | null;
             category: undefined;
             unit: undefined;
             id: string;
@@ -36,16 +33,7 @@ export declare class MaterialService {
         page: number;
         pageSize: number;
     }>;
-    findOne(id: string): Promise<{
-        category: {
-            code: string;
-            name: string;
-        };
-        unit: {
-            code: string;
-            name: string;
-        };
-    } & {
+    approve(id: string, comment?: string): Promise<{
         id: string;
         code: string;
         name: string;
@@ -65,16 +53,7 @@ export declare class MaterialService {
         remark: string | null;
         approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
     }>;
-    create(dto: CreateMaterialDto): Promise<{
-        category: {
-            code: string;
-            name: string;
-        };
-        unit: {
-            code: string;
-            name: string;
-        };
-    } & {
+    reject(id: string, comment?: string): Promise<{
         id: string;
         code: string;
         name: string;
@@ -94,16 +73,7 @@ export declare class MaterialService {
         remark: string | null;
         approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
     }>;
-    update(id: string, dto: UpdateMaterialDto): Promise<{
-        category: {
-            code: string;
-            name: string;
-        };
-        unit: {
-            code: string;
-            name: string;
-        };
-    } & {
+    submit(id: string): Promise<{
         id: string;
         code: string;
         name: string;
@@ -122,8 +92,5 @@ export declare class MaterialService {
         productCategory: string | null;
         remark: string | null;
         approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
-    }>;
-    remove(id: string): Promise<{
-        message: string;
     }>;
 }
