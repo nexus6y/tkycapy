@@ -567,18 +567,64 @@ model MeasurementUnit {
 model Material {
   id               String        @id @default(cuid())
   tenantId         String
-  code             String
-  name             String
-  specification    String?
-  externalCode     String?
-  categoryId       String
-  materialType     MaterialType  @default(PHYSICAL)
-  materialProperty String?
-  productCategory  String?
-  unitId           String
-  sortOrder        Int           @default(0)
-  status           CommonStatus  @default(ACTIVE)
-  remark           String?
+  code             String         // 物料编号
+  name             String         // 物料名称 *
+  specification    String?        // 规格型号
+  externalCode     String?        // 外部编码
+  categoryId       String         // 1级分类 *
+  materialType     MaterialType   @default(PHYSICAL) // 物料性质 *
+  materialProperty String?        // 物料属性
+  productCategory  String?        // 产品分类 *
+  unitId           String         // 计量单位 *
+  unifiedUnit      Boolean        @default(true) // 是否统一计量单位
+  sortOrder        Int            @default(0) // 排序
+  status           CommonStatus   @default(ACTIVE) // 状态
+  remark           String?        // 备注
+
+  // 采购信息
+  defaultSupplier    String?      // 默认供应商
+  defaultPurchaser   String?      // 默认采购员
+  minPurchaseQty     Decimal?     @db.Decimal(18,6) // 最小采购数量
+  plannedPrice       Decimal?     @db.Decimal(18,6) // 计划采购价
+  requiredManufacturer String?    // 要求生产厂家
+  excludedManufacturer String?    // 排除厂家
+  responsiblePerson  String?      // 主办人
+
+  // 质检信息
+  needInspection     Boolean      @default(false) // 是否质检
+  defectRateLimit    Decimal?     @db.Decimal(5,2) // 不合格比例下限(%)
+
+  // 销售信息
+  defaultSalesperson String?      // 默认销售员
+  minOrderQty        Decimal?     @db.Decimal(18,6) // 最小起订数量
+
+  // 仓储信息
+  defaultWarehouseId String?      // 默认存储仓库
+  safetyStockQty     Decimal?     @db.Decimal(18,6) // 安全库存数量
+  maxStockQty        Decimal?     @db.Decimal(18,6) // 最高库存数量
+  minStockQty        Decimal?     @db.Decimal(18,6) // 最低库存数量
+  batchManaged       Boolean      @default(false) // 是否批次管理
+  shelfLifeManaged   Boolean      @default(false) // 是否效期管理
+  remainingShelfLife Int?         // 剩余有效期(天)
+  serialManaged      Boolean      @default(false) // 是否序列号/单品码管理
+
+  // 生产信息
+  directProduction   Boolean      @default(false) // 是否直接生产
+  planAttribute      String?      // 计划属性 *
+  economicBatch      Decimal?     @db.Decimal(18,6) // 经济批量
+  batchMultiple      Decimal?     @db.Decimal(18,6) // 批量倍量
+  lossRate           Decimal?     @db.Decimal(5,2) // 损耗率(%)
+  defaultDeptId      String?      // 默认生产部门
+  issueMethod        String?      // 发料方式
+
+  // 工时信息
+  prodStdQty         Decimal?     @db.Decimal(18,6) // 生产标准工时-生产数量
+  prodStdHours       Decimal?     @db.Decimal(5,2) // 单人用时(生产)
+  repairStdQty       Decimal?     @db.Decimal(18,6) // 检修标准工时-检修数量
+  repairStdHours     Decimal?     @db.Decimal(5,2) // 单人用时(检修)
+  maintStdQty        Decimal?     @db.Decimal(18,6) // 维修标准工时-维修数量
+  maintStdHours      Decimal?     @db.Decimal(5,2) // 单人工时(维修)
+
   approvalStatus   ApprovalStatus @default(DRAFT)
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
