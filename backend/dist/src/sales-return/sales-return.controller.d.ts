@@ -6,12 +6,12 @@ export declare class SalesReturnController {
     findAll(status?: string, code?: string, name?: string, page?: number, pageSize?: number): Promise<{
         items: {
             id: string;
-            tenantId: string;
-            remark: string | null;
-            approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
             createdAt: Date;
             updatedAt: Date;
             deletedAt: Date | null;
+            tenantId: string;
+            remark: string | null;
+            approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
             customerName: string | null;
             totalAmount: import("@prisma/client/runtime/client").Decimal | null;
             businessStatus: string;
@@ -28,12 +28,12 @@ export declare class SalesReturnController {
     }>;
     create(dto: any): Promise<{
         id: string;
-        tenantId: string;
-        remark: string | null;
-        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
+        tenantId: string;
+        remark: string | null;
+        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
         customerName: string | null;
         totalAmount: import("@prisma/client/runtime/client").Decimal | null;
         businessStatus: string;
@@ -46,12 +46,12 @@ export declare class SalesReturnController {
     }>;
     update(id: string, dto: any): Promise<{
         id: string;
-        tenantId: string;
-        remark: string | null;
-        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
+        tenantId: string;
+        remark: string | null;
+        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
         customerName: string | null;
         totalAmount: import("@prisma/client/runtime/client").Decimal | null;
         businessStatus: string;
@@ -67,12 +67,12 @@ export declare class SalesReturnController {
     }>;
     submit(id: string): Promise<{
         id: string;
-        tenantId: string;
-        remark: string | null;
-        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
+        tenantId: string;
+        remark: string | null;
+        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
         customerName: string | null;
         totalAmount: import("@prisma/client/runtime/client").Decimal | null;
         businessStatus: string;

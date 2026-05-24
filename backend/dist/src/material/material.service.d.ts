@@ -14,19 +14,22 @@ export declare class MaterialService {
             category: undefined;
             unit: undefined;
             id: string;
-            tenantId: string;
             code: string;
             name: string;
+            status: import("@prisma/client").$Enums.CommonStatus;
+            createdAt: Date;
+            updatedAt: Date;
+            deletedAt: Date | null;
+            tenantId: string;
+            sortOrder: number;
+            categoryId: string;
+            unitId: string;
             specification: string | null;
             externalCode: string | null;
-            categoryId: string;
             materialType: import("@prisma/client").$Enums.MaterialType;
             materialProperty: string | null;
             productCategory: string | null;
-            unitId: string;
             unifiedUnit: boolean;
-            sortOrder: number;
-            status: import("@prisma/client").$Enums.CommonStatus;
             remark: string | null;
             defaultSupplier: string | null;
             defaultPurchaser: string | null;
@@ -61,9 +64,6 @@ export declare class MaterialService {
             maintStdQty: import("@prisma/client/runtime/client").Decimal | null;
             maintStdHours: import("@prisma/client/runtime/client").Decimal | null;
             approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
-            createdAt: Date;
-            updatedAt: Date;
-            deletedAt: Date | null;
         }[];
         total: number;
         page: number;
@@ -80,19 +80,22 @@ export declare class MaterialService {
         };
     } & {
         id: string;
-        tenantId: string;
         code: string;
         name: string;
+        status: import("@prisma/client").$Enums.CommonStatus;
+        createdAt: Date;
+        updatedAt: Date;
+        deletedAt: Date | null;
+        tenantId: string;
+        sortOrder: number;
+        categoryId: string;
+        unitId: string;
         specification: string | null;
         externalCode: string | null;
-        categoryId: string;
         materialType: import("@prisma/client").$Enums.MaterialType;
         materialProperty: string | null;
         productCategory: string | null;
-        unitId: string;
         unifiedUnit: boolean;
-        sortOrder: number;
-        status: import("@prisma/client").$Enums.CommonStatus;
         remark: string | null;
         defaultSupplier: string | null;
         defaultPurchaser: string | null;
@@ -127,9 +130,6 @@ export declare class MaterialService {
         maintStdQty: import("@prisma/client/runtime/client").Decimal | null;
         maintStdHours: import("@prisma/client/runtime/client").Decimal | null;
         approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
-        createdAt: Date;
-        updatedAt: Date;
-        deletedAt: Date | null;
     }>;
     create(dto: CreateMaterialDto): Promise<{
         category: {
@@ -142,19 +142,22 @@ export declare class MaterialService {
         };
     } & {
         id: string;
-        tenantId: string;
         code: string;
         name: string;
+        status: import("@prisma/client").$Enums.CommonStatus;
+        createdAt: Date;
+        updatedAt: Date;
+        deletedAt: Date | null;
+        tenantId: string;
+        sortOrder: number;
+        categoryId: string;
+        unitId: string;
         specification: string | null;
         externalCode: string | null;
-        categoryId: string;
         materialType: import("@prisma/client").$Enums.MaterialType;
         materialProperty: string | null;
         productCategory: string | null;
-        unitId: string;
         unifiedUnit: boolean;
-        sortOrder: number;
-        status: import("@prisma/client").$Enums.CommonStatus;
         remark: string | null;
         defaultSupplier: string | null;
         defaultPurchaser: string | null;
@@ -189,9 +192,6 @@ export declare class MaterialService {
         maintStdQty: import("@prisma/client/runtime/client").Decimal | null;
         maintStdHours: import("@prisma/client/runtime/client").Decimal | null;
         approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
-        createdAt: Date;
-        updatedAt: Date;
-        deletedAt: Date | null;
     }>;
     update(id: string, dto: UpdateMaterialDto): Promise<{
         category: {
@@ -204,19 +204,22 @@ export declare class MaterialService {
         };
     } & {
         id: string;
-        tenantId: string;
         code: string;
         name: string;
+        status: import("@prisma/client").$Enums.CommonStatus;
+        createdAt: Date;
+        updatedAt: Date;
+        deletedAt: Date | null;
+        tenantId: string;
+        sortOrder: number;
+        categoryId: string;
+        unitId: string;
         specification: string | null;
         externalCode: string | null;
-        categoryId: string;
         materialType: import("@prisma/client").$Enums.MaterialType;
         materialProperty: string | null;
         productCategory: string | null;
-        unitId: string;
         unifiedUnit: boolean;
-        sortOrder: number;
-        status: import("@prisma/client").$Enums.CommonStatus;
         remark: string | null;
         defaultSupplier: string | null;
         defaultPurchaser: string | null;
@@ -251,9 +254,6 @@ export declare class MaterialService {
         maintStdQty: import("@prisma/client/runtime/client").Decimal | null;
         maintStdHours: import("@prisma/client/runtime/client").Decimal | null;
         approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
-        createdAt: Date;
-        updatedAt: Date;
-        deletedAt: Date | null;
     }>;
     remove(id: string): Promise<{
         message: string;
