@@ -96,6 +96,7 @@ model Tenant {
   departments Department[]
   menus       Menu[]
   dictionaries Dictionary[]
+  materialCategories MaterialCategory[]
 
   @@map("tenant")
 }
@@ -296,4 +297,28 @@ model LoginLog {
   @@index([userId])
   @@index([loginTime])
   @@map("login_log")
+}
+
+// ==================== 公共基础表 ====================
+
+model MaterialCategory {
+  id          String        @id @default(cuid())
+  tenantId    String
+  code        String
+  name        String
+  parentId    String?
+  sortOrder   Int           @default(0)
+  status      CommonStatus  @default(ACTIVE)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  deletedAt   DateTime?
+
+  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  parent      MaterialCategory? @relation("CategoryTree", fields: [parentId], references: [id])
+  children    MaterialCategory[] @relation("CategoryTree")
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@index([parentId])
+  @@map("material_category")
 }
