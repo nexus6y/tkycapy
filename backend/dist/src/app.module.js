@@ -17,12 +17,13 @@ const material_param_module_1 = require("./material-param/material-param.module"
 const material_approval_module_1 = require("./material-approval/material-approval.module");
 const project_module_1 = require("./project/project.module");
 const contract_module_1 = require("./contract/contract.module");
+const customer_module_1 = require("./customer/customer.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
-        imports: [prisma_module_1.PrismaModule, auth_module_1.AuthModule, material_category_module_1.MaterialCategoryModule, material_module_1.MaterialModule, measurement_unit_module_1.MeasurementUnitModule, material_param_module_1.MaterialParamModule, material_approval_module_1.MaterialApprovalModule, project_module_1.ProjectModule, contract_module_1.ContractModule],
+        imports: [prisma_module_1.PrismaModule, auth_module_1.AuthModule, material_category_module_1.MaterialCategoryModule, material_module_1.MaterialModule, measurement_unit_module_1.MeasurementUnitModule, material_param_module_1.MaterialParamModule, material_approval_module_1.MaterialApprovalModule, project_module_1.ProjectModule, contract_module_1.ContractModule, customer_module_1.CustomerModule],
     })
 ], AppModule);
 //# sourceMappingURL=app.module.js.map

@@ -101,6 +101,7 @@ model Tenant {
   materials          Material[]
   materialParam      MaterialParam?
   projects           Project[]
+  customers          Customer[]
   contracts          Contract[]
 
   @@map("tenant")
@@ -343,6 +344,30 @@ model MaterialParam {
 
   @@unique([tenantId])
   @@map("material_param")
+}
+
+model Customer {
+  id            String        @id @default(cuid())
+  tenantId      String
+  code          String
+  name          String
+  industry      String?
+  valueLevel    String?
+  creditLevel   String?
+  contactPerson String?
+  contactPhone  String?
+  contactEmail  String?
+  address       String?
+  status        CommonStatus  @default(ACTIVE)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  deletedAt     DateTime?
+
+  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("customer")
 }
 
 model Contract {
