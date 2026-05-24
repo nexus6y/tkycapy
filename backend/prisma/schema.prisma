@@ -97,6 +97,8 @@ model Tenant {
   menus       Menu[]
   dictionaries Dictionary[]
   materialCategories MaterialCategory[]
+  measurementUnits   MeasurementUnit[]
+  materials          Material[]
 
   @@map("tenant")
 }
@@ -316,9 +318,59 @@ model MaterialCategory {
   tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   parent      MaterialCategory? @relation("CategoryTree", fields: [parentId], references: [id])
   children    MaterialCategory[] @relation("CategoryTree")
+  materials   Material[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
   @@index([parentId])
   @@map("material_category")
+}
+
+model MeasurementUnit {
+  id          String        @id @default(cuid())
+  tenantId    String
+  code        String
+  name        String
+  symbol      String?
+  sortOrder   Int           @default(0)
+  status      CommonStatus  @default(ACTIVE)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  deletedAt   DateTime?
+
+  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  materials   Material[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("measurement_unit")
+}
+
+model Material {
+  id               String        @id @default(cuid())
+  tenantId         String
+  code             String
+  name             String
+  specification    String?
+  externalCode     String?
+  categoryId       String
+  materialType     MaterialType  @default(PHYSICAL)
+  materialProperty String?
+  productCategory  String?
+  unitId           String
+  sortOrder        Int           @default(0)
+  status           CommonStatus  @default(ACTIVE)
+  remark           String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  deletedAt        DateTime?
+
+  tenant           Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  category         MaterialCategory @relation(fields: [categoryId], references: [id])
+  unit             MeasurementUnit @relation(fields: [unitId], references: [id])
+
+  @@unique([tenantId, code])
+  @@index([tenantId, categoryId])
+  @@index([unitId])
+  @@map("material")
 }

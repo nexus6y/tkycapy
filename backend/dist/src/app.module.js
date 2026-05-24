@@ -11,12 +11,14 @@ const common_1 = require("@nestjs/common");
 const prisma_module_1 = require("./prisma/prisma.module");
 const auth_module_1 = require("./auth/auth.module");
 const material_category_module_1 = require("./material-category/material-category.module");
+const material_module_1 = require("./material/material.module");
+const measurement_unit_module_1 = require("./measurement-unit/measurement-unit.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
-        imports: [prisma_module_1.PrismaModule, auth_module_1.AuthModule, material_category_module_1.MaterialCategoryModule],
+        imports: [prisma_module_1.PrismaModule, auth_module_1.AuthModule, material_category_module_1.MaterialCategoryModule, material_module_1.MaterialModule, measurement_unit_module_1.MeasurementUnitModule],
     })
 ], AppModule);
 //# sourceMappingURL=app.module.js.map
