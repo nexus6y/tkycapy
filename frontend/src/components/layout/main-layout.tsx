@@ -38,7 +38,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       <TagsView />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar collapsed={collapsed} activeModule={activeModule} onModuleChange={setActiveModule} />
-        <main className="flex-1 overflow-y-auto bg-gray-50">
+        <main className="flex-1 overflow-hidden">
           {children}
         </main>
       </div>
