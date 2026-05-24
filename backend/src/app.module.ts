@@ -7,8 +7,9 @@ import { MeasurementUnitModule } from './measurement-unit/measurement-unit.modul
 import { MaterialParamModule } from './material-param/material-param.module';
 import { MaterialApprovalModule } from './material-approval/material-approval.module';
 import { ProjectModule } from './project/project.module';
+import { ContractModule } from './contract/contract.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, MaterialCategoryModule, MaterialModule, MeasurementUnitModule, MaterialParamModule, MaterialApprovalModule, ProjectModule],
+  imports: [PrismaModule, AuthModule, MaterialCategoryModule, MaterialModule, MeasurementUnitModule, MaterialParamModule, MaterialApprovalModule, ProjectModule, ContractModule],
 })
 export class AppModule {}
