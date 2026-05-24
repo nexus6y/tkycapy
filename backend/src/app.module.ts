@@ -8,6 +8,8 @@ import { MaterialParamModule } from './material-param/material-param.module';
 import { MaterialApprovalModule } from './material-approval/material-approval.module';
 import { ProjectModule } from './project/project.module';
 import { ContractModule } from './contract/contract.module';
+import { InspectionModule } from "./inspection/inspection.module";
+import { DemandPlanModule } from './demand-plan/demand-plan.module';
 import { SupplierModule } from "./supplier/supplier.module";
 import { CustomerModule } from './customer/customer.module';
 import { QuotationModule } from './quotation/quotation.module';
@@ -22,7 +24,7 @@ import { SalesReturnModule } from './sales-return/sales-return.module';
     MaterialCategoryModule, MaterialModule, MeasurementUnitModule,
     MaterialParamModule, MaterialApprovalModule,
     ProjectModule, ContractModule,
-    SupplierModule, CustomerModule, QuotationModule, PreOrderModule,
+    InspectionModule, DemandPlanModule, SupplierModule, CustomerModule, QuotationModule, PreOrderModule,
     SalesOrderModule, SalesShipmentModule, SalesReturnModule,
   ],
 })

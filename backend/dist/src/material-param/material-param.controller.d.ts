@@ -5,9 +5,9 @@ export declare class MaterialParamController {
     private getTenantId;
     get(): Promise<{
         id: string;
+        tenantId: string;
         createdAt: Date;
         updatedAt: Date;
-        tenantId: string;
         codeFormat: string | null;
         allowDuplicateName: boolean;
         autoApproval: boolean;
@@ -20,9 +20,9 @@ export declare class MaterialParamController {
         defaultStatus?: string;
     }): Promise<{
         id: string;
+        tenantId: string;
         createdAt: Date;
         updatedAt: Date;
-        tenantId: string;
         codeFormat: string | null;
         allowDuplicateName: boolean;
         autoApproval: boolean;

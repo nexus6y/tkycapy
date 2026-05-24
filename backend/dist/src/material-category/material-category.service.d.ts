@@ -10,13 +10,13 @@ export declare class MaterialCategoryService {
             parentName: string;
             parent: undefined;
             id: string;
-            code: string;
-            name: string;
-            status: import("@prisma/client").$Enums.CommonStatus;
+            tenantId: string;
             createdAt: Date;
             updatedAt: Date;
             deletedAt: Date | null;
-            tenantId: string;
+            name: string;
+            code: string;
+            status: import("@prisma/client").$Enums.CommonStatus;
             sortOrder: number;
             parentId: string | null;
         }[];
@@ -26,47 +26,47 @@ export declare class MaterialCategoryService {
     }>;
     findOne(id: string): Promise<{
         id: string;
-        code: string;
-        name: string;
-        status: import("@prisma/client").$Enums.CommonStatus;
+        tenantId: string;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        tenantId: string;
+        name: string;
+        code: string;
+        status: import("@prisma/client").$Enums.CommonStatus;
         sortOrder: number;
         parentId: string | null;
     }>;
     create(dto: CreateCategoryDto): Promise<{
         parent: {
-            code: string;
             name: string;
+            code: string;
         } | null;
     } & {
         id: string;
-        code: string;
-        name: string;
-        status: import("@prisma/client").$Enums.CommonStatus;
+        tenantId: string;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        tenantId: string;
+        name: string;
+        code: string;
+        status: import("@prisma/client").$Enums.CommonStatus;
         sortOrder: number;
         parentId: string | null;
     }>;
     update(id: string, dto: UpdateCategoryDto): Promise<{
         parent: {
-            code: string;
             name: string;
+            code: string;
         } | null;
     } & {
         id: string;
-        code: string;
-        name: string;
-        status: import("@prisma/client").$Enums.CommonStatus;
+        tenantId: string;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        tenantId: string;
+        name: string;
+        code: string;
+        status: import("@prisma/client").$Enums.CommonStatus;
         sortOrder: number;
         parentId: string | null;
     }>;

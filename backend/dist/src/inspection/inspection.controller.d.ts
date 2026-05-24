@@ -1,0 +1,98 @@
+import { PrismaService } from '../prisma/prisma.service';
+export declare class InspectionController {
+    private prisma;
+    constructor(prisma: PrismaService);
+    private tid;
+    findAll(status?: string, code?: string, page?: number, pageSize?: number): Promise<{
+        items: {
+            result: string | null;
+            id: string;
+            tenantId: string;
+            inspectionNo: string;
+            sourceType: string | null;
+            sourceNo: string | null;
+            materialId: string | null;
+            materialName: string | null;
+            quantity: import("@prisma/client/runtime/client").Decimal | null;
+            qualifiedQty: import("@prisma/client/runtime/client").Decimal | null;
+            unqualifiedQty: import("@prisma/client/runtime/client").Decimal | null;
+            inspector: string | null;
+            inspectionDate: Date | null;
+            approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
+            businessStatus: string;
+            remark: string | null;
+            createdAt: Date;
+            updatedAt: Date;
+            deletedAt: Date | null;
+        }[];
+        total: number;
+        page: number;
+        pageSize: number;
+    }>;
+    create(dto: any): Promise<{
+        result: string | null;
+        id: string;
+        tenantId: string;
+        inspectionNo: string;
+        sourceType: string | null;
+        sourceNo: string | null;
+        materialId: string | null;
+        materialName: string | null;
+        quantity: import("@prisma/client/runtime/client").Decimal | null;
+        qualifiedQty: import("@prisma/client/runtime/client").Decimal | null;
+        unqualifiedQty: import("@prisma/client/runtime/client").Decimal | null;
+        inspector: string | null;
+        inspectionDate: Date | null;
+        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
+        businessStatus: string;
+        remark: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        deletedAt: Date | null;
+    }>;
+    update(id: string, dto: any): Promise<{
+        result: string | null;
+        id: string;
+        tenantId: string;
+        inspectionNo: string;
+        sourceType: string | null;
+        sourceNo: string | null;
+        materialId: string | null;
+        materialName: string | null;
+        quantity: import("@prisma/client/runtime/client").Decimal | null;
+        qualifiedQty: import("@prisma/client/runtime/client").Decimal | null;
+        unqualifiedQty: import("@prisma/client/runtime/client").Decimal | null;
+        inspector: string | null;
+        inspectionDate: Date | null;
+        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
+        businessStatus: string;
+        remark: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        deletedAt: Date | null;
+    }>;
+    remove(id: string): Promise<{
+        message: string;
+    }>;
+    submit(id: string): Promise<{
+        result: string | null;
+        id: string;
+        tenantId: string;
+        inspectionNo: string;
+        sourceType: string | null;
+        sourceNo: string | null;
+        materialId: string | null;
+        materialName: string | null;
+        quantity: import("@prisma/client/runtime/client").Decimal | null;
+        qualifiedQty: import("@prisma/client/runtime/client").Decimal | null;
+        unqualifiedQty: import("@prisma/client/runtime/client").Decimal | null;
+        inspector: string | null;
+        inspectionDate: Date | null;
+        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
+        businessStatus: string;
+        remark: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        deletedAt: Date | null;
+    }>;
+}

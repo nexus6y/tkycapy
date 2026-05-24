@@ -104,6 +104,8 @@ model Tenant {
   suppliers          Supplier[]
   customers          Customer[]
   quotations         Quotation[]
+  demandPlans        DemandPlan[]
+  inspections        Inspection[]
   preOrders          PreOrder[]
   salesOrders        SalesOrder[]
   salesShipments     SalesShipment[]
@@ -401,6 +403,31 @@ model Customer {
   @@map("customer")
 }
 
+model DemandPlan {
+  id              String         @id @default(cuid())
+  tenantId        String
+  planNo          String
+  planName        String
+  demandSource    String?
+  demandUse       String?
+  projectId       String?
+  projectName     String?
+  requiredDate    DateTime?
+  totalQuantity   Decimal?       @db.Decimal(18,6)
+  approvalStatus  ApprovalStatus @default(DRAFT)
+  businessStatus  String         @default("PENDING")
+  remark          String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  deletedAt       DateTime?
+
+  tenant          Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, planNo])
+  @@index([tenantId])
+  @@map("demand_plan")
+}
+
 model PreOrder {
   id              String         @id @default(cuid())
   tenantId        String
@@ -664,4 +691,32 @@ model Material {
   @@index([tenantId, categoryId])
   @@index([unitId])
   @@map("material")
+}
+
+model Inspection {
+  id              String         @id @default(cuid())
+  tenantId        String
+  inspectionNo    String
+  sourceType      String?
+  sourceNo        String?
+  materialId      String?
+  materialName    String?
+  quantity        Decimal?       @db.Decimal(18,6)
+  qualifiedQty    Decimal?       @db.Decimal(18,6)
+  unqualifiedQty  Decimal?       @db.Decimal(18,6)
+  inspector       String?
+  inspectionDate  DateTime?
+  result          String?
+  approvalStatus  ApprovalStatus @default(DRAFT)
+  businessStatus  String         @default("PENDING")
+  remark          String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  deletedAt       DateTime?
+
+  tenant          Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, inspectionNo])
+  @@index([tenantId])
+  @@map("inspection")
 }
