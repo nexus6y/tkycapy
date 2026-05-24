@@ -101,6 +101,7 @@ model Tenant {
   materials          Material[]
   materialParam      MaterialParam?
   projects           Project[]
+  suppliers          Supplier[]
   customers          Customer[]
   quotations         Quotation[]
   preOrders          PreOrder[]
@@ -349,6 +350,31 @@ model MaterialParam {
 
   @@unique([tenantId])
   @@map("material_param")
+}
+
+model Supplier {
+  id              String        @id @default(cuid())
+  tenantId        String
+  code            String
+  name            String
+  contactPerson   String?
+  contactPhone    String?
+  contactEmail    String?
+  address         String?
+  creditLevel     String?
+  taxId           String?
+  bankName        String?
+  bankAccount     String?
+  status          CommonStatus  @default(ACTIVE)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  deletedAt       DateTime?
+
+  tenant          Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("supplier")
 }
 
 model Customer {
