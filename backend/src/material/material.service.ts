@@ -60,7 +60,7 @@ export class MaterialService {
     const existing = await this.prisma.material.findUnique({ where: { tenantId_code: { tenantId, code: dto.code } } });
     if (existing) throw new ConflictException('物料编码已存在');
     return this.prisma.material.create({
-      data: { ...dto, tenantId },
+      data: { ...dto, tenantId } as any,
       include: { category: { select: { code: true, name: true } }, unit: { select: { code: true, name: true } } },
     });
   }
@@ -68,7 +68,7 @@ export class MaterialService {
   async update(id: string, dto: UpdateMaterialDto) {
     await this.findOne(id);
     return this.prisma.material.update({
-      where: { id }, data: dto,
+      where: { id }, data: dto as any,
       include: { category: { select: { code: true, name: true } }, unit: { select: { code: true, name: true } } },
     });
   }

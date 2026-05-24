@@ -6,12 +6,12 @@ export declare class SalesShipmentController {
     findAll(status?: string, code?: string, name?: string, page?: number, pageSize?: number): Promise<{
         items: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            deletedAt: Date | null;
             tenantId: string;
             remark: string | null;
             approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
+            createdAt: Date;
+            updatedAt: Date;
+            deletedAt: Date | null;
             customerName: string | null;
             totalAmount: import("@prisma/client/runtime/client").Decimal | null;
             orderNo: string | null;
@@ -27,12 +27,12 @@ export declare class SalesShipmentController {
     }>;
     create(dto: any): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        deletedAt: Date | null;
         tenantId: string;
         remark: string | null;
         approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
+        createdAt: Date;
+        updatedAt: Date;
+        deletedAt: Date | null;
         customerName: string | null;
         totalAmount: import("@prisma/client/runtime/client").Decimal | null;
         orderNo: string | null;
@@ -44,12 +44,12 @@ export declare class SalesShipmentController {
     }>;
     update(id: string, dto: any): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        deletedAt: Date | null;
         tenantId: string;
         remark: string | null;
         approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
+        createdAt: Date;
+        updatedAt: Date;
+        deletedAt: Date | null;
         customerName: string | null;
         totalAmount: import("@prisma/client/runtime/client").Decimal | null;
         orderNo: string | null;
@@ -64,12 +64,12 @@ export declare class SalesShipmentController {
     }>;
     submit(id: string): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        deletedAt: Date | null;
         tenantId: string;
         remark: string | null;
         approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
+        createdAt: Date;
+        updatedAt: Date;
+        deletedAt: Date | null;
         customerName: string | null;
         totalAmount: import("@prisma/client/runtime/client").Decimal | null;
         orderNo: string | null;

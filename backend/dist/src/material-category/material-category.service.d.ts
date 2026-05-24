@@ -10,14 +10,14 @@ export declare class MaterialCategoryService {
             parentName: string;
             parent: undefined;
             id: string;
+            tenantId: string;
             code: string;
             name: string;
+            sortOrder: number;
             status: import("@prisma/client").$Enums.CommonStatus;
             createdAt: Date;
             updatedAt: Date;
             deletedAt: Date | null;
-            tenantId: string;
-            sortOrder: number;
             parentId: string | null;
         }[];
         total: number;
@@ -26,14 +26,14 @@ export declare class MaterialCategoryService {
     }>;
     findOne(id: string): Promise<{
         id: string;
+        tenantId: string;
         code: string;
         name: string;
+        sortOrder: number;
         status: import("@prisma/client").$Enums.CommonStatus;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        tenantId: string;
-        sortOrder: number;
         parentId: string | null;
     }>;
     create(dto: CreateCategoryDto): Promise<{
@@ -43,14 +43,14 @@ export declare class MaterialCategoryService {
         } | null;
     } & {
         id: string;
+        tenantId: string;
         code: string;
         name: string;
+        sortOrder: number;
         status: import("@prisma/client").$Enums.CommonStatus;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        tenantId: string;
-        sortOrder: number;
         parentId: string | null;
     }>;
     update(id: string, dto: UpdateCategoryDto): Promise<{
@@ -60,14 +60,14 @@ export declare class MaterialCategoryService {
         } | null;
     } & {
         id: string;
+        tenantId: string;
         code: string;
         name: string;
+        sortOrder: number;
         status: import("@prisma/client").$Enums.CommonStatus;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        tenantId: string;
-        sortOrder: number;
         parentId: string | null;
     }>;
     remove(id: string): Promise<{

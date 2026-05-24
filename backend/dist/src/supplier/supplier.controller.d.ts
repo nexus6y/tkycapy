@@ -6,13 +6,13 @@ export declare class SupplierController {
     findAll(code?: string, name?: string, status?: string, page?: number, pageSize?: number): Promise<{
         items: {
             id: string;
+            tenantId: string;
             code: string;
             name: string;
             status: import("@prisma/client").$Enums.CommonStatus;
             createdAt: Date;
             updatedAt: Date;
             deletedAt: Date | null;
-            tenantId: string;
             contactPerson: string | null;
             contactPhone: string | null;
             contactEmail: string | null;
@@ -28,13 +28,13 @@ export declare class SupplierController {
     }>;
     create(dto: any): Promise<{
         id: string;
+        tenantId: string;
         code: string;
         name: string;
         status: import("@prisma/client").$Enums.CommonStatus;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        tenantId: string;
         contactPerson: string | null;
         contactPhone: string | null;
         contactEmail: string | null;
@@ -46,13 +46,13 @@ export declare class SupplierController {
     }>;
     update(id: string, dto: any): Promise<{
         id: string;
+        tenantId: string;
         code: string;
         name: string;
         status: import("@prisma/client").$Enums.CommonStatus;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        tenantId: string;
         contactPerson: string | null;
         contactPhone: string | null;
         contactEmail: string | null;
