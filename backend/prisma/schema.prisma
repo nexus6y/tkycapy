@@ -4,102 +4,99 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
-// ==================== 枚举定义 ====================
+// ==================== 枚举 ====================
 
 enum ApprovalStatus {
-  DRAFT     // 草稿
-  SUBMITTED // 已提交
-  APPROVED  // 已通过
-  REJECTED  // 已拒绝
-  WITHDRAWN // 已撤回
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  WITHDRAWN
 }
 
 enum BusinessStatus {
-  PENDING       // 待处理
-  IN_PROGRESS   // 进行中
-  PARTIAL       // 部分完成
-  COMPLETED     // 已完成
-  CLOSED        // 已关闭
-  CANCELLED     // 已取消
+  PENDING
+  IN_PROGRESS
+  PARTIAL
+  COMPLETED
+  CLOSED
+  CANCELLED
 }
 
 enum SalesOrderStatus {
-  DRAFT         // 草稿
-  PENDING_APPROVAL // 待审核
-  APPROVED      // 已审核
-  PENDING_SHIP  // 待出货
-  PARTIAL_SHIP  // 部分出货
-  FULLY_SHIPPED // 出货完成
-  CLOSED        // 已关闭
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  PENDING_SHIP
+  PARTIAL_SHIP
+  FULLY_SHIPPED
+  CLOSED
 }
 
 enum PurchaseOrderStatus {
-  DRAFT           // 草稿
-  PENDING_APPROVAL // 待审核
-  APPROVED        // 已审核
-  PENDING_RECEIPT // 待入库
-  PARTIAL_RECEIPT // 部分入库
-  FULLY_RECEIVED  // 入库完成
-  CLOSED          // 已关闭
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  PENDING_RECEIPT
+  PARTIAL_RECEIPT
+  FULLY_RECEIVED
+  CLOSED
 }
 
 enum ProductionOrderStatus {
-  DRAFT           // 草稿
-  PENDING_APPROVAL // 待审核
-  APPROVED        // 已审核
-  PENDING_ISSUE   // 待领料
-  ISSUING         // 领料中
-  IN_PRODUCTION   // 生产中
-  PENDING_STOCK   // 待入库
-  COMPLETED       // 已完成
-  CLOSED          // 已关闭
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  PENDING_ISSUE
+  ISSUING
+  IN_PRODUCTION
+  PENDING_STOCK
+  COMPLETED
+  CLOSED
 }
 
 enum InspectionStatus {
-  DRAFT       // 草稿
-  PENDING     // 待质检
-  INSP_IN_PROGRESS // 质检中
-  QUALIFIED   // 合格
-  UNQUALIFIED // 不合格
+  DRAFT
+  PENDING
+  INSP_IN_PROGRESS
+  QUALIFIED
+  UNQUALIFIED
 }
 
 enum MaterialType {
-  PHYSICAL // 实物
-  VIRTUAL  // 虚拟
+  PHYSICAL
+  VIRTUAL
 }
 
 enum CommonStatus {
-  ACTIVE  // 启用
-  INACTIVE // 停用
+  ACTIVE
+  INACTIVE
 }
 
 enum StockChangeType {
-  IN  // 入库
-  OUT // 出库
+  IN
+  OUT
 }
 
 // ==================== 系统基础表 ====================
 
 model Tenant {
-  id          String   @id @default(cuid())
-  code        String   @unique
+  id          String        @id @default(cuid())
+  code        String        @unique
   name        String
-  status      CommonStatus @default(ACTIVE)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  status      CommonStatus  @default(ACTIVE)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
   deletedAt   DateTime?
-  
-  // 关系
+
   users       User[]
   roles       Role[]
   departments Department[]
-  materials   Material[]
-  suppliers   Supplier[]
-  customers   Customer[]
-  
+  menus       Menu[]
+  dictionaries Dictionary[]
+
   @@map("tenant")
 }
 
@@ -107,12 +104,12 @@ model User {
   id            String        @id @default(cuid())
   tenantId      String
   username      String        @unique
-  password      String        // 加密存储
+  password      String
   name          String
   email         String?
   phone         String?
   departmentId  String?
-  dataScope     String?       // 数据权限范围
+  dataScope     String?
   sortOrder     Int           @default(0)
   status        CommonStatus  @default(ACTIVE)
   lastLoginAt   DateTime?
@@ -120,14 +117,13 @@ model User {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
   deletedAt     DateTime?
-  
-  // 关系
+
   tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   department    Department?   @relation(fields: [departmentId], references: [id])
   userRoles     UserRole[]
-  createdOrders SalesOrder[]  @relation("SalesOrderCreator")
-  approvedOrders SalesOrder[] @relation("SalesOrderApprover")
-  
+  operationLogs OperationLog[]
+  loginLogs     LoginLog[]
+
   @@index([tenantId])
   @@index([departmentId])
   @@map("user")
@@ -144,12 +140,12 @@ model Role {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
   deletedAt   DateTime?
-  
-  // 关系
+
   tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   userRoles   UserRole[]
   permissions Permission[]
-  
+
+  @@unique([tenantId, code])
   @@index([tenantId])
   @@map("role")
 }
@@ -159,11 +155,10 @@ model UserRole {
   userId    String
   roleId    String
   createdAt DateTime @default(now())
-  
-  // 关系
+
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  
+
   @@unique([userId, roleId])
   @@map("user_role")
 }
@@ -172,11 +167,10 @@ model Permission {
   id          String   @id @default(cuid())
   roleId      String
   menuId      String?
-  permission  String   // 权限标识 (如: read, write, delete, approve)
-  type        String   // 权限类型 (menu/button/api)
+  permission  String
+  type        String
   createdAt   DateTime @default(now())
 
-  // 关系
   role        Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
   menu        Menu?    @relation(fields: [menuId], references: [id], onDelete: SetNull)
 
@@ -197,13 +191,12 @@ model Department {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
   deletedAt   DateTime?
-  
-  // 关系
+
   tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   parent      Department?   @relation("DepartmentTree", fields: [parentId], references: [id])
   children    Department[]  @relation("DepartmentTree")
   users       User[]
-  
+
   @@index([tenantId])
   @@index([parentId])
   @@map("department")
@@ -219,18 +212,17 @@ model Menu {
   icon        String?
   component   String?
   sortOrder   Int           @default(0)
-  type        String        // menu/button
+  type        String
   status      CommonStatus  @default(ACTIVE)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
   deletedAt   DateTime?
-  
-  // 关系
+
   tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   parent      Menu?         @relation("MenuTree", fields: [parentId], references: [id])
   children    Menu[]        @relation("MenuTree")
-  permissions  Permission[]
-  
+  permissions Permission[]
+
   @@unique([tenantId, code])
   @@index([tenantId])
   @@index([parentId])
@@ -251,12 +243,11 @@ model Dictionary {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
   deletedAt   DateTime?
-  
-  // 关系
+
   tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   parent      Dictionary?   @relation("DictionaryTree", fields: [parentId], references: [id])
   children    Dictionary[]  @relation("DictionaryTree")
-  
+
   @@unique([tenantId, code])
   @@index([tenantId])
   @@index([parentId])
@@ -264,24 +255,23 @@ model Dictionary {
 }
 
 model OperationLog {
-  id          String   @id @default(cuid())
-  userId      String?
-  username    String?
-  moduleName  String?
-  businessName String?
-  method      String?
-  ipAddress   String?
-  requestUrl  String?
+  id            String   @id @default(cuid())
+  userId        String?
+  username      String?
+  moduleName    String?
+  businessName  String?
+  method        String?
+  ipAddress     String?
+  requestUrl    String?
   requestMethod String?
   requestParams Json?
   responseResult Json?
-  status      Int?     // 0失败 1成功
-  errorMsg    String?
-  costTime    Int?     // 耗时（毫秒）
-  operatedAt  DateTime @default(now())
+  status        Int?
+  errorMsg      String?
+  costTime      Int?
+  operatedAt    DateTime @default(now())
 
-  // 关系
-  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([operatedAt])
@@ -290,918 +280,20 @@ model OperationLog {
 }
 
 model LoginLog {
-  id          String   @id @default(cuid())
-  userId      String?
-  username    String?
-  ipAddress   String?
+  id            String   @id @default(cuid())
+  userId        String?
+  username      String?
+  ipAddress     String?
   loginLocation String?
-  browser     String?
-  os          String?
-  status      Int?     // 0失败 1成功
-  msg         String?
-  loginTime   DateTime @default(now())
+  browser       String?
+  os            String?
+  status        Int?
+  msg           String?
+  loginTime     DateTime @default(now())
 
-  // 关系
-  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([loginTime])
   @@map("login_log")
-}
-
-// ==================== 公共基础数据表 ====================
-
-model MaterialCategory {
-  id          String        @id @default(cuid())
-  tenantId    String
-  code        String
-  name        String
-  parentId    String?
-  sortOrder   Int           @default(0)
-  status      CommonStatus  @default(ACTIVE)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  deletedAt   DateTime?
-  
-  // 关系
-  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  parent      MaterialCategory? @relation("MaterialCategoryTree", fields: [parentId], references: [id])
-  children    MaterialCategory[] @relation("MaterialCategoryTree")
-  materials   Material[]
-  
-  @@index([tenantId])
-  @@index([parentId])
-  @@map("material_category")
-}
-
-model Material {
-  id               String        @id @default(cuid())
-  tenantId         String
-  code             String
-  name             String
-  specification    String?       // 规格型号
-  externalCode     String?       // 外部编码
-  categoryId       String
-  materialType     MaterialType  @default(PHYSICAL)
-  materialProperty String?
-  productCategory  String?
-  unitId           String
-  sortOrder        Int           @default(0)
-  status           CommonStatus  @default(ACTIVE)
-  remark           String?
-  approvalStatus   ApprovalStatus @default(DRAFT)
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
-  deletedAt        DateTime?
-  
-  // 关系
-  tenant           Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  category         MaterialCategory @relation(fields: [categoryId], references: [id])
-  unit             MeasurementUnit @relation(fields: [unitId], references: [id])
-  inventory        Inventory[]
-  bomItems         BomItem[]
-  bomParents       BomItem[]     @relation("BomParentMaterial")
-  orderItems       OrderItem[]
-  
-  @@unique([tenantId, code])
-  @@index([tenantId, categoryId])
-  @@index([unitId])
-  @@map("material")
-}
-
-model MeasurementUnit {
-  id          String        @id @default(cuid())
-  tenantId    String
-  code        String
-  name        String
-  symbol      String?
-  sortOrder   Int           @default(0)
-  status      CommonStatus  @default(ACTIVE)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  deletedAt   DateTime?
-  
-  // 关系
-  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  materials   Material[]
-  
-  @@map("measurement_unit")
-}
-
-model Project {
-  id              String         @id @default(cuid())
-  tenantId        String
-  code            String
-  name            String
-  source          String?
-  organizationId  String?
-  approvalStatus  ApprovalStatus @default(DRAFT)
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  deletedAt       DateTime?
-  
-  // 关系
-  tenant          Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  salesOrders     SalesOrder[]
-  
-  @@unique([tenantId, code])
-  @@map("project")
-}
-
-model Contract {
-  id              String         @id @default(cuid())
-  tenantId        String
-  code            String
-  name            String
-  type            String        // 销售合同/采购合同
-  isProjectContract Boolean      @default(false)
-  isFrameworkContract Boolean    @default(false)
-  projectId       String?
-  customerId      String?
-  supplierId      String?
-  startDate       DateTime?
-  endDate         DateTime?
-  totalAmount     Decimal?      @db.Decimal(18, 6)
-  approvalStatus  ApprovalStatus @default(DRAFT)
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  deletedAt       DateTime?
-  
-  // 关系
-  tenant          Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  project         Project?       @relation(fields: [projectId], references: [id])
-  customer        Customer?      @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  supplier        Supplier?      @relation(fields: [supplierId], references: [id], onDelete: SetNull)
-  salesOrders     SalesOrder[]
-  purchaseOrders  PurchaseOrder[]
-
-  // 业务约束: customerId 与 supplierId 互斥 (销售合同 vs 采购合同)
-  // 应用层需确保: (customerId IS NULL) <> (supplierId IS NULL)
-
-  @@unique([tenantId, code])
-  @@index([projectId])
-  @@index([customerId])
-  @@index([supplierId])
-  @@map("contract")
-}
-
-// ==================== 销售管理表 ====================
-
-model Customer {
-  id              String        @id @default(cuid())
-  tenantId        String
-  code            String
-  name            String
-  industry        String?
-  valueLevel      String?       // 客户价值等级
-  creditLevel     String?       // 信用等级
-  contactPerson   String?
-  contactPhone    String?
-  contactEmail    String?
-  address         String?
-  status          CommonStatus  @default(ACTIVE)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  deletedAt       DateTime?
-  
-  // 关系
-  tenant          Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  salesOrders     SalesOrder[]
-  
-  @@unique([tenantId, code])
-  @@map("customer")
-}
-
-model SalesOrder {
-  id              String             @id @default(cuid())
-  tenantId        String
-  orderNo         String
-  orderName       String
-  customerId      String
-  projectId       String?
-  contractId      String?
-  orderType       String             // 普通订单等
-  orderDate       DateTime           @default(now())
-  deliveryDate    DateTime?
-  totalAmount     Decimal?           @db.Decimal(18, 6)
-  approvalStatus  ApprovalStatus     @default(DRAFT)
-  businessStatus  SalesOrderStatus   @default(DRAFT)
-  createdById     String?
-  approvedById    String?
-  approvedAt      DateTime?
-  remark          String?
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
-  deletedAt       DateTime?
-  
-  // 关系
-  tenant          Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  customer        Customer           @relation(fields: [customerId], references: [id])
-  project         Project?           @relation(fields: [projectId], references: [id])
-  contract        Contract?          @relation(fields: [contractId], references: [id])
-  createdBy       User?              @relation("SalesOrderCreator", fields: [createdById], references: [id])
-  approvedBy      User?              @relation("SalesOrderApprover", fields: [approvedById], references: [id])
-  items           SalesOrderItem[]
-  shipments       SalesShipment[]
-  attachments     Attachment[]
-  
-  @@unique([tenantId, orderNo])
-  @@index([tenantId, customerId])
-  @@index([projectId])
-  @@index([contractId])
-  @@index([createdById])
-  @@index([approvedById])
-  @@index([businessStatus])
-  @@map("sales_order")
-}
-
-model SalesOrderItem {
-  id              String   @id @default(cuid())
-  orderId         String
-  lineNo          Int
-  materialId      String
-  quantity        Decimal  @db.Decimal(18, 6)
-  unitPrice       Decimal? @db.Decimal(18, 6)
-  amount          Decimal? @db.Decimal(18, 6)
-  deliveredQty    Decimal  @default(0) @db.Decimal(18, 6)
-  remark          String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  // 关系
-  order           SalesOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  material        Material   @relation(fields: [materialId], references: [id])
-  
-  @@index([orderId])
-  @@index([materialId])
-  @@map("sales_order_item")
-}
-
-model Quotation {
-  id              String         @id @default(cuid())
-  tenantId        String
-  quotationNo     String
-  quotationName   String
-  customerId      String
-  departmentId    String?
-  responsibleId   String?
-  validUntil      DateTime
-  totalAmount     Decimal?       @db.Decimal(18, 6)
-  approvalStatus  ApprovalStatus @default(DRAFT)
-  remark          String?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  deletedAt       DateTime?
-  
-  // 关系
-  tenant          Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  customer        Customer       @relation(fields: [customerId], references: [id])
-  department      Department?    @relation(fields: [departmentId], references: [id], onDelete: SetNull)
-  responsible     User?          @relation("QuotationResponsible", fields: [responsibleId], references: [id], onDelete: SetNull)
-  items           QuotationItem[]
-  attachments     Attachment[]
-  
-  @@unique([tenantId, quotationNo])
-  @@index([customerId])
-  @@index([departmentId])
-  @@index([responsibleId])
-  @@map("quotation")
-}
-
-model QuotationItem {
-  id              String   @id @default(cuid())
-  quotationId     String
-  lineNo          Int
-  materialId      String
-  quantity        Decimal  @db.Decimal(18, 6)
-  unitPrice       Decimal? @db.Decimal(18, 6)
-  amount          Decimal? @db.Decimal(18, 6)
-  remark          String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  // 关系
-  quotation       Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
-  material        Material  @relation(fields: [materialId], references: [id])
-  
-  @@index([quotationId])
-  @@index([materialId])
-  @@map("quotation_item")
-}
-
-model SalesShipment {
-  id              String             @id @default(cuid())
-  tenantId        String
-  shipmentNo      String
-  orderId         String
-  shipmentDate    DateTime           @default(now())
-  approvalStatus  ApprovalStatus     @default(DRAFT)
-  businessStatus  BusinessStatus     @default(PENDING)
-  totalAmount     Decimal?           @db.Decimal(18, 6)
-  remark          String?
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
-  deletedAt       DateTime?
-  
-  // 关系
-  tenant          Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  order           SalesOrder         @relation(fields: [orderId], references: [id])
-  items           SalesShipmentItem[]
-  
-  @@unique([tenantId, shipmentNo])
-  @@index([orderId])
-  @@map("sales_shipment")
-}
-
-model SalesShipmentItem {
-  id              String   @id @default(cuid())
-  shipmentId      String
-  orderItemId     String
-  materialId      String
-  quantity        Decimal  @db.Decimal(18, 6)
-  warehouseId     String?
-  locationId      String?
-  createdAt       DateTime @default(now())
-  
-  // 关系
-  shipment        SalesShipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
-  orderItem       SalesOrderItem @relation(fields: [orderItemId], references: [id])
-  material        Material   @relation(fields: [materialId], references: [id])
-  
-  @@index([shipmentId])
-  @@index([orderItemId])
-  @@index([materialId])
-  @@map("sales_shipment_item")
-}
-
-// ==================== 采购管理表 ====================
-
-model Supplier {
-  id              String        @id @default(cuid())
-  tenantId        String
-  code            String
-  name            String
-  contactPerson   String?
-  contactPhone    String?
-  contactEmail    String?
-  address         String?
-  creditLevel     String?
-  status          CommonStatus  @default(ACTIVE)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  deletedAt       DateTime?
-  
-  // 关系
-  tenant          Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  purchaseOrders  PurchaseOrder[]
-  
-  @@unique([tenantId, code])
-  @@map("supplier")
-}
-
-model PurchaseOrder {
-  id              String               @id @default(cuid())
-  tenantId        String
-  orderNo         String
-  orderName       String
-  supplierId      String
-  contractId      String?
-  createMethod    String?
-  orderDate       DateTime             @default(now())
-  expectedDate    DateTime?
-  totalAmount     Decimal?             @db.Decimal(18, 6)
-  approvalStatus  ApprovalStatus       @default(DRAFT)
-  businessStatus  PurchaseOrderStatus  @default(DRAFT)
-  createdById     String?
-  approvedById    String?
-  approvedAt      DateTime?
-  remark          String?
-  createdAt       DateTime             @default(now())
-  updatedAt       DateTime             @updatedAt
-  deletedAt       DateTime?
-  
-  // 关系
-  tenant          Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  supplier        Supplier             @relation(fields: [supplierId], references: [id])
-  contract        Contract?            @relation(fields: [contractId], references: [id], onDelete: SetNull)
-  createdBy       User?                @relation("PurchaseOrderCreator", fields: [createdById], references: [id])
-  approvedBy      User?                @relation("PurchaseOrderApprover", fields: [approvedById], references: [id])
-  items           PurchaseOrderItem[]
-  receipts        PurchaseReceipt[]
-  inspections     Inspection[]
-  
-  @@unique([tenantId, orderNo])
-  @@index([tenantId, supplierId])
-  @@index([contractId])
-  @@index([createdById])
-  @@index([approvedById])
-  @@map("purchase_order")
-}
-
-model PurchaseOrderItem {
-  id              String   @id @default(cuid())
-  orderId         String
-  lineNo          Int
-  materialId      String
-  quantity        Decimal  @db.Decimal(18, 6)
-  unitPrice       Decimal? @db.Decimal(18, 6)
-  amount          Decimal? @db.Decimal(18, 6)
-  receivedQty     Decimal  @default(0) @db.Decimal(18, 6)
-  remark          String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  // 关系
-  order           PurchaseOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  material        Material      @relation(fields: [materialId], references: [id])
-  
-  @@index([orderId])
-  @@index([materialId])
-  @@map("purchase_order_item")
-}
-
-// ==================== 生产管理表 ====================
-
-model Bom {
-  id              String         @id @default(cuid())
-  tenantId        String
-  code            String
-  name            String
-  materialId      String
-  version         String?
-  approvalStatus  ApprovalStatus @default(DRAFT)
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  deletedAt       DateTime?
-  
-  // 关系
-  tenant          Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  material        Material       @relation(fields: [materialId], references: [id])
-  items           BomItem[]
-  productionOrders ProductionOrder[]
-  
-  @@unique([tenantId, code])
-  @@index([materialId])
-  @@map("bom")
-}
-
-model BomItem {
-  id                  String   @id @default(cuid())
-  bomId               String
-  parentMaterialId    String?  // 父项物料ID，用于多层BOM
-  level               Int      @default(1)
-  lineNo              Int
-  materialId          String
-  quantity            Decimal  @db.Decimal(18, 6)
-  remark              String?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-  
-  // 关系
-  bom                 Bom      @relation(fields: [bomId], references: [id], onDelete: Cascade)
-  parentMaterial      Material? @relation("BomParentMaterial", fields: [parentMaterialId], references: [id])
-  material            Material @relation(fields: [materialId], references: [id])
-  
-  @@index([bomId])
-  @@index([parentMaterialId])
-  @@index([materialId])
-  @@map("bom_item")
-}
-
-model ProductionOrder {
-  id              String                @id @default(cuid())
-  tenantId        String
-  orderNo         String
-  orderName       String
-  bomId           String?
-  materialId      String
-  quantity        Decimal               @db.Decimal(18, 6)
-  startDate       DateTime?
-  endDate         DateTime?
-  departmentId    String?
-  approvalStatus  ApprovalStatus        @default(DRAFT)
-  businessStatus  ProductionOrderStatus @default(DRAFT)
-  remark          String?
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
-  deletedAt       DateTime?
-  
-  // 关系
-  tenant          Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  bom             Bom?                  @relation(fields: [bomId], references: [id])
-  material        Material              @relation(fields: [materialId], references: [id])
-  issues          MaterialIssue[]
-  returns         MaterialReturn[]
-  
-  @@unique([tenantId, orderNo])
-  @@index([bomId])
-  @@index([materialId])
-  @@index([businessStatus])
-  @@map("production_order")
-}
-
-model MaterialIssue {
-  id              String         @id @default(cuid())
-  tenantId        String
-  issueNo         String
-  productionOrderId String
-  approvalStatus  ApprovalStatus @default(DRAFT)
-  businessStatus  BusinessStatus @default(PENDING)
-  issueDate       DateTime       @default(now())
-  remark          String?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  deletedAt       DateTime?
-  
-  // 关系
-  tenant          Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  productionOrder ProductionOrder @relation(fields: [productionOrderId], references: [id])
-  items           MaterialIssueItem[]
-  
-  @@unique([tenantId, issueNo])
-  @@index([productionOrderId])
-  @@map("material_issue")
-}
-
-model MaterialIssueItem {
-  id              String   @id @default(cuid())
-  issueId         String
-  lineNo          Int
-  materialId      String
-  quantity        Decimal  @db.Decimal(18, 6)
-  warehouseId     String?
-  locationId      String?
-  remark          String?
-  createdAt       DateTime @default(now())
-  
-  // 关系
-  issue           MaterialIssue @relation(fields: [issueId], references: [id], onDelete: Cascade)
-  material        Material      @relation(fields: [materialId], references: [id])
-  
-  @@index([issueId])
-  @@index([materialId])
-  @@map("material_issue_item")
-}
-
-model MaterialReturn {
-  id              String         @id @default(cuid())
-  tenantId        String
-  returnNo        String
-  productionOrderId String
-  approvalStatus  ApprovalStatus @default(DRAFT)
-  businessStatus  BusinessStatus @default(PENDING)
-  returnDate      DateTime       @default(now())
-  remark          String?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  deletedAt       DateTime?
-  
-  // 关系
-  tenant          Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  productionOrder ProductionOrder @relation(fields: [productionOrderId], references: [id])
-  items           MaterialReturnItem[]
-  
-  @@unique([tenantId, returnNo])
-  @@index([productionOrderId])
-  @@map("material_return")
-}
-
-model MaterialReturnItem {
-  id              String   @id @default(cuid())
-  returnId        String
-  lineNo          Int
-  materialId      String
-  quantity        Decimal  @db.Decimal(18, 6)
-  warehouseId     String?
-  locationId      String?
-  remark          String?
-  createdAt       DateTime @default(now())
-  
-  // 关系
-  return          MaterialReturn @relation(fields: [returnId], references: [id], onDelete: Cascade)
-  material        Material       @relation(fields: [materialId], references: [id])
-  
-  @@index([returnId])
-  @@index([materialId])
-  @@map("material_return_item")
-}
-
-// ==================== 质量管理表 ====================
-
-model Inspection {
-  id              String           @id @default(cuid())
-  tenantId        String
-  inspectionNo    String
-  sourceType      String           // 采购单/生产退料等
-  sourceId        String
-  sourceNo        String
-  sourceLineNo    String?
-  approvalStatus  ApprovalStatus   @default(DRAFT)
-  businessStatus  InspectionStatus @default(DRAFT)
-  inspectionDate  DateTime?
-  inspectorId     String?
-  result          String?
-  qualifiedQty    Decimal?         @db.Decimal(18, 6)
-  unqualifiedQty  Decimal?         @db.Decimal(18, 6)
-  remark          String?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  deletedAt       DateTime?
-  
-  // 关系
-  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  inspector       User?            @relation("InspectionInspector", fields: [inspectorId], references: [id], onDelete: SetNull)
-  items           InspectionItem[]
-
-  @@unique([tenantId, inspectionNo])
-  @@index([sourceType, sourceId])
-  @@index([inspectorId])
-  @@map("inspection")
-}
-
-model InspectionItem {
-  id              String   @id @default(cuid())
-  inspectionId    String
-  lineNo          Int
-  materialId      String
-  quantity        Decimal  @db.Decimal(18, 6)
-  qualifiedQty    Decimal  @db.Decimal(18, 6)
-  unqualifiedQty  Decimal  @db.Decimal(18, 6)
-  inspectionResult String?
-  remark          String?
-  createdAt       DateTime @default(now())
-  
-  // 关系
-  inspection      Inspection @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
-  material        Material   @relation(fields: [materialId], references: [id])
-  
-  @@index([inspectionId])
-  @@index([materialId])
-  @@map("inspection_item")
-}
-
-// ==================== 仓储管理表 ====================
-
-model Warehouse {
-  id          String        @id @default(cuid())
-  tenantId    String
-  code        String
-  name        String
-  address     String?
-  managerId   String?
-  sortOrder   Int           @default(0)
-  status      CommonStatus  @default(ACTIVE)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  deletedAt   DateTime?
-  
-  // 关系
-  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  zones       Zone[]
-  locations   Location[]
-  inventory   Inventory[]
-  
-  @@unique([tenantId, code])
-  @@index([tenantId])
-  @@map("warehouse")
-}
-
-model Zone {
-  id          String        @id @default(cuid())
-  warehouseId String
-  code        String
-  name        String
-  sortOrder   Int           @default(0)
-  status      CommonStatus  @default(ACTIVE)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  deletedAt   DateTime?
-  
-  // 关系
-  warehouse   Warehouse     @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
-  locations   Location[]
-  
-  @@index([warehouseId])
-  @@map("zone")
-}
-
-model Location {
-  id          String        @id @default(cuid())
-  warehouseId String
-  zoneId      String?
-  code        String
-  name        String
-  sortOrder   Int           @default(0)
-  status      CommonStatus  @default(ACTIVE)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  deletedAt   DateTime?
-  
-  // 关系
-  warehouse   Warehouse     @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
-  zone        Zone?         @relation(fields: [zoneId], references: [id])
-  inventory   Inventory[]
-  
-  @@index([warehouseId])
-  @@index([zoneId])
-  @@map("location")
-}
-
-model Inventory {
-  id            String   @id @default(cuid())
-  tenantId      String
-  materialId    String
-  warehouseId   String?
-  locationId    String?
-  batchNo       String?
-  quantity      Decimal  @db.Decimal(18, 6)
-  availableQty  Decimal  @db.Decimal(18, 6)
-  lockedQty     Decimal  @default(0) @db.Decimal(18, 6)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  
-  // 关系
-  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  material      Material @relation(fields: [materialId], references: [id])
-  warehouse     Warehouse? @relation(fields: [warehouseId], references: [id])
-  location      Location? @relation(fields: [locationId], references: [id])
-  
-  @@unique([tenantId, materialId, warehouseId, locationId, batchNo])
-  @@index([tenantId, materialId])
-  @@index([warehouseId])
-  @@index([batchNo])
-  @@map("inventory")
-}
-
-model StockTransaction {
-  id            String           @id @default(cuid())
-  tenantId      String
-  transactionNo String
-  type          StockChangeType
-  sourceType    String?          // 来源单据类型
-  sourceId      String?
-  sourceNo      String?
-  materialId    String
-  warehouseId   String?
-  locationId    String?
-  batchNo       String?
-  quantity      Decimal          @db.Decimal(18, 6)
-  beforeQty     Decimal          @db.Decimal(18, 6)
-  afterQty      Decimal          @db.Decimal(18, 6)
-  transactionDate DateTime       @default(now())
-  remark        String?
-  createdAt     DateTime         @default(now())
-  
-  // 关系
-  tenant        Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  material      Material         @relation(fields: [materialId], references: [id])
-  warehouse     Warehouse?       @relation(fields: [warehouseId], references: [id], onDelete: SetNull)
-  location      Location?        @relation(fields: [locationId], references: [id], onDelete: SetNull)
-
-  @@index([tenantId, materialId])
-  @@index([warehouseId])
-  @@index([sourceType, sourceId])
-  @@index([transactionDate])
-  @@map("stock_transaction")
-}
-
-model PurchaseReceipt {
-  id              String           @id @default(cuid())
-  tenantId        String
-  receiptNo       String
-  orderId         String?
-  inspectionId    String?
-  receiptDate     DateTime         @default(now())
-  approvalStatus  ApprovalStatus   @default(DRAFT)
-  businessStatus  BusinessStatus   @default(PENDING)
-  totalAmount     Decimal?         @db.Decimal(18, 6)
-  qualifiedAmount Decimal?         @db.Decimal(18, 6)
-  unqualifiedAmount Decimal?       @db.Decimal(18, 6)
-  remark          String?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  deletedAt       DateTime?
-  
-  // 关系
-  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  order           PurchaseOrder?   @relation(fields: [orderId], references: [id])
-  inspection      Inspection?      @relation(fields: [inspectionId], references: [id])
-  items           PurchaseReceiptItem[]
-  
-  @@unique([tenantId, receiptNo])
-  @@index([orderId])
-  @@index([inspectionId])
-  @@map("purchase_receipt")
-}
-
-model PurchaseReceiptItem {
-  id              String   @id @default(cuid())
-  receiptId       String
-  orderItemId     String?
-  inspectionItemId String?
-  lineNo          Int
-  materialId      String
-  quantity        Decimal  @db.Decimal(18, 6)
-  qualifiedQty    Decimal  @db.Decimal(18, 6)
-  unqualifiedQty  Decimal  @db.Decimal(18, 6)
-  warehouseId     String?
-  locationId      String?
-  unitPrice       Decimal? @db.Decimal(18, 6)
-  amount          Decimal? @db.Decimal(18, 6)
-  remark          String?
-  createdAt       DateTime @default(now())
-  
-  // 关系
-  receipt         PurchaseReceipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
-  material        Material        @relation(fields: [materialId], references: [id])
-  
-  @@index([receiptId])
-  @@index([materialId])
-  @@map("purchase_receipt_item")
-}
-
-// ==================== 附件表 ====================
-
-model Attachment {
-  id            String   @id @default(cuid())
-  businessType  String   // 关联业务类型 (如: sales_order, quotation, purchase_order)
-  businessId    String
-  fileName      String
-  filePath      String
-  fileSize      Int?
-  fileType      String?
-  uploadedById  String?
-  uploadedAt    DateTime @default(now())
-
-  // 关系
-  uploadedBy    User?    @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
-
-  // 注意: businessType + businessId 实现多态关联，无法用单字段外键
-  // 查询通过联合索引 + 应用层过滤实现
-  @@index([businessType, businessId])
-  @@index([uploadedById])
-  @@map("attachment")
-}
-```
-```prisma
-// 审批流程表
-model ApprovalFlow {
-  id          String   @id @default(cuid())
-  businessType String
-  config      Json
-  status      CommonStatus @default(ACTIVE)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-// 审批记录表
-model ApprovalRecord {
-  id            String   @id @default(cuid())
-  businessType  String
-  businessId    String
-  approvalStep  Int
-  approvedBy    String?
-  approvedAt    DateTime?
-  status        ApprovalStatus
-  comment       String?
-  createdAt     DateTime @default(now())
-}
-
-// 单据编号规则表
-model NumberRule {
-  id          String   @id @default(cuid())
-  code        String
-  name        String
-  prefix      String
-  dateFormat  String
-  seqLength   Int
-  currentSeq  Int      @default(0)
-  resetType   String   // NONE/DAILY/MONTHLY/YEARLY
-  status      CommonStatus @default(ACTIVE)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-// 消息通知表
-model Notification {
-  id          String   @id @default(cuid())
-  userId      String
-  type        String
-  title       String
-  content     String?
-  businessType String?
-  businessId  String?
-  isRead      Boolean  @default(false)
-  readAt      DateTime?
-  createdAt   DateTime @default(now())
-}
-
-// 系统参数配置表
-model SystemConfig {
-  id          String   @id @default(cuid())
-  key         String   @unique
-  value       String?
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
 }
