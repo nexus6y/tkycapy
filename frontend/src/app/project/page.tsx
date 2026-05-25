@@ -87,7 +87,7 @@ export default function ProjectPage() {
                 <td className="px-2 py-2.5 text-gray-500 text-[12px]">{new Date(item.createdAt).toLocaleDateString('zh-CN')}</td>
                 <td className="px-2 py-2.5">
                   <div className="flex items-center gap-3">
-                    <button onClick={()=>openEdit(item)} className="text-blue-600 hover:text-blue-800 text-[12px] inline-flex items-center gap-0.5"><Pencil size={12}/>修改</button>
+                    <button onClick={()=>router.push(`/project/${item.id}/edit`)} className="text-blue-600 hover:text-blue-800 text-[12px] inline-flex items-center gap-0.5"><Pencil size={12}/>修改</button>
                     {item.approvalStatus==='DRAFT'&&<button onClick={()=>{api.put(`/projects/${item.id}/submit`).then(fetch);}} className="text-blue-600 hover:text-blue-800 text-[12px]">提交</button>}
                     <button onClick={()=>setDelId(item.id)} className="text-red-500 hover:text-red-700 text-[12px] inline-flex items-center gap-0.5"><Trash2 size={12}/>删除</button>
                   </div>
