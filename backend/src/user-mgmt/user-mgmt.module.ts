@@ -1,0 +1,1 @@
+import { Module } from '@nestjs/common'; import { UserMgmtController } from './user-mgmt.controller'; import { RoleMgmtController } from './role-mgmt.controller'; @Module({ controllers: [UserMgmtController, RoleMgmtController] }) export class UserMgmtModule {}

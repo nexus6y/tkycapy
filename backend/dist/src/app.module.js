@@ -17,6 +17,7 @@ const material_param_module_1 = require("./material-param/material-param.module"
 const material_approval_module_1 = require("./material-approval/material-approval.module");
 const project_module_1 = require("./project/project.module");
 const contract_module_1 = require("./contract/contract.module");
+const user_mgmt_module_1 = require("./user-mgmt/user-mgmt.module");
 const inbound_order_module_1 = require("./inbound-order/inbound-order.module");
 const outbound_order_module_1 = require("./outbound-order/outbound-order.module");
 const cost_ledger_module_1 = require("./cost-ledger/cost-ledger.module");
@@ -43,7 +44,7 @@ exports.AppModule = AppModule = __decorate([
             material_category_module_1.MaterialCategoryModule, material_module_1.MaterialModule, measurement_unit_module_1.MeasurementUnitModule,
             material_param_module_1.MaterialParamModule, material_approval_module_1.MaterialApprovalModule,
             project_module_1.ProjectModule, contract_module_1.ContractModule,
-            inbound_order_module_1.InboundOrderModule, outbound_order_module_1.OutboundOrderModule, cost_ledger_module_1.CostLedgerModule, warehouse_module_1.WarehouseModule, inventory_module_1.InventoryModule, bom_module_1.BomModule, production_order_module_1.ProductionOrderModule, inspection_module_1.InspectionModule, demand_plan_module_1.DemandPlanModule, supplier_module_1.SupplierModule, customer_module_1.CustomerModule, quotation_module_1.QuotationModule, pre_order_module_1.PreOrderModule,
+            user_mgmt_module_1.UserMgmtModule, inbound_order_module_1.InboundOrderModule, outbound_order_module_1.OutboundOrderModule, cost_ledger_module_1.CostLedgerModule, warehouse_module_1.WarehouseModule, inventory_module_1.InventoryModule, bom_module_1.BomModule, production_order_module_1.ProductionOrderModule, inspection_module_1.InspectionModule, demand_plan_module_1.DemandPlanModule, supplier_module_1.SupplierModule, customer_module_1.CustomerModule, quotation_module_1.QuotationModule, pre_order_module_1.PreOrderModule,
             sales_order_module_1.SalesOrderModule, sales_shipment_module_1.SalesShipmentModule, sales_return_module_1.SalesReturnModule,
         ],
     })
