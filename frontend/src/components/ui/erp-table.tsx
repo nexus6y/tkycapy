@@ -2,7 +2,6 @@ import { cn } from '@/lib/utils';
 import { ChevronLeft, ChevronRight, RefreshCw, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 /* ===== Table header ===== */
 export function ErpTable({ children, className }: { children: React.ReactNode; className?: string }) {
@@ -49,8 +48,8 @@ export function ErpActionBtn({ children, onClick, danger }: { children: React.Re
 export function ErpTools({ onRefresh, onSettings }: { onRefresh?: () => void; onSettings?: () => void }) {
   return (
     <div className="flex items-center justify-end px-4 py-1.5 bg-[#f5f7fa] border-b border-[#ebeef5] gap-1">
-      <Tooltip><TooltipTrigger asChild><button onClick={onRefresh} className="p-1.5 hover:bg-white rounded text-[#909399] hover:text-[#409eff] transition-colors"><RefreshCw className="h-4 w-4"/></button></TooltipTrigger><TooltipContent>刷新</TooltipContent></Tooltip>
-      <Tooltip><TooltipTrigger asChild><button onClick={onSettings} className="p-1.5 hover:bg-white rounded text-[#909399] hover:text-[#409eff] transition-colors"><Settings className="h-4 w-4"/></button></TooltipTrigger><TooltipContent>列设置</TooltipContent></Tooltip>
+      <button onClick={onRefresh} title="刷新" className="p-1.5 hover:bg-white rounded text-[#909399] hover:text-[#409eff] transition-colors"><RefreshCw className="h-4 w-4"/></button>
+      <button onClick={onSettings} title="列设置" className="p-1.5 hover:bg-white rounded text-[#909399] hover:text-[#409eff] transition-colors"><Settings className="h-4 w-4"/></button>
     </div>
   );
 }
