@@ -29,6 +29,7 @@ let CostLedgerController = class CostLedgerController {
         const [items, total] = await Promise.all([this.prisma.costLedger.findMany({ where, orderBy: { transactionDate: 'desc' }, skip: (+page - 1) * +pageSize, take: +pageSize }), this.prisma.costLedger.count({ where })]);
         return { items, total, page: +page, pageSize: +pageSize };
     }
+    async create(dto) { const tenantId = await this.tid(); return this.prisma.costLedger.create({ data: { ...dto, tenantId } }); }
 };
 exports.CostLedgerController = CostLedgerController;
 __decorate([
@@ -40,6 +41,13 @@ __decorate([
     __metadata("design:paramtypes", [String, Object, Object]),
     __metadata("design:returntype", Promise)
 ], CostLedgerController.prototype, "findAll", null);
+__decorate([
+    (0, common_1.Post)(),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], CostLedgerController.prototype, "create", null);
 exports.CostLedgerController = CostLedgerController = __decorate([
     (0, common_1.Controller)('cost-ledgers'),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService])

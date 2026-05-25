@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 @Controller('cost-ledgers')
 export class CostLedgerController {
@@ -10,4 +10,5 @@ export class CostLedgerController {
     const [items, total] = await Promise.all([this.prisma.costLedger.findMany({ where, orderBy: { transactionDate: 'desc' }, skip: (+page - 1) * +pageSize, take: +pageSize }), this.prisma.costLedger.count({ where })]);
     return { items, total, page: +page, pageSize: +pageSize };
   }
+  @Post() async create(@Body() dto: any) { const tenantId = await this.tid(); return this.prisma.costLedger.create({ data: { ...dto, tenantId } as any }); }
 }
