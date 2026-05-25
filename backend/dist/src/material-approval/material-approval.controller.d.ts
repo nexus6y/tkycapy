@@ -12,13 +12,14 @@ export declare class MaterialApprovalController {
             unit: undefined;
             id: string;
             tenantId: string;
-            code: string;
-            name: string;
-            sortOrder: number;
-            status: import("@prisma/client").$Enums.CommonStatus;
+            remark: string | null;
             createdAt: Date;
+            name: string;
+            code: string;
+            status: import("@prisma/client").$Enums.CommonStatus;
             updatedAt: Date;
             deletedAt: Date | null;
+            sortOrder: number;
             categoryId: string;
             specification: string | null;
             externalCode: string | null;
@@ -27,7 +28,6 @@ export declare class MaterialApprovalController {
             productCategory: string | null;
             unitId: string;
             unifiedUnit: boolean;
-            remark: string | null;
             defaultSupplier: string | null;
             defaultPurchaser: string | null;
             minPurchaseQty: import("@prisma/client/runtime/client").Decimal | null;
@@ -69,13 +69,14 @@ export declare class MaterialApprovalController {
     approve(id: string, comment?: string): Promise<{
         id: string;
         tenantId: string;
-        code: string;
-        name: string;
-        sortOrder: number;
-        status: import("@prisma/client").$Enums.CommonStatus;
+        remark: string | null;
         createdAt: Date;
+        name: string;
+        code: string;
+        status: import("@prisma/client").$Enums.CommonStatus;
         updatedAt: Date;
         deletedAt: Date | null;
+        sortOrder: number;
         categoryId: string;
         specification: string | null;
         externalCode: string | null;
@@ -84,7 +85,6 @@ export declare class MaterialApprovalController {
         productCategory: string | null;
         unitId: string;
         unifiedUnit: boolean;
-        remark: string | null;
         defaultSupplier: string | null;
         defaultPurchaser: string | null;
         minPurchaseQty: import("@prisma/client/runtime/client").Decimal | null;
@@ -122,13 +122,14 @@ export declare class MaterialApprovalController {
     reject(id: string, comment?: string): Promise<{
         id: string;
         tenantId: string;
-        code: string;
-        name: string;
-        sortOrder: number;
-        status: import("@prisma/client").$Enums.CommonStatus;
+        remark: string | null;
         createdAt: Date;
+        name: string;
+        code: string;
+        status: import("@prisma/client").$Enums.CommonStatus;
         updatedAt: Date;
         deletedAt: Date | null;
+        sortOrder: number;
         categoryId: string;
         specification: string | null;
         externalCode: string | null;
@@ -137,7 +138,6 @@ export declare class MaterialApprovalController {
         productCategory: string | null;
         unitId: string;
         unifiedUnit: boolean;
-        remark: string | null;
         defaultSupplier: string | null;
         defaultPurchaser: string | null;
         minPurchaseQty: import("@prisma/client/runtime/client").Decimal | null;
@@ -175,13 +175,14 @@ export declare class MaterialApprovalController {
     submit(id: string): Promise<{
         id: string;
         tenantId: string;
-        code: string;
-        name: string;
-        sortOrder: number;
-        status: import("@prisma/client").$Enums.CommonStatus;
+        remark: string | null;
         createdAt: Date;
+        name: string;
+        code: string;
+        status: import("@prisma/client").$Enums.CommonStatus;
         updatedAt: Date;
         deletedAt: Date | null;
+        sortOrder: number;
         categoryId: string;
         specification: string | null;
         externalCode: string | null;
@@ -190,7 +191,6 @@ export declare class MaterialApprovalController {
         productCategory: string | null;
         unitId: string;
         unifiedUnit: boolean;
-        remark: string | null;
         defaultSupplier: string | null;
         defaultPurchaser: string | null;
         minPurchaseQty: import("@prisma/client/runtime/client").Decimal | null;

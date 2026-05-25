@@ -106,6 +106,7 @@ model Tenant {
   quotations         Quotation[]
   demandPlans        DemandPlan[]
   warehouses         Warehouse[]
+  costLedgers        CostLedger[]
   inventory          Inventory[]
   boms               Bom[]
   productionOrders   ProductionOrder[]
@@ -735,6 +736,25 @@ model Warehouse {
   @@unique([tenantId, code])
   @@index([tenantId])
   @@map("warehouse")
+}
+
+model CostLedger {
+  id              String   @id @default(cuid())
+  tenantId        String
+  transactionNo   String
+  transactionType String   // 入库/出库/调拨/调整
+  materialName    String?
+  quantity        Decimal? @db.Decimal(18,6)
+  unitPrice       Decimal? @db.Decimal(18,6)
+  totalAmount     Decimal? @db.Decimal(18,6)
+  transactionDate DateTime @default(now())
+  remark          String?
+  createdAt       DateTime @default(now())
+
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("cost_ledger")
 }
 
 model Inventory {

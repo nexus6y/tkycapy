@@ -7,9 +7,9 @@ export declare class ProjectController {
         items: {
             id: string;
             tenantId: string;
-            code: string;
-            name: string;
             createdAt: Date;
+            name: string;
+            code: string;
             updatedAt: Date;
             deletedAt: Date | null;
             approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
@@ -23,9 +23,9 @@ export declare class ProjectController {
     findOne(id: string): Promise<{
         id: string;
         tenantId: string;
-        code: string;
-        name: string;
         createdAt: Date;
+        name: string;
+        code: string;
         updatedAt: Date;
         deletedAt: Date | null;
         approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
@@ -39,9 +39,9 @@ export declare class ProjectController {
     }): Promise<{
         id: string;
         tenantId: string;
-        code: string;
-        name: string;
         createdAt: Date;
+        name: string;
+        code: string;
         updatedAt: Date;
         deletedAt: Date | null;
         approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
@@ -54,9 +54,9 @@ export declare class ProjectController {
     }): Promise<{
         id: string;
         tenantId: string;
-        code: string;
-        name: string;
         createdAt: Date;
+        name: string;
+        code: string;
         updatedAt: Date;
         deletedAt: Date | null;
         approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
@@ -69,9 +69,9 @@ export declare class ProjectController {
     submit(id: string): Promise<{
         id: string;
         tenantId: string;
-        code: string;
-        name: string;
         createdAt: Date;
+        name: string;
+        code: string;
         updatedAt: Date;
         deletedAt: Date | null;
         approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;

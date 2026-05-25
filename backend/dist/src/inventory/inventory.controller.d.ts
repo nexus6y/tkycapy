@@ -7,15 +7,15 @@ export declare class InventoryController {
         items: {
             id: string;
             tenantId: string;
+            materialName: string | null;
+            quantity: import("@prisma/client/runtime/client").Decimal;
             createdAt: Date;
             updatedAt: Date;
-            materialId: string | null;
-            materialName: string | null;
             warehouseId: string | null;
+            materialId: string | null;
             warehouseName: string | null;
             locationCode: string | null;
             batchNo: string | null;
-            quantity: import("@prisma/client/runtime/client").Decimal;
             availableQty: import("@prisma/client/runtime/client").Decimal;
             lockedQty: import("@prisma/client/runtime/client").Decimal;
         }[];

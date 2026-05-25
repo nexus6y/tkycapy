@@ -7,13 +7,13 @@ export declare class SupplierController {
         items: {
             id: string;
             tenantId: string;
-            code: string;
-            name: string;
-            address: string | null;
-            status: import("@prisma/client").$Enums.CommonStatus;
             createdAt: Date;
+            name: string;
+            code: string;
+            status: import("@prisma/client").$Enums.CommonStatus;
             updatedAt: Date;
             deletedAt: Date | null;
+            address: string | null;
             contactPerson: string | null;
             contactPhone: string | null;
             contactEmail: string | null;
@@ -29,13 +29,13 @@ export declare class SupplierController {
     create(dto: any): Promise<{
         id: string;
         tenantId: string;
-        code: string;
-        name: string;
-        address: string | null;
-        status: import("@prisma/client").$Enums.CommonStatus;
         createdAt: Date;
+        name: string;
+        code: string;
+        status: import("@prisma/client").$Enums.CommonStatus;
         updatedAt: Date;
         deletedAt: Date | null;
+        address: string | null;
         contactPerson: string | null;
         contactPhone: string | null;
         contactEmail: string | null;
@@ -47,13 +47,13 @@ export declare class SupplierController {
     update(id: string, dto: any): Promise<{
         id: string;
         tenantId: string;
-        code: string;
-        name: string;
-        address: string | null;
-        status: import("@prisma/client").$Enums.CommonStatus;
         createdAt: Date;
+        name: string;
+        code: string;
+        status: import("@prisma/client").$Enums.CommonStatus;
         updatedAt: Date;
         deletedAt: Date | null;
+        address: string | null;
         contactPerson: string | null;
         contactPhone: string | null;
         contactEmail: string | null;

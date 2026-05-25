@@ -7,13 +7,13 @@ export declare class CustomerController {
         items: {
             id: string;
             tenantId: string;
-            code: string;
-            name: string;
-            address: string | null;
-            status: import("@prisma/client").$Enums.CommonStatus;
             createdAt: Date;
+            name: string;
+            code: string;
+            status: import("@prisma/client").$Enums.CommonStatus;
             updatedAt: Date;
             deletedAt: Date | null;
+            address: string | null;
             contactPerson: string | null;
             contactPhone: string | null;
             contactEmail: string | null;
@@ -28,13 +28,13 @@ export declare class CustomerController {
     create(dto: any): Promise<{
         id: string;
         tenantId: string;
-        code: string;
-        name: string;
-        address: string | null;
-        status: import("@prisma/client").$Enums.CommonStatus;
         createdAt: Date;
+        name: string;
+        code: string;
+        status: import("@prisma/client").$Enums.CommonStatus;
         updatedAt: Date;
         deletedAt: Date | null;
+        address: string | null;
         contactPerson: string | null;
         contactPhone: string | null;
         contactEmail: string | null;
@@ -45,13 +45,13 @@ export declare class CustomerController {
     update(id: string, dto: any): Promise<{
         id: string;
         tenantId: string;
-        code: string;
-        name: string;
-        address: string | null;
-        status: import("@prisma/client").$Enums.CommonStatus;
         createdAt: Date;
+        name: string;
+        code: string;
+        status: import("@prisma/client").$Enums.CommonStatus;
         updatedAt: Date;
         deletedAt: Date | null;
+        address: string | null;
         contactPerson: string | null;
         contactPhone: string | null;
         contactEmail: string | null;

@@ -9,12 +9,12 @@ export declare class AuthService {
         user: {
             id: string;
             tenantId: string;
-            name: string;
-            sortOrder: number;
-            status: import("@prisma/client").$Enums.CommonStatus;
             createdAt: Date;
+            name: string;
+            status: import("@prisma/client").$Enums.CommonStatus;
             updatedAt: Date;
             deletedAt: Date | null;
+            sortOrder: number;
             username: string;
             email: string | null;
             phone: string | null;
@@ -29,12 +29,12 @@ export declare class AuthService {
         user: {
             id: string;
             tenantId: string;
-            name: string;
-            sortOrder: number;
-            status: import("@prisma/client").$Enums.CommonStatus;
             createdAt: Date;
+            name: string;
+            status: import("@prisma/client").$Enums.CommonStatus;
             updatedAt: Date;
             deletedAt: Date | null;
+            sortOrder: number;
             username: string;
             email: string | null;
             phone: string | null;

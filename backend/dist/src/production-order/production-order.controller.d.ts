@@ -7,17 +7,17 @@ export declare class ProductionOrderController {
         items: {
             id: string;
             tenantId: string;
+            materialName: string | null;
+            quantity: import("@prisma/client/runtime/client").Decimal | null;
+            remark: string | null;
             createdAt: Date;
             updatedAt: Date;
             deletedAt: Date | null;
-            materialId: string | null;
-            materialName: string | null;
-            quantity: import("@prisma/client/runtime/client").Decimal | null;
             departmentId: string | null;
             startDate: Date | null;
             endDate: Date | null;
-            remark: string | null;
             approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
+            materialId: string | null;
             orderNo: string;
             orderName: string;
             bomId: string | null;
@@ -31,17 +31,17 @@ export declare class ProductionOrderController {
     create(dto: any): Promise<{
         id: string;
         tenantId: string;
+        materialName: string | null;
+        quantity: import("@prisma/client/runtime/client").Decimal | null;
+        remark: string | null;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        materialId: string | null;
-        materialName: string | null;
-        quantity: import("@prisma/client/runtime/client").Decimal | null;
         departmentId: string | null;
         startDate: Date | null;
         endDate: Date | null;
-        remark: string | null;
         approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
+        materialId: string | null;
         orderNo: string;
         orderName: string;
         bomId: string | null;
@@ -51,17 +51,17 @@ export declare class ProductionOrderController {
     update(id: string, dto: any): Promise<{
         id: string;
         tenantId: string;
+        materialName: string | null;
+        quantity: import("@prisma/client/runtime/client").Decimal | null;
+        remark: string | null;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        materialId: string | null;
-        materialName: string | null;
-        quantity: import("@prisma/client/runtime/client").Decimal | null;
         departmentId: string | null;
         startDate: Date | null;
         endDate: Date | null;
-        remark: string | null;
         approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
+        materialId: string | null;
         orderNo: string;
         orderName: string;
         bomId: string | null;
@@ -74,17 +74,17 @@ export declare class ProductionOrderController {
     submit(id: string): Promise<{
         id: string;
         tenantId: string;
+        materialName: string | null;
+        quantity: import("@prisma/client/runtime/client").Decimal | null;
+        remark: string | null;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        materialId: string | null;
-        materialName: string | null;
-        quantity: import("@prisma/client/runtime/client").Decimal | null;
         departmentId: string | null;
         startDate: Date | null;
         endDate: Date | null;
-        remark: string | null;
         approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
+        materialId: string | null;
         orderNo: string;
         orderName: string;
         bomId: string | null;
