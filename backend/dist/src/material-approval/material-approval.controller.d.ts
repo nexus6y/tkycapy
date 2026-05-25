@@ -12,14 +12,14 @@ export declare class MaterialApprovalController {
             unit: undefined;
             id: string;
             tenantId: string;
+            code: string;
+            name: string;
             approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
-            remark: string | null;
             createdAt: Date;
             updatedAt: Date;
             deletedAt: Date | null;
-            name: string;
-            code: string;
             status: import("@prisma/client").$Enums.CommonStatus;
+            remark: string | null;
             sortOrder: number;
             categoryId: string;
             specification: string | null;
@@ -69,14 +69,14 @@ export declare class MaterialApprovalController {
     approve(id: string, comment?: string): Promise<{
         id: string;
         tenantId: string;
+        code: string;
+        name: string;
         approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
-        remark: string | null;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        name: string;
-        code: string;
         status: import("@prisma/client").$Enums.CommonStatus;
+        remark: string | null;
         sortOrder: number;
         categoryId: string;
         specification: string | null;
@@ -122,14 +122,14 @@ export declare class MaterialApprovalController {
     reject(id: string, comment?: string): Promise<{
         id: string;
         tenantId: string;
+        code: string;
+        name: string;
         approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
-        remark: string | null;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        name: string;
-        code: string;
         status: import("@prisma/client").$Enums.CommonStatus;
+        remark: string | null;
         sortOrder: number;
         categoryId: string;
         specification: string | null;
@@ -175,14 +175,14 @@ export declare class MaterialApprovalController {
     submit(id: string): Promise<{
         id: string;
         tenantId: string;
+        code: string;
+        name: string;
         approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
-        remark: string | null;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        name: string;
-        code: string;
         status: import("@prisma/client").$Enums.CommonStatus;
+        remark: string | null;
         sortOrder: number;
         categoryId: string;
         specification: string | null;

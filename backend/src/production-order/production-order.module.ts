@@ -1,0 +1,1 @@
+import { Module } from '@nestjs/common'; import { ProductionOrderController } from './production-order.controller'; @Module({ controllers: [ProductionOrderController] }) export class ProductionOrderModule {}

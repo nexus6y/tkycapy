@@ -12,16 +12,16 @@ export declare class JwtStrategy extends JwtStrategy_base {
     }): Promise<{
         id: string;
         tenantId: string;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        name: string;
         status: import("@prisma/client").$Enums.CommonStatus;
+        departmentId: string | null;
         sortOrder: number;
         username: string;
         email: string | null;
         phone: string | null;
-        departmentId: string | null;
         dataScope: string | null;
         lastLoginAt: Date | null;
         lastLoginIp: string | null;

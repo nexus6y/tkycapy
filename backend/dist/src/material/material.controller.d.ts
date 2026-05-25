@@ -14,14 +14,14 @@ export declare class MaterialController {
             unit: undefined;
             id: string;
             tenantId: string;
+            code: string;
+            name: string;
             approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
-            remark: string | null;
             createdAt: Date;
             updatedAt: Date;
             deletedAt: Date | null;
-            name: string;
-            code: string;
             status: import("@prisma/client").$Enums.CommonStatus;
+            remark: string | null;
             sortOrder: number;
             categoryId: string;
             specification: string | null;
@@ -70,24 +70,24 @@ export declare class MaterialController {
     }>;
     findOne(id: string): Promise<{
         category: {
-            name: string;
             code: string;
+            name: string;
         };
         unit: {
-            name: string;
             code: string;
+            name: string;
         };
     } & {
         id: string;
         tenantId: string;
+        code: string;
+        name: string;
         approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
-        remark: string | null;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        name: string;
-        code: string;
         status: import("@prisma/client").$Enums.CommonStatus;
+        remark: string | null;
         sortOrder: number;
         categoryId: string;
         specification: string | null;
@@ -132,24 +132,24 @@ export declare class MaterialController {
     }>;
     create(dto: CreateMaterialDto): Promise<{
         category: {
-            name: string;
             code: string;
+            name: string;
         };
         unit: {
-            name: string;
             code: string;
+            name: string;
         };
     } & {
         id: string;
         tenantId: string;
+        code: string;
+        name: string;
         approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
-        remark: string | null;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        name: string;
-        code: string;
         status: import("@prisma/client").$Enums.CommonStatus;
+        remark: string | null;
         sortOrder: number;
         categoryId: string;
         specification: string | null;
@@ -194,24 +194,24 @@ export declare class MaterialController {
     }>;
     update(id: string, dto: UpdateMaterialDto): Promise<{
         category: {
-            name: string;
             code: string;
+            name: string;
         };
         unit: {
-            name: string;
             code: string;
+            name: string;
         };
     } & {
         id: string;
         tenantId: string;
+        code: string;
+        name: string;
         approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
-        remark: string | null;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        name: string;
-        code: string;
         status: import("@prisma/client").$Enums.CommonStatus;
+        remark: string | null;
         sortOrder: number;
         categoryId: string;
         specification: string | null;

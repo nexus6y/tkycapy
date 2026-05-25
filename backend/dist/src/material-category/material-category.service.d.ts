@@ -11,11 +11,11 @@ export declare class MaterialCategoryService {
             parent: undefined;
             id: string;
             tenantId: string;
+            code: string;
+            name: string;
             createdAt: Date;
             updatedAt: Date;
             deletedAt: Date | null;
-            name: string;
-            code: string;
             status: import("@prisma/client").$Enums.CommonStatus;
             sortOrder: number;
             parentId: string | null;
@@ -27,45 +27,45 @@ export declare class MaterialCategoryService {
     findOne(id: string): Promise<{
         id: string;
         tenantId: string;
+        code: string;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        name: string;
-        code: string;
         status: import("@prisma/client").$Enums.CommonStatus;
         sortOrder: number;
         parentId: string | null;
     }>;
     create(dto: CreateCategoryDto): Promise<{
         parent: {
-            name: string;
             code: string;
+            name: string;
         } | null;
     } & {
         id: string;
         tenantId: string;
+        code: string;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        name: string;
-        code: string;
         status: import("@prisma/client").$Enums.CommonStatus;
         sortOrder: number;
         parentId: string | null;
     }>;
     update(id: string, dto: UpdateCategoryDto): Promise<{
         parent: {
-            name: string;
             code: string;
+            name: string;
         } | null;
     } & {
         id: string;
         tenantId: string;
+        code: string;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        name: string;
-        code: string;
         status: import("@prisma/client").$Enums.CommonStatus;
         sortOrder: number;
         parentId: string | null;

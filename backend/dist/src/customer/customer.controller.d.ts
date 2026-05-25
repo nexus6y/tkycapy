@@ -7,11 +7,11 @@ export declare class CustomerController {
         items: {
             id: string;
             tenantId: string;
+            code: string;
+            name: string;
             createdAt: Date;
             updatedAt: Date;
             deletedAt: Date | null;
-            name: string;
-            code: string;
             status: import("@prisma/client").$Enums.CommonStatus;
             contactPerson: string | null;
             contactPhone: string | null;
@@ -28,11 +28,11 @@ export declare class CustomerController {
     create(dto: any): Promise<{
         id: string;
         tenantId: string;
+        code: string;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        name: string;
-        code: string;
         status: import("@prisma/client").$Enums.CommonStatus;
         contactPerson: string | null;
         contactPhone: string | null;
@@ -45,11 +45,11 @@ export declare class CustomerController {
     update(id: string, dto: any): Promise<{
         id: string;
         tenantId: string;
+        code: string;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        name: string;
-        code: string;
         status: import("@prisma/client").$Enums.CommonStatus;
         contactPerson: string | null;
         contactPhone: string | null;

@@ -7,12 +7,12 @@ export declare class ContractController {
         items: {
             id: string;
             tenantId: string;
+            code: string;
+            name: string;
             approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
             createdAt: Date;
             updatedAt: Date;
             deletedAt: Date | null;
-            name: string;
-            code: string;
             startDate: Date | null;
             endDate: Date | null;
             type: string;
@@ -30,12 +30,12 @@ export declare class ContractController {
     create(dto: any): Promise<{
         id: string;
         tenantId: string;
+        code: string;
+        name: string;
         approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        name: string;
-        code: string;
         startDate: Date | null;
         endDate: Date | null;
         type: string;
@@ -49,12 +49,12 @@ export declare class ContractController {
     update(id: string, dto: any): Promise<{
         id: string;
         tenantId: string;
+        code: string;
+        name: string;
         approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        name: string;
-        code: string;
         startDate: Date | null;
         endDate: Date | null;
         type: string;
@@ -71,12 +71,12 @@ export declare class ContractController {
     submit(id: string): Promise<{
         id: string;
         tenantId: string;
+        code: string;
+        name: string;
         approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        name: string;
-        code: string;
         startDate: Date | null;
         endDate: Date | null;
         type: string;
@@ -90,12 +90,12 @@ export declare class ContractController {
     withdraw(id: string): Promise<{
         id: string;
         tenantId: string;
+        code: string;
+        name: string;
         approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        name: string;
-        code: string;
         startDate: Date | null;
         endDate: Date | null;
         type: string;

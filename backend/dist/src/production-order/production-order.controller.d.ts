@@ -1,11 +1,10 @@
 import { PrismaService } from '../prisma/prisma.service';
-export declare class InspectionController {
+export declare class ProductionOrderController {
     private prisma;
     constructor(prisma: PrismaService);
     private tid;
-    findAll(status?: string, code?: string, page?: number, pageSize?: number): Promise<{
+    findAll(status?: string, biz?: string, code?: string, page?: number, pageSize?: number): Promise<{
         items: {
-            result: string | null;
             id: string;
             tenantId: string;
             materialId: string | null;
@@ -15,22 +14,21 @@ export declare class InspectionController {
             createdAt: Date;
             updatedAt: Date;
             deletedAt: Date | null;
+            orderNo: string;
+            orderName: string;
+            bomId: string | null;
+            departmentId: string | null;
+            departmentName: string | null;
+            startDate: Date | null;
+            endDate: Date | null;
             businessStatus: string;
             remark: string | null;
-            inspectionNo: string;
-            sourceType: string | null;
-            sourceNo: string | null;
-            qualifiedQty: import("@prisma/client/runtime/client").Decimal | null;
-            unqualifiedQty: import("@prisma/client/runtime/client").Decimal | null;
-            inspector: string | null;
-            inspectionDate: Date | null;
         }[];
         total: number;
         page: number;
         pageSize: number;
     }>;
     create(dto: any): Promise<{
-        result: string | null;
         id: string;
         tenantId: string;
         materialId: string | null;
@@ -40,18 +38,17 @@ export declare class InspectionController {
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
+        orderNo: string;
+        orderName: string;
+        bomId: string | null;
+        departmentId: string | null;
+        departmentName: string | null;
+        startDate: Date | null;
+        endDate: Date | null;
         businessStatus: string;
         remark: string | null;
-        inspectionNo: string;
-        sourceType: string | null;
-        sourceNo: string | null;
-        qualifiedQty: import("@prisma/client/runtime/client").Decimal | null;
-        unqualifiedQty: import("@prisma/client/runtime/client").Decimal | null;
-        inspector: string | null;
-        inspectionDate: Date | null;
     }>;
     update(id: string, dto: any): Promise<{
-        result: string | null;
         id: string;
         tenantId: string;
         materialId: string | null;
@@ -61,21 +58,20 @@ export declare class InspectionController {
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
+        orderNo: string;
+        orderName: string;
+        bomId: string | null;
+        departmentId: string | null;
+        departmentName: string | null;
+        startDate: Date | null;
+        endDate: Date | null;
         businessStatus: string;
         remark: string | null;
-        inspectionNo: string;
-        sourceType: string | null;
-        sourceNo: string | null;
-        qualifiedQty: import("@prisma/client/runtime/client").Decimal | null;
-        unqualifiedQty: import("@prisma/client/runtime/client").Decimal | null;
-        inspector: string | null;
-        inspectionDate: Date | null;
     }>;
     remove(id: string): Promise<{
         message: string;
     }>;
     submit(id: string): Promise<{
-        result: string | null;
         id: string;
         tenantId: string;
         materialId: string | null;
@@ -85,14 +81,14 @@ export declare class InspectionController {
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
+        orderNo: string;
+        orderName: string;
+        bomId: string | null;
+        departmentId: string | null;
+        departmentName: string | null;
+        startDate: Date | null;
+        endDate: Date | null;
         businessStatus: string;
         remark: string | null;
-        inspectionNo: string;
-        sourceType: string | null;
-        sourceNo: string | null;
-        qualifiedQty: import("@prisma/client/runtime/client").Decimal | null;
-        unqualifiedQty: import("@prisma/client/runtime/client").Decimal | null;
-        inspector: string | null;
-        inspectionDate: Date | null;
     }>;
 }

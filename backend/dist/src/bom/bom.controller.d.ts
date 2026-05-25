@@ -1,67 +1,54 @@
 import { PrismaService } from '../prisma/prisma.service';
-export declare class ProjectController {
+export declare class BomController {
     private prisma;
     constructor(prisma: PrismaService);
-    private getTenantId;
-    findAll(status?: string, code?: string, name?: string, page?: number, pageSize?: number): Promise<{
+    private tid;
+    findAll(status?: string, code?: string, page?: number, pageSize?: number): Promise<{
         items: {
             id: string;
             tenantId: string;
             code: string;
             name: string;
+            materialId: string | null;
+            materialName: string | null;
+            version: string | null;
+            quantity: import("@prisma/client/runtime/client").Decimal | null;
             approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
             createdAt: Date;
             updatedAt: Date;
             deletedAt: Date | null;
-            source: string | null;
-            organizationId: string | null;
         }[];
         total: number;
         page: number;
         pageSize: number;
     }>;
-    findOne(id: string): Promise<{
+    create(dto: any): Promise<{
         id: string;
         tenantId: string;
         code: string;
         name: string;
+        materialId: string | null;
+        materialName: string | null;
+        version: string | null;
+        quantity: import("@prisma/client/runtime/client").Decimal | null;
         approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        source: string | null;
-        organizationId: string | null;
     }>;
-    create(dto: {
-        code: string;
-        name: string;
-        source?: string;
-    }): Promise<{
+    update(id: string, dto: any): Promise<{
         id: string;
         tenantId: string;
         code: string;
         name: string;
+        materialId: string | null;
+        materialName: string | null;
+        version: string | null;
+        quantity: import("@prisma/client/runtime/client").Decimal | null;
         approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        source: string | null;
-        organizationId: string | null;
-    }>;
-    update(id: string, dto: {
-        name?: string;
-        source?: string;
-    }): Promise<{
-        id: string;
-        tenantId: string;
-        code: string;
-        name: string;
-        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
-        createdAt: Date;
-        updatedAt: Date;
-        deletedAt: Date | null;
-        source: string | null;
-        organizationId: string | null;
     }>;
     remove(id: string): Promise<{
         message: string;
@@ -71,11 +58,13 @@ export declare class ProjectController {
         tenantId: string;
         code: string;
         name: string;
+        materialId: string | null;
+        materialName: string | null;
+        version: string | null;
+        quantity: import("@prisma/client/runtime/client").Decimal | null;
         approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        source: string | null;
-        organizationId: string | null;
     }>;
 }

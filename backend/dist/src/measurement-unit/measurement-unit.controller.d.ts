@@ -8,11 +8,11 @@ export declare class MeasurementUnitController {
             symbol: string | null;
             id: string;
             tenantId: string;
+            code: string;
+            name: string;
             createdAt: Date;
             updatedAt: Date;
             deletedAt: Date | null;
-            name: string;
-            code: string;
             status: import("@prisma/client").$Enums.CommonStatus;
             sortOrder: number;
         }[];
@@ -29,11 +29,11 @@ export declare class MeasurementUnitController {
         symbol: string | null;
         id: string;
         tenantId: string;
+        code: string;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        name: string;
-        code: string;
         status: import("@prisma/client").$Enums.CommonStatus;
         sortOrder: number;
     }>;
