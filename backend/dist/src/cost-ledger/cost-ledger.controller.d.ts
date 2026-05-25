@@ -6,16 +6,16 @@ export declare class CostLedgerController {
     findAll(type?: string, page?: number, pageSize?: number): Promise<{
         items: {
             id: string;
+            createdAt: Date;
             tenantId: string;
-            transactionNo: string;
-            transactionType: string;
+            remark: string | null;
+            totalAmount: import("@prisma/client/runtime/client").Decimal | null;
             materialName: string | null;
             quantity: import("@prisma/client/runtime/client").Decimal | null;
             unitPrice: import("@prisma/client/runtime/client").Decimal | null;
-            totalAmount: import("@prisma/client/runtime/client").Decimal | null;
+            transactionNo: string;
+            transactionType: string;
             transactionDate: Date;
-            remark: string | null;
-            createdAt: Date;
         }[];
         total: number;
         page: number;
@@ -23,15 +23,15 @@ export declare class CostLedgerController {
     }>;
     create(dto: any): Promise<{
         id: string;
+        createdAt: Date;
         tenantId: string;
-        transactionNo: string;
-        transactionType: string;
+        remark: string | null;
+        totalAmount: import("@prisma/client/runtime/client").Decimal | null;
         materialName: string | null;
         quantity: import("@prisma/client/runtime/client").Decimal | null;
         unitPrice: import("@prisma/client/runtime/client").Decimal | null;
-        totalAmount: import("@prisma/client/runtime/client").Decimal | null;
+        transactionNo: string;
+        transactionType: string;
         transactionDate: Date;
-        remark: string | null;
-        createdAt: Date;
     }>;
 }
