@@ -1,106 +1,54 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Pencil, RefreshCw, Search, Settings, Trash2 } from 'lucide-react';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { Download, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { ErpTable,ErpThead,ErpTh,ErpTbody,ErpTr,ErpTd,ErpEmpty,ErpLink,ErpAction,ErpActionBtn,ErpTools,ErpApproval,ErpPagination } from '@/components/ui/erp-table';
 
-interface Contract { id:string;code:string;name:string;type:string;customerName:string|null;supplierName:string|null;totalAmount:string|null;approvalStatus:string;createdAt:string; }
+interface Item { id:string;code:string;name:string;type:string;customerName:string|null;supplierName:string|null;totalAmount:string|null;approvalStatus:string;createdAt:string; }
 const ST:Record<string,string>={DRAFT:'草稿',SUBMITTED:'已提交',APPROVED:'已通过',REJECTED:'已拒绝',WITHDRAWN:'已撤回'};
 
 export default function ContractPage() {
-  const [items,setItems]=useState<Contract[]>([]); const [total,setTotal]=useState(0);
-  const [page,setPage]=useState(1); const [pageSize,setPageSize]=useState(30);
-  const [selected,setSelected]=useState<Set<string>>(new Set());
-  const [s,setS]=useState({code:'',name:'',status:'',type:''});
-  const [dialog,setDialog]=useState(false); const [editing,setEditing]=useState<Contract|null>(null);
-  const [f,setF]=useState({code:'',name:'',type:'销售合同',isProjectContract:false,isFrameworkContract:false,customerName:'',supplierName:'',startDate:'',endDate:'',totalAmount:''});
-  const [delId,setDelId]=useState<string|null>(null);
+  const router=useRouter();
+  const [items,setItems]=useState<Item[]>([]);const [total,setTotal]=useState(0);const [pg,setPg]=useState(1);const [ps,setPs]=useState(30);
+  const [sel,setSel]=useState<Set<string>>(new Set());const [s,setS]=useState({code:'',name:'',status:'',type:''});
+  const [del,setDel]=useState<string|null>(null);
 
   const fetch=useCallback(async()=>{
-    const p:any={page,pageSize}; if(s.code)p.code=s.code; if(s.name)p.name=s.name; if(s.status)p.status=s.status; if(s.type)p.type=s.type;
+    const p:any={page:pg,pageSize:ps}; if(s.code)p.code=s.code; if(s.name)p.name=s.name; if(s.status)p.status=s.status; if(s.type)p.type=s.type;
     const {data}=await api.get('/contracts',{params:p}); setItems(data.items); setTotal(data.total);
-  },[page,pageSize,s]);
-  useEffect(()=>{fetch();},[fetch]);
+  },[pg,ps,s]); useEffect(()=>{fetch();},[fetch]);
 
-  const openAdd=()=>{setEditing(null);setF({code:'',name:'',type:'销售合同',isProjectContract:false,isFrameworkContract:false,customerName:'',supplierName:'',startDate:'',endDate:'',totalAmount:''});setDialog(true);};
-  const openEdit=(item:Contract)=>{setEditing(item);setF({code:item.code,name:item.name,type:item.type,isProjectContract:false,isFrameworkContract:false,customerName:item.customerName||'',supplierName:item.supplierName||'',startDate:'',endDate:'',totalAmount:item.totalAmount||''});setDialog(true);};
-  const save=async()=>{try{const d={...f,totalAmount:f.totalAmount?+f.totalAmount:null};if(editing)await api.put(`/contracts/${editing.id}`,d);else await api.post('/contracts',d);setDialog(false);fetch();}catch(err:any){alert(err.response?.data?.message||'保存失败');}};
-  const del=async()=>{if(!delId)return;await api.delete(`/contracts/${delId}`);setDelId(null);fetch();};
-  const toggleAll=(v:boolean)=>setSelected(v?new Set(items.map(i=>i.id)):new Set());
-  const toggleOne=(id:string,v:boolean)=>{const n=new Set(selected);v?n.add(id):n.delete(id);setSelected(n);};
-  const totalPages=Math.ceil(total/pageSize);
-  const pages=Array.from({length:totalPages},(_,i)=>i+1).filter(p=>p===1||p===totalPages||Math.abs(p-page)<=2);
+  const doDel=async()=>{if(!del)return;await api.delete(`/contracts/${del}`);setDel(null);fetch();};
+  const tp=Math.ceil(total/ps);const pgs=Array.from({length:tp},(_,i)=>i+1).filter(p=>p===1||p===tp||Math.abs(p-pg)<=2);
 
-  return (<TooltipProvider><div className="h-full flex flex-col bg-white">
-    <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100">
+  return (<TooltipProvider><div className="bg-background rounded-lg border shadow-sm">
+    <div className="flex items-center justify-between px-4 h-14 border-b border-border">
       <div className="flex items-center gap-1">
-        <Button size="sm" onClick={openAdd}><span className="mr-1">+</span>新增</Button>
-        <Button size="sm" variant="outline" disabled={selected.size===0}>修改</Button>
-        <Button size="sm" variant="outline" disabled={selected.size===0}>删除</Button>
+        <Button variant="secondary" size="sm" onClick={()=>router.push('/contract/create')}><Plus className="h-3.5 w-3.5"/>新增</Button>
+        <Button variant="outline" size="sm" disabled={sel.size===0} onClick={()=>alert('请先勾选数据')}>修改</Button>
+        <Button variant="outline" size="sm" disabled={sel.size===0} onClick={()=>alert('请先勾选数据')}>删除</Button>
+        <Button variant="outline" size="sm"><Download className="h-3.5 w-3.5 mr-1"/>导出</Button>
       </div>
-      <div className="flex items-center gap-1">
-        <Button size="sm" variant="ghost" onClick={()=>setS({code:'',name:'',status:'',type:''})}>重置</Button>
-        <Button size="sm" onClick={fetch}><Search size={14} className="mr-1"/>搜索</Button>
-      </div>
+      <div className="flex items-center gap-1"><Button variant="ghost" size="sm" onClick={()=>setS({code:'',name:'',status:'',type:''})}>重置</Button><Button variant="default" size="sm" onClick={fetch}><Search className="h-3.5 w-3.5 mr-1"/>搜索</Button></div>
     </div>
-    <div className="flex items-center gap-3 px-4 py-2.5 bg-gray-50/50 border-b border-gray-100 flex-wrap">
-      <div className="flex items-center gap-1.5"><span className="text-[12px] text-gray-500">合同编码</span><Input className="w-[140px] h-8 text-[12px]" value={s.code} onChange={e=>setS({...s,code:e.target.value})}/></div>
-      <div className="flex items-center gap-1.5"><span className="text-[12px] text-gray-500">合同名称</span><Input className="w-[140px] h-8 text-[12px]" value={s.name} onChange={e=>setS({...s,name:e.target.value})}/></div>
+    <div className="flex items-center gap-4 px-4 py-2.5 border-b border-border bg-muted/30 flex-wrap">
+      <F label="合同编码"><Input className="w-[140px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.code} onChange={e=>setS({...s,code:e.target.value})}/></F>
+      <F label="合同名称"><Input className="w-[140px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.name} onChange={e=>setS({...s,name:e.target.value})}/></F>
     </div>
-    <div className="flex-1 overflow-auto">
-      <div className="flex items-center justify-end px-4 py-1.5 bg-gray-50/30 border-b border-gray-100 gap-1">
-        <Tooltip><TooltipTrigger asChild><button className="p-1.5 hover:bg-gray-100 rounded text-gray-400 hover:text-gray-600"><RefreshCw size={14}/></button></TooltipTrigger><TooltipContent>刷新</TooltipContent></Tooltip>
-        <Tooltip><TooltipTrigger asChild><button className="p-1.5 hover:bg-gray-100 rounded text-gray-400 hover:text-gray-600"><Settings size={14}/></button></TooltipTrigger><TooltipContent>列设置</TooltipContent></Tooltip>
-      </div>
-      <table className="w-full text-[13px]"><thead className="bg-gray-50 border-y border-gray-200 sticky top-0"><tr>
-        <th className="w-10 px-3 py-2.5"><Checkbox checked={items.length>0&&selected.size===items.length} onCheckedChange={(v:boolean)=>toggleAll(v)}/></th>
-        <th className="text-left px-2 py-2.5 font-medium text-gray-600">审批状态</th><th className="text-left px-2 py-2.5 font-medium text-gray-600">合同编码</th><th className="text-left px-2 py-2.5 font-medium text-gray-600">合同名称</th><th className="text-left px-2 py-2.5 font-medium text-gray-600">类型</th><th className="text-left px-2 py-2.5 font-medium text-gray-600">客户/供应商</th><th className="text-left px-2 py-2.5 font-medium text-gray-600">金额</th><th className="text-left px-2 py-2.5 font-medium text-gray-600">创建时间</th><th className="text-left px-2 py-2.5 font-medium text-gray-600">操作</th>
-      </tr></thead><tbody>
-        {items.map(item=>(<tr key={item.id} className="border-b border-gray-100 hover:bg-blue-50/30 transition-colors">
-          <td className="px-3 py-2.5"><Checkbox checked={selected.has(item.id)} onCheckedChange={(v:boolean)=>toggleOne(item.id,v)}/></td>
-          <td className="px-2 py-2.5"><span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] ${item.approvalStatus==='APPROVED'?'bg-green-50 text-green-700':item.approvalStatus==='SUBMITTED'?'bg-blue-50 text-blue-700':'bg-gray-50 text-gray-500'}`}>{ST[item.approvalStatus]}</span></td>
-          <td className="px-2 py-2.5"><button className="text-blue-600 hover:text-blue-800 hover:underline text-[13px]">{item.code}</button></td>
-          <td className="px-2 py-2.5 text-gray-700">{item.name}</td><td className="px-2 py-2.5 text-gray-700">{item.type}</td>
-          <td className="px-2 py-2.5 text-gray-500">{item.customerName||item.supplierName||'-'}</td>
-          <td className="px-2 py-2.5 text-gray-700">{item.totalAmount?Number(item.totalAmount).toLocaleString():'-'}</td>
-          <td className="px-2 py-2.5 text-gray-500 text-[12px]">{new Date(item.createdAt).toLocaleDateString('zh-CN')}</td>
-          <td className="px-2 py-2.5"><div className="flex items-center gap-3">
-            <button onClick={()=>router.push(`/contract/${item.id}/edit`)} className="text-blue-600 hover:text-blue-800 text-[12px] inline-flex items-center gap-0.5"><Pencil size={12}/>修改</button>
-            {item.approvalStatus==='DRAFT'&&<button onClick={()=>{api.put(`/contracts/${item.id}/submit`).then(fetch);}} className="text-blue-600 hover:text-blue-800 text-[12px]">提交</button>}
-            {item.approvalStatus==='SUBMITTED'&&<button onClick={()=>{api.put(`/contracts/${item.id}/withdraw`).then(fetch);}} className="text-blue-600 hover:text-blue-800 text-[12px]">撤回</button>}
-            <button onClick={()=>setDelId(item.id)} className="text-red-500 hover:text-red-700 text-[12px] inline-flex items-center gap-0.5"><Trash2 size={12}/>删除</button>
-          </div></td>
-        </tr>))}
-        {items.length===0&&<tr><td colSpan={9} className="text-center text-gray-400 py-16">暂无数据</td></tr>}
-      </tbody></table>
-    </div>
-    <div className="flex items-center justify-between px-4 py-2.5 border-t border-gray-200 bg-white shrink-0">
-      <span className="text-[12px] text-gray-500">共 {total} 条</span>
-      <div className="flex items-center gap-3">
-        <Select value={String(pageSize)} onValueChange={v=>{setPageSize(+v);setPage(1);}}><SelectTrigger className="w-[100px] h-8 text-[12px]"><SelectValue/></SelectTrigger><SelectContent>{[20,30,50,100].map(n=><SelectItem key={n} value={String(n)}>{n}条/页</SelectItem>)}</SelectContent></Select>
-        <div className="flex items-center gap-0.5">
-          <Button size="sm" variant="ghost" disabled={page<=1} onClick={()=>setPage(p=>p-1)} className="text-[12px] px-2">‹</Button>
-          {pages.map((p,i)=>(<span key={p}>{i>0&&pages[i-1]!==p-1&&<span className="text-gray-300 mx-0.5">...</span>}<button onClick={()=>setPage(p)} className={`w-7 h-7 rounded text-[12px] transition-colors ${p===page?'bg-blue-600 text-white':'text-gray-600 hover:bg-gray-100'}`}>{p}</button></span>))}
-          <Button size="sm" variant="ghost" disabled={page>=totalPages} onClick={()=>setPage(p=>p+1)} className="text-[12px] px-2">›</Button>
-        </div>
-      </div>
-    </div>
-
-    <Dialog open={dialog} onOpenChange={setDialog}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>{editing?'修改合同':'新增合同'}</DialogTitle></DialogHeader>
-    <div className="space-y-3 max-h-[60vh] overflow-y-auto py-2"><div className="grid grid-cols-2 gap-3">
-      <div><label className="text-[12px] font-medium">合同编码 *</label><Input className="h-8 text-[13px]" value={f.code} onChange={e=>setF({...f,code:e.target.value})} disabled={!!editing}/></div>
-      <div><label className="text-[12px] font-medium">合同名称 *</label><Input className="h-8 text-[13px]" value={f.name} onChange={e=>setF({...f,name:e.target.value})}/></div>
-      <div><label className="text-[12px] font-medium">合同类型</label><Select value={f.type} onValueChange={v=>setF({...f,type:v})}><SelectTrigger className="h-8 text-[13px]"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="销售合同">销售合同</SelectItem><SelectItem value="采购合同">采购合同</SelectItem></SelectContent></Select></div>
-      <div><label className="text-[12px] font-medium">金额</label><Input type="number" className="h-8 text-[13px]" value={f.totalAmount} onChange={e=>setF({...f,totalAmount:e.target.value})}/></div>
-    </div></div>
-    <DialogFooter><Button variant="outline" size="sm" onClick={()=>setDialog(false)}>取消</Button><Button size="sm" onClick={save}>确定</Button></DialogFooter></DialogContent></Dialog>
-
-    <AlertDialog open={!!delId} onOpenChange={()=>setDelId(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>确认删除？</AlertDialogTitle></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>取消</AlertDialogCancel><AlertDialogAction onClick={del} className="bg-red-600 hover:bg-red-700">删除</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+    <ErpTools onRefresh={fetch}/>
+    <div className="overflow-auto"><ErpTable><ErpThead><ErpTh className="w-10"><Checkbox/></ErpTh><ErpTh>审批状态</ErpTh><ErpTh>合同编码</ErpTh><ErpTh>合同名称</ErpTh><ErpTh>类型</ErpTh><ErpTh>客户/供应商</ErpTh><ErpTh>金额</ErpTh><ErpTh>创建时间</ErpTh><ErpTh>操作</ErpTh></ErpThead><ErpTbody>
+    {items.map(i=>(<ErpTr key={i.id}><ErpTd><Checkbox/></ErpTd><ErpTd><ErpApproval status={i.approvalStatus}/></ErpTd><ErpTd><ErpLink onClick={()=>router.push('/contract/'+i.id+'/edit')}>{i.code}</ErpLink></ErpTd><ErpTd>{i.name}</ErpTd><ErpTd>{i.type}</ErpTd><ErpTd className="text-muted-foreground">{i.customerName||i.supplierName||'-'}</ErpTd><ErpTd>{i.totalAmount?Number(i.totalAmount).toLocaleString():'-'}</ErpTd><ErpTd className="text-muted-foreground">{new Date(i.createdAt).toLocaleDateString('zh-CN')}</ErpTd><ErpTd><ErpAction><ErpActionBtn onClick={()=>router.push('/contract/'+i.id+'/edit')}><Pencil className="h-3.5 w-3.5"/>修改</ErpActionBtn>{i.approvalStatus==='DRAFT'&&<button onClick={()=>{api.put(`/contracts/${i.id}/submit`).then(fetch);}} className="text-primary text-[13px]">提交</button>}{i.approvalStatus==='SUBMITTED'&&<button onClick={()=>{api.put(`/contracts/${i.id}/withdraw`).then(fetch);}} className="text-primary text-[13px]">撤回</button>}<ErpActionBtn danger onClick={()=>setDel(i.id)}><Trash2 className="h-3.5 w-3.5"/>删除</ErpActionBtn></ErpAction></ErpTd></ErpTr>))}
+    {items.length===0&&<ErpEmpty colSpan={9}/>}
+    </ErpTbody></ErpTable></div>
+    <ErpPagination page={pg} pageSize={ps} total={total} onPage={setPg} onPageSize={v=>setPs(+v)}/>
+    <AlertDialog open={!!del} onOpenChange={()=>setDel(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>确认删除？</AlertDialogTitle></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>取消</AlertDialogCancel><AlertDialogAction onClick={doDel} className="bg-[#f56c6c] text-white hover:bg-[#f56c6c]/90">删除</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
   </div></TooltipProvider>);
 }
+function F({label,children}:{label:string;children:React.ReactNode}){return<div className="flex items-center gap-1.5"><span className="text-[13px] text-muted-foreground w-[80px] text-right shrink-0">{label}</span>{children}</div>;}
