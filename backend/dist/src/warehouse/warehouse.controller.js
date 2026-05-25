@@ -26,6 +26,10 @@ let WarehouseController = class WarehouseController {
         const where = { tenantId };
         const [items, total] = await Promise.all([this.prisma.warehouse.findMany({ where, orderBy: { sortOrder: 'asc' }, skip: (+page - 1) * +pageSize, take: +pageSize }), this.prisma.warehouse.count({ where })]);
         return { items, total, page: +page, pageSize: +pageSize };
+        findOne(, id, string);
+        {
+            return this.prisma.warehouse.findUniqueOrThrow({ where: { id } });
+        }
     }
     async create(dto) { const tenantId = await this.tid(); return this.prisma.warehouse.create({ data: { ...dto, tenantId } }); }
     async update(id, dto) { return this.prisma.warehouse.update({ where: { id }, data: dto }); }

@@ -9,6 +9,11 @@ export class DemandPlanController {
     if (status) where.approvalStatus = status; if (code) where.planNo = { contains: code }; if (name) where.planName = { contains: name };
     const [items, total] = await Promise.all([this.prisma.demandPlan.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (+page - 1) * +pageSize, take: +pageSize }), this.prisma.demandPlan.count({ where })]);
     return { items, total, page: +page, pageSize: +pageSize };
+
+  @Get(':id')
+  async findOne(@Param('id') id: string) {
+    return this.prisma.demandPlan.findUniqueOrThrow({ where: { id } });
+  }
   }
   @Post() async create(@Body() dto: any) { const tenantId = await this.tid(); return this.prisma.demandPlan.create({ data: { ...dto, tenantId } as any }); }
   @Put(':id') async update(@Param('id') id: string, @Body() dto: any) { return this.prisma.demandPlan.update({ where: { id }, data: dto as any }); }

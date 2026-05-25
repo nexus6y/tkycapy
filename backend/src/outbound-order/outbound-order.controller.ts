@@ -9,6 +9,11 @@ export class OutboundOrderController {
     if (status) where.approvalStatus = status; if (code) where.orderNo = { contains: code };
     const [items, total] = await Promise.all([this.prisma.outboundOrder.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (+page - 1) * +pageSize, take: +pageSize }), this.prisma.outboundOrder.count({ where })]);
     return { items, total, page: +page, pageSize: +pageSize };
+
+  @Get(':id')
+  async findOne(@Param('id') id: string) {
+    return this.prisma.outboundOrder.findUniqueOrThrow({ where: { id } });
+  }
   }
   @Post() async create(@Body() dto: any) { const tenantId = await this.tid(); return this.prisma.outboundOrder.create({ data: { ...dto, tenantId } as any }); }
   @Put(':id') async update(@Param('id') id: string, @Body() dto: any) { return this.prisma.outboundOrder.update({ where: { id }, data: dto as any }); }

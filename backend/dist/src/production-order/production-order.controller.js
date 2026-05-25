@@ -32,6 +32,10 @@ let ProductionOrderController = class ProductionOrderController {
             where.orderNo = { contains: code };
         const [items, total] = await Promise.all([this.prisma.productionOrder.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (+page - 1) * +pageSize, take: +pageSize }), this.prisma.productionOrder.count({ where })]);
         return { items, total, page: +page, pageSize: +pageSize };
+        findOne(, id, string);
+        {
+            return this.prisma.productionOrder.findUniqueOrThrow({ where: { id } });
+        }
     }
     async create(dto) { const tenantId = await this.tid(); return this.prisma.productionOrder.create({ data: { ...dto, tenantId } }); }
     async update(id, dto) { return this.prisma.productionOrder.update({ where: { id }, data: dto }); }

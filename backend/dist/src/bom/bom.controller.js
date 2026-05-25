@@ -30,6 +30,10 @@ let BomController = class BomController {
             where.code = { contains: code };
         const [items, total] = await Promise.all([this.prisma.bom.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (+page - 1) * +pageSize, take: +pageSize }), this.prisma.bom.count({ where })]);
         return { items, total, page: +page, pageSize: +pageSize };
+        findOne(, id, string);
+        {
+            return this.prisma.bom.findUniqueOrThrow({ where: { id } });
+        }
     }
     async create(dto) { const tenantId = await this.tid(); return this.prisma.bom.create({ data: { ...dto, tenantId } }); }
     async update(id, dto) { return this.prisma.bom.update({ where: { id }, data: dto }); }

@@ -4,17 +4,28 @@ export declare class WarehouseController {
     constructor(prisma: PrismaService);
     private tid;
     findAll(page?: number, pageSize?: number): Promise<{
+        id: string;
+        tenantId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        deletedAt: Date | null;
+        name: string;
+        code: string;
+        status: import("@prisma/client").$Enums.CommonStatus;
+        address: string | null;
+        sortOrder: number;
+    } | {
         items: {
             id: string;
-            code: string;
-            name: string;
-            status: import("@prisma/client").$Enums.CommonStatus;
+            tenantId: string;
             createdAt: Date;
             updatedAt: Date;
             deletedAt: Date | null;
-            tenantId: string;
-            sortOrder: number;
+            name: string;
+            code: string;
+            status: import("@prisma/client").$Enums.CommonStatus;
             address: string | null;
+            sortOrder: number;
         }[];
         total: number;
         page: number;
@@ -22,27 +33,27 @@ export declare class WarehouseController {
     }>;
     create(dto: any): Promise<{
         id: string;
-        code: string;
-        name: string;
-        status: import("@prisma/client").$Enums.CommonStatus;
+        tenantId: string;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        tenantId: string;
-        sortOrder: number;
+        name: string;
+        code: string;
+        status: import("@prisma/client").$Enums.CommonStatus;
         address: string | null;
+        sortOrder: number;
     }>;
     update(id: string, dto: any): Promise<{
         id: string;
-        code: string;
-        name: string;
-        status: import("@prisma/client").$Enums.CommonStatus;
+        tenantId: string;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        tenantId: string;
-        sortOrder: number;
+        name: string;
+        code: string;
+        status: import("@prisma/client").$Enums.CommonStatus;
         address: string | null;
+        sortOrder: number;
     }>;
     remove(id: string): Promise<{
         message: string;
