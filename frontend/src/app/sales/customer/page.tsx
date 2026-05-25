@@ -42,7 +42,7 @@ export default function CustomerPage() {
   return (<TooltipProvider><div className="h-full flex flex-col bg-white">
     <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100">
       <div className="flex items-center gap-1">
-        <Button size="sm" onClick={openAdd}><span className="mr-1">+</span>新增</Button>
+        <Button size="sm" onClick={()=>router.push('/sales/customer/create')}><span className="mr-1">+</span>新增</Button>
         <Button size="sm" variant="outline" disabled={selected.size===0}>修改</Button>
         <Button size="sm" variant="outline" disabled={selected.size===0}>删除</Button>
         <DropdownMenu><DropdownMenuTrigger asChild><Button size="sm" variant="outline">导入 <ChevronDown size={12} className="ml-1"/></Button></DropdownMenuTrigger><DropdownMenuContent><DropdownMenuItem><Upload size={14} className="mr-2"/>导入数据</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
