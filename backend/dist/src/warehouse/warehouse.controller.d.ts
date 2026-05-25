@@ -1,25 +1,20 @@
 import { PrismaService } from '../prisma/prisma.service';
-export declare class CustomerController {
+export declare class WarehouseController {
     private prisma;
     constructor(prisma: PrismaService);
-    private getTenantId;
-    findAll(code?: string, name?: string, status?: string, page?: number, pageSize?: number): Promise<{
+    private tid;
+    findAll(page?: number, pageSize?: number): Promise<{
         items: {
             id: string;
             tenantId: string;
             code: string;
             name: string;
             address: string | null;
+            sortOrder: number;
             status: import("@prisma/client").$Enums.CommonStatus;
             createdAt: Date;
             updatedAt: Date;
             deletedAt: Date | null;
-            contactPerson: string | null;
-            contactPhone: string | null;
-            contactEmail: string | null;
-            creditLevel: string | null;
-            industry: string | null;
-            valueLevel: string | null;
         }[];
         total: number;
         page: number;
@@ -31,16 +26,11 @@ export declare class CustomerController {
         code: string;
         name: string;
         address: string | null;
+        sortOrder: number;
         status: import("@prisma/client").$Enums.CommonStatus;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        contactPerson: string | null;
-        contactPhone: string | null;
-        contactEmail: string | null;
-        creditLevel: string | null;
-        industry: string | null;
-        valueLevel: string | null;
     }>;
     update(id: string, dto: any): Promise<{
         id: string;
@@ -48,16 +38,11 @@ export declare class CustomerController {
         code: string;
         name: string;
         address: string | null;
+        sortOrder: number;
         status: import("@prisma/client").$Enums.CommonStatus;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        contactPerson: string | null;
-        contactPhone: string | null;
-        contactEmail: string | null;
-        creditLevel: string | null;
-        industry: string | null;
-        valueLevel: string | null;
     }>;
     remove(id: string): Promise<{
         message: string;

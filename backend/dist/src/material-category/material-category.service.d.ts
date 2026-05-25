@@ -13,11 +13,11 @@ export declare class MaterialCategoryService {
             tenantId: string;
             code: string;
             name: string;
+            sortOrder: number;
+            status: import("@prisma/client").$Enums.CommonStatus;
             createdAt: Date;
             updatedAt: Date;
             deletedAt: Date | null;
-            status: import("@prisma/client").$Enums.CommonStatus;
-            sortOrder: number;
             parentId: string | null;
         }[];
         total: number;
@@ -29,11 +29,11 @@ export declare class MaterialCategoryService {
         tenantId: string;
         code: string;
         name: string;
+        sortOrder: number;
+        status: import("@prisma/client").$Enums.CommonStatus;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        status: import("@prisma/client").$Enums.CommonStatus;
-        sortOrder: number;
         parentId: string | null;
     }>;
     create(dto: CreateCategoryDto): Promise<{
@@ -46,11 +46,11 @@ export declare class MaterialCategoryService {
         tenantId: string;
         code: string;
         name: string;
+        sortOrder: number;
+        status: import("@prisma/client").$Enums.CommonStatus;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        status: import("@prisma/client").$Enums.CommonStatus;
-        sortOrder: number;
         parentId: string | null;
     }>;
     update(id: string, dto: UpdateCategoryDto): Promise<{
@@ -63,11 +63,11 @@ export declare class MaterialCategoryService {
         tenantId: string;
         code: string;
         name: string;
+        sortOrder: number;
+        status: import("@prisma/client").$Enums.CommonStatus;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        status: import("@prisma/client").$Enums.CommonStatus;
-        sortOrder: number;
         parentId: string | null;
     }>;
     remove(id: string): Promise<{

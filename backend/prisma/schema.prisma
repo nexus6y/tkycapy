@@ -105,6 +105,8 @@ model Tenant {
   customers          Customer[]
   quotations         Quotation[]
   demandPlans        DemandPlan[]
+  warehouses         Warehouse[]
+  inventory          Inventory[]
   boms               Bom[]
   productionOrders   ProductionOrder[]
   inspections        Inspection[]
@@ -714,6 +716,47 @@ model Bom {
   @@unique([tenantId, code])
   @@index([tenantId])
   @@map("bom")
+}
+
+model Warehouse {
+  id          String        @id @default(cuid())
+  tenantId    String
+  code        String
+  name        String
+  address     String?
+  sortOrder   Int           @default(0)
+  status      CommonStatus  @default(ACTIVE)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  deletedAt   DateTime?
+
+  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("warehouse")
+}
+
+model Inventory {
+  id            String   @id @default(cuid())
+  tenantId      String
+  materialId    String?
+  materialName  String?
+  warehouseId   String?
+  warehouseName String?
+  locationCode  String?
+  batchNo       String?
+  quantity      Decimal  @db.Decimal(18,6)
+  availableQty  Decimal  @db.Decimal(18,6)
+  lockedQty     Decimal  @default(0) @db.Decimal(18,6)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, materialId, warehouseId, batchNo])
+  @@index([tenantId])
+  @@map("inventory")
 }
 
 model ProductionOrder {
