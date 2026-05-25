@@ -27,6 +27,7 @@ let TransferOrderController = class TransferOrderController {
         const [items, total] = await Promise.all([this.prisma.transferOrder.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (+page - 1) * +pageSize, take: +pageSize }), this.prisma.transferOrder.count({ where })]);
         return { items, total, page: +page, pageSize: +pageSize };
     }
+    async findOne(id) { return this.prisma.transferOrder.findUniqueOrThrow({ where: { id } }); }
     async create(dto) { const tenantId = await this.tid(); return this.prisma.transferOrder.create({ data: { ...dto, tenantId } }); }
     async update(id, dto) { return this.prisma.transferOrder.update({ where: { id }, data: dto }); }
     async remove(id) { await this.prisma.transferOrder.delete({ where: { id } }); return { message: '删除成功' }; }
@@ -40,6 +41,13 @@ __decorate([
     __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], TransferOrderController.prototype, "findAll", null);
+__decorate([
+    (0, common_1.Get)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], TransferOrderController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),

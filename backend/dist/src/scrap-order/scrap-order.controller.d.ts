@@ -9,6 +9,7 @@ export declare class ScrapOrderController {
         page: number;
         pageSize: number;
     }>;
+    findOne(id: string): Promise<any>;
     create(dto: any): Promise<any>;
     update(id: string, dto: any): Promise<any>;
     remove(id: string): Promise<{
