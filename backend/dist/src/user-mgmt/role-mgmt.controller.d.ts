@@ -5,15 +5,15 @@ export declare class RoleMgmtController {
     findAll(page?: number, pageSize?: number): Promise<{
         items: {
             id: string;
-            tenantId: string;
             code: string;
             name: string;
-            description: string | null;
-            sortOrder: number;
             status: import("@prisma/client").$Enums.CommonStatus;
             createdAt: Date;
             updatedAt: Date;
             deletedAt: Date | null;
+            tenantId: string;
+            description: string | null;
+            sortOrder: number;
         }[];
         total: number;
         page: number;

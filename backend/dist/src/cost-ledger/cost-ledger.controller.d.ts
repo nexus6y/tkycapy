@@ -6,13 +6,13 @@ export declare class CostLedgerController {
     findAll(type?: string, page?: number, pageSize?: number): Promise<{
         items: {
             id: string;
+            createdAt: Date;
             tenantId: string;
+            remark: string | null;
+            totalAmount: import("@prisma/client/runtime/client").Decimal | null;
             materialName: string | null;
             quantity: import("@prisma/client/runtime/client").Decimal | null;
             unitPrice: import("@prisma/client/runtime/client").Decimal | null;
-            totalAmount: import("@prisma/client/runtime/client").Decimal | null;
-            remark: string | null;
-            createdAt: Date;
             transactionNo: string;
             transactionType: string;
             transactionDate: Date;

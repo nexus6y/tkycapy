@@ -6,13 +6,13 @@ export declare class WarehouseController {
     findAll(page?: number, pageSize?: number): Promise<{
         items: {
             id: string;
-            tenantId: string;
+            code: string;
+            name: string;
+            status: import("@prisma/client").$Enums.CommonStatus;
             createdAt: Date;
             updatedAt: Date;
             deletedAt: Date | null;
-            name: string;
-            code: string;
-            status: import("@prisma/client").$Enums.CommonStatus;
+            tenantId: string;
             sortOrder: number;
             address: string | null;
         }[];
@@ -22,25 +22,25 @@ export declare class WarehouseController {
     }>;
     create(dto: any): Promise<{
         id: string;
-        tenantId: string;
+        code: string;
+        name: string;
+        status: import("@prisma/client").$Enums.CommonStatus;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        name: string;
-        code: string;
-        status: import("@prisma/client").$Enums.CommonStatus;
+        tenantId: string;
         sortOrder: number;
         address: string | null;
     }>;
     update(id: string, dto: any): Promise<{
         id: string;
-        tenantId: string;
+        code: string;
+        name: string;
+        status: import("@prisma/client").$Enums.CommonStatus;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        name: string;
-        code: string;
-        status: import("@prisma/client").$Enums.CommonStatus;
+        tenantId: string;
         sortOrder: number;
         address: string | null;
     }>;

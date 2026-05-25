@@ -8,12 +8,12 @@ export declare class AuthService {
     register(dto: RegisterDto): Promise<{
         user: {
             id: string;
-            tenantId: string;
+            name: string;
+            status: import("@prisma/client").$Enums.CommonStatus;
             createdAt: Date;
             updatedAt: Date;
             deletedAt: Date | null;
-            name: string;
-            status: import("@prisma/client").$Enums.CommonStatus;
+            tenantId: string;
             sortOrder: number;
             username: string;
             email: string | null;
@@ -28,12 +28,12 @@ export declare class AuthService {
     login(dto: LoginDto): Promise<{
         user: {
             id: string;
-            tenantId: string;
+            name: string;
+            status: import("@prisma/client").$Enums.CommonStatus;
             createdAt: Date;
             updatedAt: Date;
             deletedAt: Date | null;
-            name: string;
-            status: import("@prisma/client").$Enums.CommonStatus;
+            tenantId: string;
             sortOrder: number;
             username: string;
             email: string | null;

@@ -6,15 +6,15 @@ export declare class BomController {
     findAll(status?: string, code?: string, page?: number, pageSize?: number): Promise<{
         items: {
             id: string;
-            tenantId: string;
-            materialName: string | null;
-            quantity: import("@prisma/client/runtime/client").Decimal | null;
-            approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
+            code: string;
+            name: string;
             createdAt: Date;
             updatedAt: Date;
             deletedAt: Date | null;
-            name: string;
-            code: string;
+            tenantId: string;
+            approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
+            materialName: string | null;
+            quantity: import("@prisma/client/runtime/client").Decimal | null;
             materialId: string | null;
             version: string | null;
         }[];
@@ -24,29 +24,29 @@ export declare class BomController {
     }>;
     create(dto: any): Promise<{
         id: string;
-        tenantId: string;
-        materialName: string | null;
-        quantity: import("@prisma/client/runtime/client").Decimal | null;
-        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
+        code: string;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        name: string;
-        code: string;
+        tenantId: string;
+        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
+        materialName: string | null;
+        quantity: import("@prisma/client/runtime/client").Decimal | null;
         materialId: string | null;
         version: string | null;
     }>;
     update(id: string, dto: any): Promise<{
         id: string;
-        tenantId: string;
-        materialName: string | null;
-        quantity: import("@prisma/client/runtime/client").Decimal | null;
-        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
+        code: string;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        name: string;
-        code: string;
+        tenantId: string;
+        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
+        materialName: string | null;
+        quantity: import("@prisma/client/runtime/client").Decimal | null;
         materialId: string | null;
         version: string | null;
     }>;
@@ -55,15 +55,15 @@ export declare class BomController {
     }>;
     submit(id: string): Promise<{
         id: string;
-        tenantId: string;
-        materialName: string | null;
-        quantity: import("@prisma/client/runtime/client").Decimal | null;
-        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
+        code: string;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        name: string;
-        code: string;
+        tenantId: string;
+        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
+        materialName: string | null;
+        quantity: import("@prisma/client/runtime/client").Decimal | null;
         materialId: string | null;
         version: string | null;
     }>;

@@ -6,15 +6,15 @@ export declare class QuotationController {
     findAll(status?: string, code?: string, name?: string, page?: number, pageSize?: number): Promise<{
         items: {
             id: string;
-            tenantId: string;
-            totalAmount: import("@prisma/client/runtime/client").Decimal | null;
-            approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
-            remark: string | null;
+            status: import("@prisma/client").$Enums.CommonStatus;
             createdAt: Date;
             updatedAt: Date;
             deletedAt: Date | null;
-            status: import("@prisma/client").$Enums.CommonStatus;
+            tenantId: string;
+            remark: string | null;
+            approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
             customerName: string | null;
+            totalAmount: import("@prisma/client/runtime/client").Decimal | null;
             departmentName: string | null;
             quotationNo: string;
             quotationName: string;
@@ -28,15 +28,15 @@ export declare class QuotationController {
     }>;
     create(dto: any): Promise<{
         id: string;
-        tenantId: string;
-        totalAmount: import("@prisma/client/runtime/client").Decimal | null;
-        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
-        remark: string | null;
+        status: import("@prisma/client").$Enums.CommonStatus;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        status: import("@prisma/client").$Enums.CommonStatus;
+        tenantId: string;
+        remark: string | null;
+        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
         customerName: string | null;
+        totalAmount: import("@prisma/client/runtime/client").Decimal | null;
         departmentName: string | null;
         quotationNo: string;
         quotationName: string;
@@ -46,15 +46,15 @@ export declare class QuotationController {
     }>;
     update(id: string, dto: any): Promise<{
         id: string;
-        tenantId: string;
-        totalAmount: import("@prisma/client/runtime/client").Decimal | null;
-        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
-        remark: string | null;
+        status: import("@prisma/client").$Enums.CommonStatus;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        status: import("@prisma/client").$Enums.CommonStatus;
+        tenantId: string;
+        remark: string | null;
+        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
         customerName: string | null;
+        totalAmount: import("@prisma/client/runtime/client").Decimal | null;
         departmentName: string | null;
         quotationNo: string;
         quotationName: string;
@@ -67,15 +67,15 @@ export declare class QuotationController {
     }>;
     submit(id: string): Promise<{
         id: string;
-        tenantId: string;
-        totalAmount: import("@prisma/client/runtime/client").Decimal | null;
-        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
-        remark: string | null;
+        status: import("@prisma/client").$Enums.CommonStatus;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        status: import("@prisma/client").$Enums.CommonStatus;
+        tenantId: string;
+        remark: string | null;
+        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
         customerName: string | null;
+        totalAmount: import("@prisma/client/runtime/client").Decimal | null;
         departmentName: string | null;
         quotationNo: string;
         quotationName: string;

@@ -1,11 +1,11 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ChevronDown, Pencil, RefreshCw, Search, Settings, Trash2 } from 'lucide-react';
@@ -13,11 +13,10 @@ import { ChevronDown, Pencil, RefreshCw, Search, Settings, Trash2 } from 'lucide
 interface Category { id:string;code:string;name:string;parentId:string|null;parentCode:string;parentName:string;sortOrder:number;status:string;createdAt:string; }
 
 export default function MaterialCategoryPage() {
+  const router=useRouter();
   const [items,setItems]=useState<Category[]>([]); const [total,setTotal]=useState(0); const [page,setPage]=useState(1); const [pageSize,setPageSize]=useState(30);
   const [selected,setSelected]=useState<Set<string>>(new Set());
   const [s,setS]=useState({code:'',name:'',status:''});
-  const [dialog,setDialog]=useState(false); const [editing,setEditing]=useState<Category|null>(null);
-  const [f,setF]=useState({code:'',name:'',parentId:'',sortOrder:0,status:'ACTIVE'});
   const [delId,setDelId]=useState<string|null>(null);
   const [advanced,setAdvanced]=useState(false);
 
@@ -27,9 +26,6 @@ export default function MaterialCategoryPage() {
   },[page,pageSize,s]);
   useEffect(()=>{fetch();},[fetch]);
 
-  const openAdd=()=>{setEditing(null);setF({code:'',name:'',parentId:'',sortOrder:0,status:'ACTIVE'});setDialog(true);};
-  const openEdit=(item:Category)=>{setEditing(item);setF({code:item.code,name:item.name,parentId:item.parentId||'',sortOrder:item.sortOrder,status:item.status});setDialog(true);};
-  const save=async()=>{try{if(editing)await api.put(`/material-categories/${editing.id}`,f);else await api.post('/material-categories',f);setDialog(false);fetch();}catch(err:any){alert(err.response?.data?.message||'保存失败');}};
   const del=async()=>{if(!delId)return;await api.delete(`/material-categories/${delId}`);setDelId(null);fetch();};
   const toggleAll=(v:boolean)=>setSelected(v?new Set(items.map(i=>i.id)):new Set());
   const toggleOne=(id:string,v:boolean)=>{const n=new Set(selected);v?n.add(id):n.delete(id);setSelected(n);};
@@ -41,7 +37,7 @@ export default function MaterialCategoryPage() {
     <div className="h-full flex flex-col bg-white">
       <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100">
         <div className="flex items-center gap-1">
-          <Button size="sm" onClick={openAdd}><span className="mr-1">+</span>新增</Button>
+          <Button size="sm" onClick={()=>router.push('/material-category/create')}><span className="mr-1">+</span>新增</Button>
           <Button size="sm" variant="outline" disabled={selected.size===0}>修改</Button>
           <Button size="sm" variant="outline" disabled={selected.size===0}>删除</Button>
         </div>
@@ -92,7 +88,7 @@ export default function MaterialCategoryPage() {
                 <td className="px-2 py-2.5 text-gray-500 text-[12px]">{new Date(item.createdAt).toLocaleDateString('zh-CN')}</td>
                 <td className="px-2 py-2.5">
                   <div className="flex items-center gap-3">
-                    <button onClick={()=>openEdit(item)} className="text-blue-600 hover:text-blue-800 text-[12px] inline-flex items-center gap-0.5"><Pencil size={12}/>修改</button>
+                    <button onClick={()=>router.push('/material-category/'+item.id+'/edit')} className="text-blue-600 hover:text-blue-800 text-[12px] inline-flex items-center gap-0.5"><Pencil size={12}/>修改</button>
                     <button onClick={()=>setDelId(item.id)} className="text-red-500 hover:text-red-700 text-[12px] inline-flex items-center gap-0.5"><Trash2 size={12}/>删除</button>
                   </div>
                 </td>
@@ -116,23 +112,6 @@ export default function MaterialCategoryPage() {
           </div>
         </div>
       </div>
-
-      <Dialog open={dialog} onOpenChange={setDialog}><DialogContent><DialogHeader><DialogTitle>{editing?'修改分类':'新增分类'}</DialogTitle></DialogHeader>
-        <div className="space-y-3 py-2">
-          <div><label className="text-[12px] font-medium">分类编码 *</label><Input className="h-8 text-[13px]" value={f.code} onChange={e=>setF({...f,code:e.target.value})} disabled={!!editing}/></div>
-          <div><label className="text-[12px] font-medium">分类名称 *</label><Input className="h-8 text-[13px]" value={f.name} onChange={e=>setF({...f,name:e.target.value})}/></div>
-          <div><label className="text-[12px] font-medium">上级分类</label>
-            <Select value={f.parentId} onValueChange={v=>setF({...f,parentId:v==='NONE'?'':v})}><SelectTrigger className="h-8 text-[13px]"><SelectValue placeholder="无"/></SelectTrigger>
-            <SelectContent><SelectItem value="NONE">无</SelectItem>{items.filter(i=>i.id!==editing?.id).map(i=><SelectItem key={i.id} value={i.id}>{i.code} - {i.name}</SelectItem>)}</SelectContent></Select>
-          </div>
-          <div><label className="text-[12px] font-medium">排序</label><Input type="number" className="h-8 text-[13px]" value={f.sortOrder} onChange={e=>setF({...f,sortOrder:+e.target.value})}/></div>
-          <div><label className="text-[12px] font-medium">状态</label>
-            <Select value={f.status} onValueChange={v=>setF({...f,status:v})}><SelectTrigger className="h-8 text-[13px]"><SelectValue/></SelectTrigger>
-            <SelectContent><SelectItem value="ACTIVE">启用</SelectItem><SelectItem value="INACTIVE">停用</SelectItem></SelectContent></Select>
-          </div>
-        </div>
-        <DialogFooter><Button variant="outline" size="sm" onClick={()=>setDialog(false)}>取消</Button><Button size="sm" onClick={save}>确定</Button></DialogFooter></DialogContent>
-      </Dialog>
 
       <AlertDialog open={!!delId} onOpenChange={()=>setDelId(null)}>
         <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>确认删除？</AlertDialogTitle></AlertDialogHeader>

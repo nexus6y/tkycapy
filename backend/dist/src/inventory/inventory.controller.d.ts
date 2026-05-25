@@ -6,13 +6,13 @@ export declare class InventoryController {
     findAll(code?: string, name?: string, warehouseId?: string, page?: number, pageSize?: number): Promise<{
         items: {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
             tenantId: string;
             materialName: string | null;
             quantity: import("@prisma/client/runtime/client").Decimal;
             warehouseId: string | null;
             warehouseName: string | null;
-            createdAt: Date;
-            updatedAt: Date;
             materialId: string | null;
             locationCode: string | null;
             batchNo: string | null;

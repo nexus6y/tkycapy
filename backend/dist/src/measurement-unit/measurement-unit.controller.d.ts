@@ -7,13 +7,13 @@ export declare class MeasurementUnitController {
         items: {
             symbol: string | null;
             id: string;
-            tenantId: string;
+            code: string;
+            name: string;
+            status: import("@prisma/client").$Enums.CommonStatus;
             createdAt: Date;
             updatedAt: Date;
             deletedAt: Date | null;
-            name: string;
-            code: string;
-            status: import("@prisma/client").$Enums.CommonStatus;
+            tenantId: string;
             sortOrder: number;
         }[];
         total: number;
@@ -28,13 +28,13 @@ export declare class MeasurementUnitController {
     }): Promise<{
         symbol: string | null;
         id: string;
-        tenantId: string;
+        code: string;
+        name: string;
+        status: import("@prisma/client").$Enums.CommonStatus;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        name: string;
-        code: string;
-        status: import("@prisma/client").$Enums.CommonStatus;
+        tenantId: string;
         sortOrder: number;
     }>;
 }

@@ -6,13 +6,13 @@ export declare class ProjectController {
     findAll(status?: string, code?: string, name?: string, page?: number, pageSize?: number): Promise<{
         items: {
             id: string;
-            tenantId: string;
-            approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
+            code: string;
+            name: string;
             createdAt: Date;
             updatedAt: Date;
             deletedAt: Date | null;
-            name: string;
-            code: string;
+            tenantId: string;
+            approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
             source: string | null;
             organizationId: string | null;
         }[];
@@ -22,13 +22,13 @@ export declare class ProjectController {
     }>;
     findOne(id: string): Promise<{
         id: string;
-        tenantId: string;
-        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
+        code: string;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        name: string;
-        code: string;
+        tenantId: string;
+        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
         source: string | null;
         organizationId: string | null;
     }>;
@@ -38,13 +38,13 @@ export declare class ProjectController {
         source?: string;
     }): Promise<{
         id: string;
-        tenantId: string;
-        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
+        code: string;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        name: string;
-        code: string;
+        tenantId: string;
+        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
         source: string | null;
         organizationId: string | null;
     }>;
@@ -53,13 +53,13 @@ export declare class ProjectController {
         source?: string;
     }): Promise<{
         id: string;
-        tenantId: string;
-        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
+        code: string;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        name: string;
-        code: string;
+        tenantId: string;
+        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
         source: string | null;
         organizationId: string | null;
     }>;
@@ -68,13 +68,13 @@ export declare class ProjectController {
     }>;
     submit(id: string): Promise<{
         id: string;
-        tenantId: string;
-        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
+        code: string;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        name: string;
-        code: string;
+        tenantId: string;
+        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
         source: string | null;
         organizationId: string | null;
     }>;
