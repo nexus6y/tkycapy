@@ -9,11 +9,11 @@ export declare class InventoryController {
             tenantId: string;
             materialName: string | null;
             quantity: import("@prisma/client/runtime/client").Decimal;
+            warehouseId: string | null;
+            warehouseName: string | null;
             createdAt: Date;
             updatedAt: Date;
-            warehouseId: string | null;
             materialId: string | null;
-            warehouseName: string | null;
             locationCode: string | null;
             batchNo: string | null;
             availableQty: import("@prisma/client/runtime/client").Decimal;

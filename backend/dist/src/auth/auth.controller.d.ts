@@ -8,10 +8,10 @@ export declare class AuthController {
             id: string;
             tenantId: string;
             createdAt: Date;
-            name: string;
-            status: import("@prisma/client").$Enums.CommonStatus;
             updatedAt: Date;
             deletedAt: Date | null;
+            name: string;
+            status: import("@prisma/client").$Enums.CommonStatus;
             sortOrder: number;
             username: string;
             email: string | null;
@@ -28,10 +28,10 @@ export declare class AuthController {
             id: string;
             tenantId: string;
             createdAt: Date;
-            name: string;
-            status: import("@prisma/client").$Enums.CommonStatus;
             updatedAt: Date;
             deletedAt: Date | null;
+            name: string;
+            status: import("@prisma/client").$Enums.CommonStatus;
             sortOrder: number;
             username: string;
             email: string | null;

@@ -7,14 +7,14 @@ export declare class PreOrderController {
         items: {
             id: string;
             tenantId: string;
+            orderNo: string;
             totalAmount: import("@prisma/client/runtime/client").Decimal | null;
+            approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
             remark: string | null;
             createdAt: Date;
             updatedAt: Date;
             deletedAt: Date | null;
-            approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
             customerName: string | null;
-            orderNo: string;
             orderName: string;
             customerId: string | null;
             contractId: string | null;
@@ -27,14 +27,14 @@ export declare class PreOrderController {
     create(dto: any): Promise<{
         id: string;
         tenantId: string;
+        orderNo: string;
         totalAmount: import("@prisma/client/runtime/client").Decimal | null;
+        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
         remark: string | null;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
         customerName: string | null;
-        orderNo: string;
         orderName: string;
         customerId: string | null;
         contractId: string | null;
@@ -43,14 +43,14 @@ export declare class PreOrderController {
     update(id: string, dto: any): Promise<{
         id: string;
         tenantId: string;
+        orderNo: string;
         totalAmount: import("@prisma/client/runtime/client").Decimal | null;
+        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
         remark: string | null;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
         customerName: string | null;
-        orderNo: string;
         orderName: string;
         customerId: string | null;
         contractId: string | null;
@@ -62,14 +62,14 @@ export declare class PreOrderController {
     submit(id: string): Promise<{
         id: string;
         tenantId: string;
+        orderNo: string;
         totalAmount: import("@prisma/client/runtime/client").Decimal | null;
+        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
         remark: string | null;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
         customerName: string | null;
-        orderNo: string;
         orderName: string;
         customerId: string | null;
         contractId: string | null;

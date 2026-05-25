@@ -12,16 +12,17 @@ export declare class MaterialApprovalController {
             unit: undefined;
             id: string;
             tenantId: string;
+            specification: string | null;
+            approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
             remark: string | null;
             createdAt: Date;
+            updatedAt: Date;
+            deletedAt: Date | null;
             name: string;
             code: string;
             status: import("@prisma/client").$Enums.CommonStatus;
-            updatedAt: Date;
-            deletedAt: Date | null;
             sortOrder: number;
             categoryId: string;
-            specification: string | null;
             externalCode: string | null;
             materialType: import("@prisma/client").$Enums.MaterialType;
             materialProperty: string | null;
@@ -60,7 +61,6 @@ export declare class MaterialApprovalController {
             repairStdHours: import("@prisma/client/runtime/client").Decimal | null;
             maintStdQty: import("@prisma/client/runtime/client").Decimal | null;
             maintStdHours: import("@prisma/client/runtime/client").Decimal | null;
-            approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
         }[];
         total: number;
         page: number;
@@ -69,16 +69,17 @@ export declare class MaterialApprovalController {
     approve(id: string, comment?: string): Promise<{
         id: string;
         tenantId: string;
+        specification: string | null;
+        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
         remark: string | null;
         createdAt: Date;
+        updatedAt: Date;
+        deletedAt: Date | null;
         name: string;
         code: string;
         status: import("@prisma/client").$Enums.CommonStatus;
-        updatedAt: Date;
-        deletedAt: Date | null;
         sortOrder: number;
         categoryId: string;
-        specification: string | null;
         externalCode: string | null;
         materialType: import("@prisma/client").$Enums.MaterialType;
         materialProperty: string | null;
@@ -117,21 +118,21 @@ export declare class MaterialApprovalController {
         repairStdHours: import("@prisma/client/runtime/client").Decimal | null;
         maintStdQty: import("@prisma/client/runtime/client").Decimal | null;
         maintStdHours: import("@prisma/client/runtime/client").Decimal | null;
-        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
     }>;
     reject(id: string, comment?: string): Promise<{
         id: string;
         tenantId: string;
+        specification: string | null;
+        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
         remark: string | null;
         createdAt: Date;
+        updatedAt: Date;
+        deletedAt: Date | null;
         name: string;
         code: string;
         status: import("@prisma/client").$Enums.CommonStatus;
-        updatedAt: Date;
-        deletedAt: Date | null;
         sortOrder: number;
         categoryId: string;
-        specification: string | null;
         externalCode: string | null;
         materialType: import("@prisma/client").$Enums.MaterialType;
         materialProperty: string | null;
@@ -170,21 +171,21 @@ export declare class MaterialApprovalController {
         repairStdHours: import("@prisma/client/runtime/client").Decimal | null;
         maintStdQty: import("@prisma/client/runtime/client").Decimal | null;
         maintStdHours: import("@prisma/client/runtime/client").Decimal | null;
-        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
     }>;
     submit(id: string): Promise<{
         id: string;
         tenantId: string;
+        specification: string | null;
+        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
         remark: string | null;
         createdAt: Date;
+        updatedAt: Date;
+        deletedAt: Date | null;
         name: string;
         code: string;
         status: import("@prisma/client").$Enums.CommonStatus;
-        updatedAt: Date;
-        deletedAt: Date | null;
         sortOrder: number;
         categoryId: string;
-        specification: string | null;
         externalCode: string | null;
         materialType: import("@prisma/client").$Enums.MaterialType;
         materialProperty: string | null;
@@ -223,6 +224,5 @@ export declare class MaterialApprovalController {
         repairStdHours: import("@prisma/client/runtime/client").Decimal | null;
         maintStdQty: import("@prisma/client/runtime/client").Decimal | null;
         maintStdHours: import("@prisma/client/runtime/client").Decimal | null;
-        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
     }>;
 }

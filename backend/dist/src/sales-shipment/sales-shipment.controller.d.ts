@@ -7,19 +7,19 @@ export declare class SalesShipmentController {
         items: {
             id: string;
             tenantId: string;
+            orderNo: string | null;
             totalAmount: import("@prisma/client/runtime/client").Decimal | null;
+            approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
+            businessStatus: string;
             remark: string | null;
             createdAt: Date;
             updatedAt: Date;
             deletedAt: Date | null;
-            approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
+            shipmentDate: Date;
             customerName: string | null;
-            orderNo: string | null;
-            businessStatus: string;
             totalQuantity: import("@prisma/client/runtime/client").Decimal | null;
             shipmentNo: string;
             orderId: string | null;
-            shipmentDate: Date;
         }[];
         total: number;
         page: number;
@@ -28,36 +28,36 @@ export declare class SalesShipmentController {
     create(dto: any): Promise<{
         id: string;
         tenantId: string;
+        orderNo: string | null;
         totalAmount: import("@prisma/client/runtime/client").Decimal | null;
+        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
+        businessStatus: string;
         remark: string | null;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
+        shipmentDate: Date;
         customerName: string | null;
-        orderNo: string | null;
-        businessStatus: string;
         totalQuantity: import("@prisma/client/runtime/client").Decimal | null;
         shipmentNo: string;
         orderId: string | null;
-        shipmentDate: Date;
     }>;
     update(id: string, dto: any): Promise<{
         id: string;
         tenantId: string;
+        orderNo: string | null;
         totalAmount: import("@prisma/client/runtime/client").Decimal | null;
+        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
+        businessStatus: string;
         remark: string | null;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
+        shipmentDate: Date;
         customerName: string | null;
-        orderNo: string | null;
-        businessStatus: string;
         totalQuantity: import("@prisma/client/runtime/client").Decimal | null;
         shipmentNo: string;
         orderId: string | null;
-        shipmentDate: Date;
     }>;
     remove(id: string): Promise<{
         message: string;
@@ -65,18 +65,18 @@ export declare class SalesShipmentController {
     submit(id: string): Promise<{
         id: string;
         tenantId: string;
+        orderNo: string | null;
         totalAmount: import("@prisma/client/runtime/client").Decimal | null;
+        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
+        businessStatus: string;
         remark: string | null;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
+        shipmentDate: Date;
         customerName: string | null;
-        orderNo: string | null;
-        businessStatus: string;
         totalQuantity: import("@prisma/client/runtime/client").Decimal | null;
         shipmentNo: string;
         orderId: string | null;
-        shipmentDate: Date;
     }>;
 }
