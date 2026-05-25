@@ -1,56 +1,61 @@
 'use client';
-import { useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { ChevronDown, Pencil, RefreshCw, Search, Settings, Trash2, Download, Upload } from 'lucide-react';
+import { ChevronDown, Download, Pencil, Plus, Search, Trash2, Upload } from 'lucide-react';
+import { ErpTable,ErpThead,ErpTh,ErpTbody,ErpTr,ErpTd,ErpEmpty,ErpLink,ErpAction,ErpActionBtn,ErpTools,ErpApproval,ErpPagination } from '@/components/ui/erp-table';
 
 interface Item { id:string;orderNo:string;orderName:string;contractName:string|null;customerName:string|null;totalAmount:string|null;approvalStatus:string;createdAt:string; }
 const AP:Record<string,string>={DRAFT:'草稿',SUBMITTED:'已提交',APPROVED:'已通过',REJECTED:'已拒绝'};
 
 export default function PreOrderPage() {
-  const [items,setItems]=useState<Item[]>([]);const [total,setTotal]=useState(0);const [page,setPage]=useState(1);const [ps,setPs]=useState(30);
+  const router=useRouter();
+  const [items,setItems]=useState<Item[]>([]);const [total,setTotal]=useState(0);const [pg,setPg]=useState(1);const [ps,setPs]=useState(30);
   const [sel,setSel]=useState<Set<string>>(new Set());const [s,setS]=useState({code:'',name:'',status:''});
-  const [open,setOpen]=useState(false);const [ed,setEd]=useState<Item|null>(null);
-  const [f,setF]=useState({orderNo:'',orderName:'',contractName:'',customerName:'',totalAmount:''});
   const [del,setDel]=useState<string|null>(null);
 
   const fetch=useCallback(async()=>{
-    const p:any={page,pageSize:ps}; if(s.code)p.code=s.code; if(s.name)p.name=s.name; if(s.status)p.status=s.status;
+    const p:any={page:pg,pageSize:ps}; if(s.code)p.code=s.code; if(s.name)p.name=s.name; if(s.status)p.status=s.status;
     const {data}=await api.get('/pre-orders',{params:p}); setItems(data.items); setTotal(data.total);
-  },[page,ps,s]); useEffect(()=>{fetch();},[fetch]);
+  },[pg,ps,s]); useEffect(()=>{fetch();},[fetch]);
 
-  const add=()=>{setEd(null);setF({orderNo:'',orderName:'',contractName:'',customerName:'',totalAmount:''});setOpen(true);};
-  const edit=(i:Item)=>{setEd(i);setF({orderNo:i.orderNo,orderName:i.orderName,contractName:i.contractName||'',customerName:i.customerName||'',totalAmount:i.totalAmount||''});setOpen(true);};
-  const save=async()=>{try{const d={...f,totalAmount:f.totalAmount?+f.totalAmount:null};await (ed?api.put(`/pre-orders/${ed.id}`,d):api.post('/pre-orders',d));setOpen(false);fetch();}catch(e:any){alert(e.response?.data?.message||'保存失败');}};
   const doDel=async()=>{if(!del)return;await api.delete(`/pre-orders/${del}`);setDel(null);fetch();};
-  const tp=Math.ceil(total/ps); const pgs=Array.from({length:tp},(_,i)=>i+1).filter(p=>p===1||p===tp||Math.abs(p-page)<=2);
+  const toggleAll=(v:boolean)=>setSel(v?new Set(items.map(i=>i.id)):new Set());
+  const tp=Math.ceil(total/ps);const pgs=Array.from({length:tp},(_,i)=>i+1).filter(p=>p===1||p===tp||Math.abs(p-pg)<=2);
 
-  return (<TooltipProvider><div className="h-full flex flex-col bg-white">
-    <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100">
-      <div className="flex items-center gap-1"><Button size="sm" onClick={()=>router.push(`/sales/pre-order/create`)}><span className="mr-1">+</span>新增</Button><Button size="sm" variant="outline" disabled={sel.size===0}>修改</Button><Button size="sm" variant="outline" disabled={sel.size===0}>删除</Button><DropdownMenu><DropdownMenuTrigger asChild><Button size="sm" variant="outline">导入 <ChevronDown size={12} className="ml-1"/></Button></DropdownMenuTrigger><DropdownMenuContent><DropdownMenuItem><Upload size={14} className="mr-2"/>导入数据</DropdownMenuItem></DropdownMenuContent></DropdownMenu><Button size="sm" variant="outline"><Download size={14} className="mr-1"/>导出</Button></div>
-      <div className="flex items-center gap-1"><Button size="sm" variant="ghost" onClick={()=>setS({code:'',name:'',status:''})}>重置</Button><Button size="sm" onClick={fetch}><Search size={14} className="mr-1"/>搜索</Button></div>
+  return (<TooltipProvider><div className="bg-background rounded-lg border shadow-sm">
+    <div className="flex items-center justify-between px-4 h-14 border-b border-border">
+      <div className="flex items-center gap-1">
+        <Button variant="secondary" size="sm" onClick={()=>router.push('/sales/pre-order/create')}><Plus className="h-3.5 w-3.5"/>新增</Button>
+        <Button variant="outline" size="sm" disabled={sel.size===0}>修改</Button>
+        <Button variant="outline" size="sm" disabled={sel.size===0}>删除</Button>
+        <DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" size="sm">导入 <ChevronDown className="h-3 w-3 ml-0.5"/></Button></DropdownMenuTrigger><DropdownMenuContent><DropdownMenuItem><Upload className="h-3.5 w-3.5 mr-2"/>导入数据</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
+        <Button variant="outline" size="sm"><Download className="h-3.5 w-3.5 mr-1"/>导出</Button>
+      </div>
+      <div className="flex items-center gap-1">
+        <Button variant="ghost" size="sm" onClick={()=>setS({code:'',name:'',status:''})}>重置</Button>
+        <Button variant="default" size="sm" onClick={fetch}><Search className="h-3.5 w-3.5 mr-1"/>搜索</Button>
+      </div>
     </div>
-    <div className="flex items-center gap-3 px-4 py-2.5 bg-gray-50/50 border-b border-gray-100 flex-wrap">
-      <div className="flex items-center gap-1.5"><span className="text-[12px] text-gray-500 w-12">状态</span><Select value={s.status} onValueChange={v=>setS({...s,status:v==='ALL'?'':v})}><SelectTrigger className="w-[100px] h-8 text-[12px]"><SelectValue placeholder="全部"/></SelectTrigger><SelectContent><SelectItem value="ALL">全部</SelectItem><SelectItem value="DRAFT">草稿</SelectItem><SelectItem value="SUBMITTED">已提交</SelectItem><SelectItem value="APPROVED">已通过</SelectItem></SelectContent></Select></div>
-      <div className="flex items-center gap-1.5"><span className="text-[12px] text-gray-500">分劈单号</span><Input className="w-[140px] h-8 text-[12px]" value={s.code} onChange={e=>setS({...s,code:e.target.value})}/></div>
-      <div className="flex items-center gap-1.5"><span className="text-[12px] text-gray-500">分劈名称</span><Input className="w-[140px] h-8 text-[12px]" value={s.name} onChange={e=>setS({...s,name:e.target.value})}/></div>
+    <div className="flex items-center gap-4 px-4 py-2.5 border-b border-border bg-muted/30 flex-wrap">
+      <F label="状态"><Select value={s.status} onValueChange={v=>setS({...s,status:v==='ALL'?'':v})}><SelectTrigger className="w-[100px] h-9 rounded-md border border-border bg-background px-3 text-[13px]"><SelectValue placeholder="全部"/></SelectTrigger><SelectContent><SelectItem value="ALL">全部</SelectItem><SelectItem value="DRAFT">草稿</SelectItem><SelectItem value="SUBMITTED">已提交</SelectItem><SelectItem value="APPROVED">已通过</SelectItem></SelectContent></Select></F>
+      <F label="分劈单号"><Input className="w-[140px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.code} onChange={e=>setS({...s,code:e.target.value})}/></F>
+      <F label="分劈名称"><Input className="w-[140px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.name} onChange={e=>setS({...s,name:e.target.value})}/></F>
     </div>
-    <div className="flex-1 overflow-auto"><Hdr/><table className="w-full text-[13px]"><thead className="bg-gray-50 border-y border-gray-200 sticky top-0"><tr><th className="w-10 px-3 py-2.5"><Checkbox checked={items.length>0&&sel.size===items.length} onCheckedChange={(v:boolean)=>setSel(v?new Set(items.map(i=>i.id)):new Set())}/></th><th className="text-left px-2 py-2.5 font-medium text-gray-600">审批状态</th><th className="text-left px-2 py-2.5 font-medium text-gray-600">分劈单号</th><th className="text-left px-2 py-2.5 font-medium text-gray-600">分劈名称</th><th className="text-left px-2 py-2.5 font-medium text-gray-600">合同</th><th className="text-left px-2 py-2.5 font-medium text-gray-600">客户</th><th className="text-left px-2 py-2.5 font-medium text-gray-600">金额</th><th className="text-left px-2 py-2.5 font-medium text-gray-600">创建时间</th><th className="text-left px-2 py-2.5 font-medium text-gray-600">操作</th></tr></thead><tbody>{items.map(i=>(<tr key={i.id} className="border-b border-gray-100 hover:bg-blue-50/30"><td className="px-3 py-2.5"><Checkbox checked={sel.has(i.id)} onCheckedChange={(v:boolean)=>{const n=new Set(sel);v?n.add(i.id):n.delete(i.id);setSel(n);}}/></td><td className="px-2 py-2.5"><span className={`inline-flex px-1.5 py-0.5 rounded text-[11px] ${i.approvalStatus==='APPROVED'?'bg-green-50 text-green-700':i.approvalStatus==='SUBMITTED'?'bg-blue-50 text-blue-700':'bg-gray-50 text-gray-500'}`}>{AP[i.approvalStatus]}</span></td><td className="px-2 py-2.5"><button className="text-blue-600 hover:text-blue-800 hover:underline text-[13px]">{i.orderNo}</button></td><td className="px-2 py-2.5 text-gray-700">{i.orderName}</td><td className="px-2 py-2.5 text-gray-500">{i.contractName||'-'}</td><td className="px-2 py-2.5 text-gray-500">{i.customerName||'-'}</td><td className="px-2 py-2.5 text-gray-700">{i.totalAmount?Number(i.totalAmount).toLocaleString():'-'}</td><td className="px-2 py-2.5 text-gray-500 text-[12px]">{new Date(i.createdAt).toLocaleDateString('zh-CN')}</td><td className="px-2 py-2.5"><div className="flex items-center gap-3"><button onClick={()=>router.push(`/sales/pre-order/${i.id}/edit`)} className="text-blue-600 hover:text-blue-800 text-[12px] inline-flex items-center gap-0.5"><Pencil size={12}/>修改</button>{i.approvalStatus==='DRAFT'&&<button onClick={()=>{api.put(`/pre-orders/${i.id}/submit`).then(fetch);}} className="text-blue-600 text-[12px]">提交</button>}<button onClick={()=>setDel(i.id)} className="text-red-500 hover:text-red-700 text-[12px] inline-flex items-center gap-0.5"><Trash2 size={12}/>删除</button></div></td></tr>))}{items.length===0&&<tr><td colSpan={9} className="text-center text-gray-400 py-16">暂无数据</td></tr>}</tbody></table></div>
-    <Pager page={page} ps={ps} total={total} onPage={setPage} onPs={v=>{setPs(+v);setPage(1);}} tp={tp} pgs={pgs}/>
-    <Dlg open={open} onOpen={setOpen} ed={!!ed} label="分劈单" onSave={save}><div className="grid grid-cols-2 gap-3"><div><label className="text-[12px] font-medium">分劈单号 *</label><Input className="h-8 text-[13px]" value={f.orderNo} onChange={e=>setF({...f,orderNo:e.target.value})} disabled={!!ed}/></div><div><label className="text-[12px] font-medium">分劈名称 *</label><Input className="h-8 text-[13px]" value={f.orderName} onChange={e=>setF({...f,orderName:e.target.value})}/></div><div><label className="text-[12px] font-medium">合同名称</label><Input className="h-8 text-[13px]" value={f.contractName} onChange={e=>setF({...f,contractName:e.target.value})}/></div><div><label className="text-[12px] font-medium">客户名称</label><Input className="h-8 text-[13px]" value={f.customerName} onChange={e=>setF({...f,customerName:e.target.value})}/></div><div><label className="text-[12px] font-medium">金额</label><Input type="number" className="h-8 text-[13px]" value={f.totalAmount} onChange={e=>setF({...f,totalAmount:e.target.value})}/></div></div></Dlg>
-    <Cfm open={!!del} onOpen={()=>setDel(null)} onConfirm={doDel}/>
+    <ErpTools onRefresh={fetch}/>
+    <div className="overflow-auto"><ErpTable><ErpThead><ErpTh className="w-10"><Checkbox checked={items.length>0&&sel.size===items.length} onCheckedChange={(v:boolean)=>toggleAll(v)}/></ErpTh><ErpTh>审批状态</ErpTh><ErpTh>分劈单号</ErpTh><ErpTh>分劈名称</ErpTh><ErpTh>合同</ErpTh><ErpTh>客户</ErpTh><ErpTh>金额</ErpTh><ErpTh>创建时间</ErpTh><ErpTh>操作</ErpTh></ErpThead><ErpTbody>
+    {items.map(i=>(<ErpTr key={i.id}><ErpTd><Checkbox checked={sel.has(i.id)} onCheckedChange={(v:boolean)=>{const n=new Set(sel);v?n.add(i.id):n.delete(i.id);setSel(n);}}/></ErpTd><ErpTd><ErpApproval status={i.approvalStatus}/></ErpTd><ErpTd><ErpLink onClick={()=>router.push('/sales/pre-order/'+i.id+'/edit')}>{i.orderNo}</ErpLink></ErpTd><ErpTd>{i.orderName}</ErpTd><ErpTd className="text-muted-foreground">{i.contractName||'-'}</ErpTd><ErpTd className="text-muted-foreground">{i.customerName||'-'}</ErpTd><ErpTd>{i.totalAmount?Number(i.totalAmount).toLocaleString():'-'}</ErpTd><ErpTd className="text-muted-foreground">{new Date(i.createdAt).toLocaleDateString('zh-CN')}</ErpTd><ErpTd><ErpAction><ErpActionBtn onClick={()=>router.push('/sales/pre-order/'+i.id+'/edit')}><Pencil className="h-3.5 w-3.5"/>修改</ErpActionBtn>{i.approvalStatus==='DRAFT'&&<button onClick={()=>{api.put(`/pre-orders/${i.id}/submit`).then(fetch);}} className="text-primary text-[13px]">提交</button>}<ErpActionBtn danger onClick={()=>setDel(i.id)}><Trash2 className="h-3.5 w-3.5"/>删除</ErpActionBtn></ErpAction></ErpTd></ErpTr>))}
+    {items.length===0&&<ErpEmpty colSpan={9}/>}
+    </ErpTbody></ErpTable></div>
+    <ErpPagination page={pg} pageSize={ps} total={total} onPage={setPg} onPageSize={v=>setPs(+v)}/>
+    <AlertDialog open={!!del} onOpenChange={()=>setDel(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>确认删除？</AlertDialogTitle></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>取消</AlertDialogCancel><AlertDialogAction onClick={doDel} className="bg-[#f56c6c] text-white hover:bg-[#f56c6c]/90">删除</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
   </div></TooltipProvider>);
 }
-
-// Shared sub-components (can be extracted later)
-function Hdr(){return<div className="flex items-center justify-end px-4 py-1.5 bg-gray-50/30 border-b border-gray-100 gap-1"><Tooltip><TooltipTrigger asChild><button className="p-1.5 hover:bg-gray-100 rounded text-gray-400 hover:text-gray-600"><RefreshCw size={14}/></button></TooltipTrigger><TooltipContent>刷新</TooltipContent></Tooltip><Tooltip><TooltipTrigger asChild><button className="p-1.5 hover:bg-gray-100 rounded text-gray-400 hover:text-gray-600"><Settings size={14}/></button></TooltipTrigger><TooltipContent>列设置</TooltipContent></Tooltip></div>;}
-function Pager({page,ps,total,onPage,onPs,tp,pgs}:{page:number;ps:number;total:number;onPage:(p:number)=>void;onPs:(v:string)=>void;tp:number;pgs:number[]}){return<div className="flex items-center justify-between px-4 py-2.5 border-t border-gray-200 bg-white shrink-0"><span className="text-[12px] text-gray-500">共 {total} 条</span><div className="flex items-center gap-3"><Select value={String(ps)} onValueChange={onPs}><SelectTrigger className="w-[100px] h-8 text-[12px]"><SelectValue/></SelectTrigger><SelectContent>{[20,30,50,100].map(n=><SelectItem key={n} value={String(n)}>{n}条/页</SelectItem>)}</SelectContent></Select><div className="flex items-center gap-0.5"><Button size="sm" variant="ghost" disabled={page<=1} onClick={()=>onPage(page-1)} className="text-[12px] px-2">‹</Button>{pgs.map((p,i)=>(<span key={p}>{i>0&&pgs[i-1]!==p-1&&<span className="text-gray-300 mx-0.5">...</span>}<button onClick={()=>onPage(p)} className={`w-7 h-7 rounded text-[12px] transition-colors ${p===page?'bg-blue-600 text-white':'text-gray-600 hover:bg-gray-100'}`}>{p}</button></span>))}<Button size="sm" variant="ghost" disabled={page>=tp} onClick={()=>onPage(page+1)} className="text-[12px] px-2">›</Button></div></div></div>;}
-function Dlg({open,onOpen,ed,label,onSave,children}:{open:boolean;onOpen:(v:boolean)=>void;ed:boolean;label:string;onSave:()=>void;children:React.ReactNode}){return<Dialog open={open} onOpenChange={onOpen}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>{ed?'修改'+label:'新增'+label}</DialogTitle></DialogHeader><div className="space-y-3 max-h-[60vh] overflow-y-auto py-2">{children}</div><DialogFooter><Button variant="outline" size="sm" onClick={()=>onOpen(false)}>取消</Button><Button size="sm" onClick={onSave}>确定</Button></DialogFooter></DialogContent></Dialog>;}
-function Cfm({open,onOpen,onConfirm}:{open:boolean;onOpen:()=>void;onConfirm:()=>void}){return<AlertDialog open={open} onOpenChange={onOpen}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>确认删除？</AlertDialogTitle></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>取消</AlertDialogCancel><AlertDialogAction onClick={onConfirm} className="bg-red-600 hover:bg-red-700">删除</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>;}
+function F({label,children}:{label:string;children:React.ReactNode}){return<div className="flex items-center gap-1.5"><span className="text-[13px] text-muted-foreground w-[80px] text-right shrink-0">{label}</span>{children}</div>;}
