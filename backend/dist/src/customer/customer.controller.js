@@ -38,6 +38,9 @@ let CustomerController = class CustomerController {
         ]);
         return { items, total, page: +page, pageSize: +pageSize };
     }
+    async findOne(id) {
+        return this.prisma.customer.findUniqueOrThrow({ where: { id } });
+    }
     async create(dto) {
         const tenantId = await this.getTenantId();
         return this.prisma.customer.create({ data: { ...dto, tenantId } });
@@ -62,6 +65,13 @@ __decorate([
     __metadata("design:paramtypes", [String, String, String, Object, Object]),
     __metadata("design:returntype", Promise)
 ], CustomerController.prototype, "findAll", null);
+__decorate([
+    (0, common_1.Get)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], CustomerController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),

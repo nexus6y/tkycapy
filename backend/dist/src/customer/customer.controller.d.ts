@@ -4,61 +4,14 @@ export declare class CustomerController {
     constructor(prisma: PrismaService);
     private getTenantId;
     findAll(code?: string, name?: string, status?: string, page?: number, pageSize?: number): Promise<{
-        items: {
-            id: string;
-            code: string;
-            name: string;
-            status: import("@prisma/client").$Enums.CommonStatus;
-            createdAt: Date;
-            updatedAt: Date;
-            deletedAt: Date | null;
-            tenantId: string;
-            address: string | null;
-            contactPerson: string | null;
-            contactPhone: string | null;
-            contactEmail: string | null;
-            creditLevel: string | null;
-            industry: string | null;
-            valueLevel: string | null;
-        }[];
-        total: number;
+        items: any;
+        total: any;
         page: number;
         pageSize: number;
     }>;
-    create(dto: any): Promise<{
-        id: string;
-        code: string;
-        name: string;
-        status: import("@prisma/client").$Enums.CommonStatus;
-        createdAt: Date;
-        updatedAt: Date;
-        deletedAt: Date | null;
-        tenantId: string;
-        address: string | null;
-        contactPerson: string | null;
-        contactPhone: string | null;
-        contactEmail: string | null;
-        creditLevel: string | null;
-        industry: string | null;
-        valueLevel: string | null;
-    }>;
-    update(id: string, dto: any): Promise<{
-        id: string;
-        code: string;
-        name: string;
-        status: import("@prisma/client").$Enums.CommonStatus;
-        createdAt: Date;
-        updatedAt: Date;
-        deletedAt: Date | null;
-        tenantId: string;
-        address: string | null;
-        contactPerson: string | null;
-        contactPhone: string | null;
-        contactEmail: string | null;
-        creditLevel: string | null;
-        industry: string | null;
-        valueLevel: string | null;
-    }>;
+    findOne(id: string): Promise<any>;
+    create(dto: any): Promise<any>;
+    update(id: string, dto: any): Promise<any>;
     remove(id: string): Promise<{
         message: string;
     }>;

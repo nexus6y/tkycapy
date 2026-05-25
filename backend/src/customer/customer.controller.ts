@@ -24,6 +24,11 @@ export class CustomerController {
     return { items, total, page: +page, pageSize: +pageSize };
   }
 
+  @Get(':id')
+  async findOne(@Param('id') id: string) {
+    return this.prisma.customer.findUniqueOrThrow({ where: { id } });
+  }
+
   @Post()
   async create(@Body() dto: any) {
     const tenantId = await this.getTenantId();
