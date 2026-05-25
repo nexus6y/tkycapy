@@ -9,11 +9,12 @@ export class InboundOrderController {
     if (status) where.approvalStatus = status; if (code) where.orderNo = { contains: code };
     const [items, total] = await Promise.all([this.prisma.inboundOrder.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (+page - 1) * +pageSize, take: +pageSize }), this.prisma.inboundOrder.count({ where })]);
     return { items, total, page: +page, pageSize: +pageSize };
+  }
 
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.prisma.inboundOrder.findUniqueOrThrow({ where: { id } });
-  }
+
   }
   @Post() async create(@Body() dto: any) { const tenantId = await this.tid(); return this.prisma.inboundOrder.create({ data: { ...dto, tenantId } as any }); }
   @Put(':id') async update(@Param('id') id: string, @Body() dto: any) { return this.prisma.inboundOrder.update({ where: { id }, data: dto as any }); }

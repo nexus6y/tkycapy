@@ -9,12 +9,8 @@ export class BomController {
     if (status) where.approvalStatus = status; if (code) where.code = { contains: code };
     const [items, total] = await Promise.all([this.prisma.bom.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (+page - 1) * +pageSize, take: +pageSize }), this.prisma.bom.count({ where })]);
     return { items, total, page: +page, pageSize: +pageSize };
-
-  @Get(':id')
-  async findOne(@Param('id') id: string) {
-    return this.prisma.bom.findUniqueOrThrow({ where: { id } });
   }
-  }
+  @Get(':id') async findOne(@Param('id') id: string) { return this.prisma.bom.findUniqueOrThrow({ where: { id } }); }
   @Post() async create(@Body() dto: any) { const tenantId = await this.tid(); return this.prisma.bom.create({ data: { ...dto, tenantId } as any }); }
   @Put(':id') async update(@Param('id') id: string, @Body() dto: any) { return this.prisma.bom.update({ where: { id }, data: dto as any }); }
   @Delete(':id') async remove(@Param('id') id: string) { await this.prisma.bom.delete({ where: { id } }); return { message: '删除成功' }; }

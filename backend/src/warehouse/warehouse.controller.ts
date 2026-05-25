@@ -8,11 +8,12 @@ export class WarehouseController {
     const tenantId = await this.tid(); const where = { tenantId };
     const [items, total] = await Promise.all([this.prisma.warehouse.findMany({ where, orderBy: { sortOrder: 'asc' }, skip: (+page - 1) * +pageSize, take: +pageSize }), this.prisma.warehouse.count({ where })]);
     return { items, total, page: +page, pageSize: +pageSize };
+  }
 
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.prisma.warehouse.findUniqueOrThrow({ where: { id } });
-  }
+
   }
   @Post() async create(@Body() dto: any) { const tenantId = await this.tid(); return this.prisma.warehouse.create({ data: { ...dto, tenantId } as any }); }
   @Put(':id') async update(@Param('id') id: string, @Body() dto: any) { return this.prisma.warehouse.update({ where: { id }, data: dto as any }); }

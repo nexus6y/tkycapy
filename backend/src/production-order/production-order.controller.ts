@@ -9,11 +9,12 @@ export class ProductionOrderController {
     if (status) where.approvalStatus = status; if (biz) where.businessStatus = biz; if (code) where.orderNo = { contains: code };
     const [items, total] = await Promise.all([this.prisma.productionOrder.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (+page - 1) * +pageSize, take: +pageSize }), this.prisma.productionOrder.count({ where })]);
     return { items, total, page: +page, pageSize: +pageSize };
+  }
 
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.prisma.productionOrder.findUniqueOrThrow({ where: { id } });
-  }
+
   }
   @Post() async create(@Body() dto: any) { const tenantId = await this.tid(); return this.prisma.productionOrder.create({ data: { ...dto, tenantId } as any }); }
   @Put(':id') async update(@Param('id') id: string, @Body() dto: any) { return this.prisma.productionOrder.update({ where: { id }, data: dto as any }); }

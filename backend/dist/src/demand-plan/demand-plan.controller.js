@@ -32,10 +32,9 @@ let DemandPlanController = class DemandPlanController {
             where.planName = { contains: name };
         const [items, total] = await Promise.all([this.prisma.demandPlan.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (+page - 1) * +pageSize, take: +pageSize }), this.prisma.demandPlan.count({ where })]);
         return { items, total, page: +page, pageSize: +pageSize };
-        findOne(, id, string);
-        {
-            return this.prisma.demandPlan.findUniqueOrThrow({ where: { id } });
-        }
+    }
+    async findOne(id) {
+        return this.prisma.demandPlan.findUniqueOrThrow({ where: { id } });
     }
     async create(dto) { const tenantId = await this.tid(); return this.prisma.demandPlan.create({ data: { ...dto, tenantId } }); }
     async update(id, dto) { return this.prisma.demandPlan.update({ where: { id }, data: dto }); }
@@ -54,6 +53,13 @@ __decorate([
     __metadata("design:paramtypes", [String, String, String, Object, Object]),
     __metadata("design:returntype", Promise)
 ], DemandPlanController.prototype, "findAll", null);
+__decorate([
+    (0, common_1.Get)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], DemandPlanController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),

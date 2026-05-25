@@ -4,25 +4,6 @@ export declare class ProductionOrderController {
     constructor(prisma: PrismaService);
     private tid;
     findAll(status?: string, biz?: string, code?: string, page?: number, pageSize?: number): Promise<{
-        id: string;
-        tenantId: string;
-        orderNo: string;
-        materialName: string | null;
-        quantity: import("@prisma/client/runtime/client").Decimal | null;
-        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
-        businessStatus: string;
-        remark: string | null;
-        createdAt: Date;
-        updatedAt: Date;
-        deletedAt: Date | null;
-        orderName: string;
-        bomId: string | null;
-        materialId: string | null;
-        departmentId: string | null;
-        departmentName: string | null;
-        startDate: Date | null;
-        endDate: Date | null;
-    } | {
         items: {
             id: string;
             tenantId: string;
@@ -46,6 +27,26 @@ export declare class ProductionOrderController {
         total: number;
         page: number;
         pageSize: number;
+    }>;
+    findOne(id: string): Promise<{
+        id: string;
+        tenantId: string;
+        orderNo: string;
+        materialName: string | null;
+        quantity: import("@prisma/client/runtime/client").Decimal | null;
+        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
+        businessStatus: string;
+        remark: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        deletedAt: Date | null;
+        orderName: string;
+        bomId: string | null;
+        materialId: string | null;
+        departmentId: string | null;
+        departmentName: string | null;
+        startDate: Date | null;
+        endDate: Date | null;
     }>;
     create(dto: any): Promise<{
         id: string;

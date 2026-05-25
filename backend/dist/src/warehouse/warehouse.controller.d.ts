@@ -4,17 +4,6 @@ export declare class WarehouseController {
     constructor(prisma: PrismaService);
     private tid;
     findAll(page?: number, pageSize?: number): Promise<{
-        id: string;
-        tenantId: string;
-        createdAt: Date;
-        updatedAt: Date;
-        deletedAt: Date | null;
-        name: string;
-        code: string;
-        status: import("@prisma/client").$Enums.CommonStatus;
-        address: string | null;
-        sortOrder: number;
-    } | {
         items: {
             id: string;
             tenantId: string;
@@ -30,6 +19,18 @@ export declare class WarehouseController {
         total: number;
         page: number;
         pageSize: number;
+    }>;
+    findOne(id: string): Promise<{
+        id: string;
+        tenantId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        deletedAt: Date | null;
+        name: string;
+        code: string;
+        status: import("@prisma/client").$Enums.CommonStatus;
+        address: string | null;
+        sortOrder: number;
     }>;
     create(dto: any): Promise<{
         id: string;

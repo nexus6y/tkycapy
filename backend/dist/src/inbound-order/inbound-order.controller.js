@@ -30,10 +30,9 @@ let InboundOrderController = class InboundOrderController {
             where.orderNo = { contains: code };
         const [items, total] = await Promise.all([this.prisma.inboundOrder.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (+page - 1) * +pageSize, take: +pageSize }), this.prisma.inboundOrder.count({ where })]);
         return { items, total, page: +page, pageSize: +pageSize };
-        findOne(, id, string);
-        {
-            return this.prisma.inboundOrder.findUniqueOrThrow({ where: { id } });
-        }
+    }
+    async findOne(id) {
+        return this.prisma.inboundOrder.findUniqueOrThrow({ where: { id } });
     }
     async create(dto) { const tenantId = await this.tid(); return this.prisma.inboundOrder.create({ data: { ...dto, tenantId } }); }
     async update(id, dto) { return this.prisma.inboundOrder.update({ where: { id }, data: dto }); }
@@ -50,6 +49,13 @@ __decorate([
     __metadata("design:paramtypes", [String, String, Object, Object]),
     __metadata("design:returntype", Promise)
 ], InboundOrderController.prototype, "findAll", null);
+__decorate([
+    (0, common_1.Get)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], InboundOrderController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),

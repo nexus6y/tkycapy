@@ -26,10 +26,9 @@ let WarehouseController = class WarehouseController {
         const where = { tenantId };
         const [items, total] = await Promise.all([this.prisma.warehouse.findMany({ where, orderBy: { sortOrder: 'asc' }, skip: (+page - 1) * +pageSize, take: +pageSize }), this.prisma.warehouse.count({ where })]);
         return { items, total, page: +page, pageSize: +pageSize };
-        findOne(, id, string);
-        {
-            return this.prisma.warehouse.findUniqueOrThrow({ where: { id } });
-        }
+    }
+    async findOne(id) {
+        return this.prisma.warehouse.findUniqueOrThrow({ where: { id } });
     }
     async create(dto) { const tenantId = await this.tid(); return this.prisma.warehouse.create({ data: { ...dto, tenantId } }); }
     async update(id, dto) { return this.prisma.warehouse.update({ where: { id }, data: dto }); }
@@ -44,6 +43,13 @@ __decorate([
     __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], WarehouseController.prototype, "findAll", null);
+__decorate([
+    (0, common_1.Get)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], WarehouseController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),

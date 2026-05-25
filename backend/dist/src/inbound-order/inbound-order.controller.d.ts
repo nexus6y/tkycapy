@@ -4,26 +4,6 @@ export declare class InboundOrderController {
     constructor(prisma: PrismaService);
     private tid;
     findAll(status?: string, code?: string, page?: number, pageSize?: number): Promise<{
-        id: string;
-        tenantId: string;
-        orderNo: string;
-        materialName: string | null;
-        specification: string | null;
-        quantity: import("@prisma/client/runtime/client").Decimal | null;
-        qualifiedQty: import("@prisma/client/runtime/client").Decimal | null;
-        unqualifiedQty: import("@prisma/client/runtime/client").Decimal | null;
-        warehouseId: string | null;
-        warehouseName: string | null;
-        unitPrice: import("@prisma/client/runtime/client").Decimal | null;
-        totalAmount: import("@prisma/client/runtime/client").Decimal | null;
-        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
-        businessStatus: string;
-        receiptDate: Date;
-        remark: string | null;
-        createdAt: Date;
-        updatedAt: Date;
-        deletedAt: Date | null;
-    } | {
         items: {
             id: string;
             tenantId: string;
@@ -48,6 +28,27 @@ export declare class InboundOrderController {
         total: number;
         page: number;
         pageSize: number;
+    }>;
+    findOne(id: string): Promise<{
+        id: string;
+        tenantId: string;
+        orderNo: string;
+        materialName: string | null;
+        specification: string | null;
+        quantity: import("@prisma/client/runtime/client").Decimal | null;
+        qualifiedQty: import("@prisma/client/runtime/client").Decimal | null;
+        unqualifiedQty: import("@prisma/client/runtime/client").Decimal | null;
+        warehouseId: string | null;
+        warehouseName: string | null;
+        unitPrice: import("@prisma/client/runtime/client").Decimal | null;
+        totalAmount: import("@prisma/client/runtime/client").Decimal | null;
+        approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
+        businessStatus: string;
+        receiptDate: Date;
+        remark: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        deletedAt: Date | null;
     }>;
     create(dto: any): Promise<{
         id: string;
