@@ -32,7 +32,7 @@ export default function SalesShipmentPage() {
   const tp=Math.ceil(total/ps); const pgs=Array.from({length:tp},(_,i)=>i+1).filter(p=>p===1||p===tp||Math.abs(p-pg)<=2);
 
   return (<TooltipProvider><div className="h-full flex flex-col bg-white">
-    <Toolbar onAdd={add} selCount={sel.size} onSearch={fetch} onReset={()=>setS({code:'',name:'',status:''})}/>
+    <Toolbar onAdd={()=>router.push(`/sales/shipment/create`)} selCount={sel.size} onSearch={fetch} onReset={()=>setS({code:'',name:'',status:''})}/>
     <div className="flex items-center gap-3 px-4 py-2.5 bg-gray-50/50 border-b border-gray-100 flex-wrap">
       <F name="状态" w="w-[90px]"><Select value={s.status} onValueChange={v=>setS({...s,status:v==='ALL'?'':v})}><SelectTrigger className="w-[90px] h-8 text-[12px]"><SelectValue placeholder="全部"/></SelectTrigger><SelectContent><SelectItem value="ALL">全部</SelectItem><SelectItem value="DRAFT">草稿</SelectItem><SelectItem value="SUBMITTED">已提交</SelectItem><SelectItem value="APPROVED">已通过</SelectItem></SelectContent></Select></F>
       <F name="出货单号"><Input className="w-[130px] h-8 text-[12px]" value={s.code} onChange={e=>setS({...s,code:e.target.value})}/></F>
