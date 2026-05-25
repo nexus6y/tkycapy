@@ -1,0 +1,1 @@
+import { Module } from '@nestjs/common'; import { OperationLogController, LoginLogController } from './log.controller'; @Module({ controllers: [OperationLogController, LoginLogController] }) export class LogModule {}
