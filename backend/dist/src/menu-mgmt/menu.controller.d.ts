@@ -3,7 +3,6 @@ export declare class MenuMgmtController {
     private prisma;
     constructor(prisma: PrismaService);
     findAll(): Promise<{
-        path: string | null;
         id: string;
         code: string;
         name: string;
@@ -15,11 +14,11 @@ export declare class MenuMgmtController {
         sortOrder: number;
         parentId: string | null;
         type: string;
+        path: string | null;
         icon: string | null;
         component: string | null;
     }[]>;
     create(dto: any): Promise<{
-        path: string | null;
         id: string;
         code: string;
         name: string;
@@ -31,11 +30,11 @@ export declare class MenuMgmtController {
         sortOrder: number;
         parentId: string | null;
         type: string;
+        path: string | null;
         icon: string | null;
         component: string | null;
     }>;
     update(id: string, dto: any): Promise<{
-        path: string | null;
         id: string;
         code: string;
         name: string;
@@ -47,6 +46,7 @@ export declare class MenuMgmtController {
         sortOrder: number;
         parentId: string | null;
         type: string;
+        path: string | null;
         icon: string | null;
         component: string | null;
     }>;
