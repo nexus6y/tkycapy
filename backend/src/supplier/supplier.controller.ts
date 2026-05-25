@@ -10,6 +10,7 @@ export class SupplierController {
     const [items, total] = await Promise.all([this.prisma.supplier.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (+page - 1) * +pageSize, take: +pageSize }), this.prisma.supplier.count({ where })]);
     return { items, total, page: +page, pageSize: +pageSize };
   }
+  @Get(':id') async findOne(@Param('id') id: string) { return this.prisma.supplier.findUniqueOrThrow({ where: { id } }); }
   @Post() async create(@Body() dto: any) { const tenantId = await this.tid(); return this.prisma.supplier.create({ data: { ...dto, tenantId } as any }); }
   @Put(':id') async update(@Param('id') id: string, @Body() dto: any) { return this.prisma.supplier.update({ where: { id }, data: dto as any }); }
   @Delete(':id') async remove(@Param('id') id: string) { await this.prisma.supplier.delete({ where: { id } }); return { message: '删除成功' }; }
