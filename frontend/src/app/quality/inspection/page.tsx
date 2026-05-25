@@ -28,8 +28,8 @@ export default function InspectionPage() {
     <div className="flex items-center justify-between px-4 h-14 border-b border-border">
       <div className="flex items-center gap-1">
         <Button variant="secondary" size="sm" onClick={()=>router.push('/quality/inspection/create')}><Plus className="h-3.5 w-3.5"/>新增</Button>
-        <Button variant="outline" size="sm">修改</Button>
-        <Button variant="outline" size="sm">删除</Button>
+        <Button variant="outline" size="sm" onClick={()=>alert('请先勾选数据')}>修改</Button>
+        <Button variant="outline" size="sm" onClick={()=>alert('请先勾选数据')}>删除</Button>
         <Button variant="outline" size="sm"><Download className="h-3.5 w-3.5 mr-1"/>导出</Button>
       </div>
       <div className="flex items-center gap-1">
