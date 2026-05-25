@@ -5,17 +5,17 @@ export declare class DictController {
     findAll(page?: number, pageSize?: number): Promise<{
         items: {
             id: string;
-            tenantId: string;
             code: string;
             name: string;
-            parentId: string | null;
-            sortOrder: number;
             status: import("@prisma/client").$Enums.CommonStatus;
             createdAt: Date;
             updatedAt: Date;
             deletedAt: Date | null;
-            value: string | null;
+            tenantId: string;
+            sortOrder: number;
+            parentId: string | null;
             remark: string | null;
+            value: string | null;
             hint: string | null;
         }[];
         total: number;
@@ -24,47 +24,47 @@ export declare class DictController {
     }>;
     findOne(id: string): Promise<{
         id: string;
-        tenantId: string;
         code: string;
         name: string;
-        parentId: string | null;
-        sortOrder: number;
         status: import("@prisma/client").$Enums.CommonStatus;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        value: string | null;
+        tenantId: string;
+        sortOrder: number;
+        parentId: string | null;
         remark: string | null;
+        value: string | null;
         hint: string | null;
     }>;
     create(dto: any): Promise<{
         id: string;
-        tenantId: string;
         code: string;
         name: string;
-        parentId: string | null;
-        sortOrder: number;
         status: import("@prisma/client").$Enums.CommonStatus;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        value: string | null;
+        tenantId: string;
+        sortOrder: number;
+        parentId: string | null;
         remark: string | null;
+        value: string | null;
         hint: string | null;
     }>;
     update(id: string, dto: any): Promise<{
         id: string;
-        tenantId: string;
         code: string;
         name: string;
-        parentId: string | null;
-        sortOrder: number;
         status: import("@prisma/client").$Enums.CommonStatus;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        value: string | null;
+        tenantId: string;
+        sortOrder: number;
+        parentId: string | null;
         remark: string | null;
+        value: string | null;
         hint: string | null;
     }>;
     remove(id: string): Promise<{

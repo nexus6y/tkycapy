@@ -5,8 +5,9 @@ export declare class OperationLogController {
     findAll(page?: number, pageSize?: number): Promise<{
         items: {
             id: string;
-            userId: string | null;
+            status: number | null;
             username: string | null;
+            userId: string | null;
             moduleName: string | null;
             businessName: string | null;
             method: string | null;
@@ -15,7 +16,6 @@ export declare class OperationLogController {
             requestMethod: string | null;
             requestParams: import("@prisma/client/runtime/client").JsonValue | null;
             responseResult: import("@prisma/client/runtime/client").JsonValue | null;
-            status: number | null;
             errorMsg: string | null;
             costTime: number | null;
             operatedAt: Date;
@@ -31,10 +31,10 @@ export declare class LoginLogController {
     findAll(page?: number, pageSize?: number): Promise<{
         items: {
             id: string;
-            userId: string | null;
-            username: string | null;
-            ipAddress: string | null;
             status: number | null;
+            username: string | null;
+            userId: string | null;
+            ipAddress: string | null;
             loginLocation: string | null;
             browser: string | null;
             os: string | null;

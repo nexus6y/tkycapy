@@ -5,15 +5,15 @@ export declare class DeptController {
     findAll(page?: number, pageSize?: number): Promise<{
         items: {
             id: string;
-            tenantId: string;
             code: string;
             name: string;
-            parentId: string | null;
-            sortOrder: number;
             status: import("@prisma/client").$Enums.CommonStatus;
             createdAt: Date;
             updatedAt: Date;
             deletedAt: Date | null;
+            tenantId: string;
+            sortOrder: number;
+            parentId: string | null;
         }[];
         total: number;
         page: number;
@@ -21,39 +21,39 @@ export declare class DeptController {
     }>;
     findOne(id: string): Promise<{
         id: string;
-        tenantId: string;
         code: string;
         name: string;
-        parentId: string | null;
-        sortOrder: number;
         status: import("@prisma/client").$Enums.CommonStatus;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
+        tenantId: string;
+        sortOrder: number;
+        parentId: string | null;
     }>;
     create(dto: any): Promise<{
         id: string;
-        tenantId: string;
         code: string;
         name: string;
-        parentId: string | null;
-        sortOrder: number;
         status: import("@prisma/client").$Enums.CommonStatus;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
+        tenantId: string;
+        sortOrder: number;
+        parentId: string | null;
     }>;
     update(id: string, dto: any): Promise<{
         id: string;
-        tenantId: string;
         code: string;
         name: string;
-        parentId: string | null;
-        sortOrder: number;
         status: import("@prisma/client").$Enums.CommonStatus;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
+        tenantId: string;
+        sortOrder: number;
+        parentId: string | null;
     }>;
     remove(id: string): Promise<{
         message: string;

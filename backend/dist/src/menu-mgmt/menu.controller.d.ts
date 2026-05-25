@@ -3,52 +3,52 @@ export declare class MenuMgmtController {
     private prisma;
     constructor(prisma: PrismaService);
     findAll(): Promise<{
+        path: string | null;
         id: string;
-        tenantId: string;
         code: string;
         name: string;
-        parentId: string | null;
-        path: string | null;
-        icon: string | null;
-        component: string | null;
-        sortOrder: number;
-        type: string;
         status: import("@prisma/client").$Enums.CommonStatus;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
+        tenantId: string;
+        sortOrder: number;
+        parentId: string | null;
+        type: string;
+        icon: string | null;
+        component: string | null;
     }[]>;
     create(dto: any): Promise<{
+        path: string | null;
         id: string;
-        tenantId: string;
         code: string;
         name: string;
-        parentId: string | null;
-        path: string | null;
-        icon: string | null;
-        component: string | null;
-        sortOrder: number;
-        type: string;
         status: import("@prisma/client").$Enums.CommonStatus;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
+        tenantId: string;
+        sortOrder: number;
+        parentId: string | null;
+        type: string;
+        icon: string | null;
+        component: string | null;
     }>;
     update(id: string, dto: any): Promise<{
+        path: string | null;
         id: string;
-        tenantId: string;
         code: string;
         name: string;
-        parentId: string | null;
-        path: string | null;
-        icon: string | null;
-        component: string | null;
-        sortOrder: number;
-        type: string;
         status: import("@prisma/client").$Enums.CommonStatus;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
+        tenantId: string;
+        sortOrder: number;
+        parentId: string | null;
+        type: string;
+        icon: string | null;
+        component: string | null;
     }>;
     remove(id: string): Promise<{
         message: string;
@@ -63,18 +63,18 @@ export declare class PermissionMgmtController {
         };
     } & {
         id: string;
-        type: string;
         createdAt: Date;
-        permission: string;
         roleId: string;
+        permission: string;
+        type: string;
         menuId: string | null;
     })[]>;
     create(dto: any): Promise<{
         id: string;
-        type: string;
         createdAt: Date;
-        permission: string;
         roleId: string;
+        permission: string;
+        type: string;
         menuId: string | null;
     }>;
     remove(id: string): Promise<{

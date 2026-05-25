@@ -909,7 +909,9 @@ model TransferOrder {
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   tenant          Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  @@unique([tenantId, orderNo]) @@index([tenantId]) @@map("transfer_order")
+  @@unique([tenantId, orderNo])
+  @@index([tenantId])
+  @@map("transfer_order")
 }
 
 model LendOrder {
@@ -929,7 +931,9 @@ model LendOrder {
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   tenant          Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  @@unique([tenantId, orderNo]) @@index([tenantId]) @@map("lend_order")
+  @@unique([tenantId, orderNo])
+  @@index([tenantId])
+  @@map("lend_order")
 }
 
 model ScrapOrder {
@@ -947,5 +951,7 @@ model ScrapOrder {
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   tenant          Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  @@unique([tenantId, orderNo]) @@index([tenantId]) @@map("scrap_order")
+  @@unique([tenantId, orderNo])
+  @@index([tenantId])
+  @@map("scrap_order")
 }

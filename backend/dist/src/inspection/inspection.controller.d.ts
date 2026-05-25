@@ -15,9 +15,9 @@ export declare class InspectionController {
             approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
             materialName: string | null;
             quantity: import("@prisma/client/runtime/client").Decimal | null;
+            businessStatus: string;
             qualifiedQty: import("@prisma/client/runtime/client").Decimal | null;
             unqualifiedQty: import("@prisma/client/runtime/client").Decimal | null;
-            businessStatus: string;
             materialId: string | null;
             inspectionNo: string;
             sourceType: string | null;
@@ -40,9 +40,9 @@ export declare class InspectionController {
         approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
         materialName: string | null;
         quantity: import("@prisma/client/runtime/client").Decimal | null;
+        businessStatus: string;
         qualifiedQty: import("@prisma/client/runtime/client").Decimal | null;
         unqualifiedQty: import("@prisma/client/runtime/client").Decimal | null;
-        businessStatus: string;
         materialId: string | null;
         inspectionNo: string;
         sourceType: string | null;
@@ -61,9 +61,9 @@ export declare class InspectionController {
         approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
         materialName: string | null;
         quantity: import("@prisma/client/runtime/client").Decimal | null;
+        businessStatus: string;
         qualifiedQty: import("@prisma/client/runtime/client").Decimal | null;
         unqualifiedQty: import("@prisma/client/runtime/client").Decimal | null;
-        businessStatus: string;
         materialId: string | null;
         inspectionNo: string;
         sourceType: string | null;
@@ -85,9 +85,9 @@ export declare class InspectionController {
         approvalStatus: import("@prisma/client").$Enums.ApprovalStatus;
         materialName: string | null;
         quantity: import("@prisma/client/runtime/client").Decimal | null;
+        businessStatus: string;
         qualifiedQty: import("@prisma/client/runtime/client").Decimal | null;
         unqualifiedQty: import("@prisma/client/runtime/client").Decimal | null;
-        businessStatus: string;
         materialId: string | null;
         inspectionNo: string;
         sourceType: string | null;
