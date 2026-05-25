@@ -38,7 +38,7 @@ export default function QuotationPage() {
   return (<TooltipProvider><div className="h-full flex flex-col bg-white">
     <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100">
       <div className="flex items-center gap-1">
-        <Button size="sm" onClick={openAdd}><span className="mr-1">+</span>新增</Button>
+        <Button size="sm" onClick={()=>router.push('/sales/quotation/create')}><span className="mr-1">+</span>新增</Button>
         <Button size="sm" variant="outline" disabled={selected.size===0}>修改</Button>
         <Button size="sm" variant="outline" disabled={selected.size===0}>删除</Button>
         <DropdownMenu><DropdownMenuTrigger asChild><Button size="sm" variant="outline">导入 <ChevronDown size={12} className="ml-1"/></Button></DropdownMenuTrigger><DropdownMenuContent><DropdownMenuItem><Upload size={14} className="mr-2"/>导入数据</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
@@ -75,7 +75,7 @@ export default function QuotationPage() {
           <td className="px-2 py-2.5 text-gray-700">{item.totalAmount?Number(item.totalAmount).toLocaleString():'-'}</td>
           <td className="px-2 py-2.5 text-gray-500 text-[12px]">{new Date(item.createdAt).toLocaleDateString('zh-CN')}</td>
           <td className="px-2 py-2.5"><div className="flex items-center gap-3">
-            <button onClick={()=>openEdit(item)} className="text-blue-600 hover:text-blue-800 text-[12px] inline-flex items-center gap-0.5"><Pencil size={12}/>修改</button>
+            <button onClick={()=>router.push(`/sales/quotation/${item.id}/edit`)} className="text-blue-600 hover:text-blue-800 text-[12px] inline-flex items-center gap-0.5"><Pencil size={12}/>修改</button>
             {item.approvalStatus==='DRAFT'&&<button onClick={()=>{api.put(`/quotations/${item.id}/submit`).then(fetch);}} className="text-blue-600 text-[12px]">提交</button>}
             <button onClick={()=>setDelId(item.id)} className="text-red-500 hover:text-red-700 text-[12px] inline-flex items-center gap-0.5"><Trash2 size={12}/>删除</button>
           </div></td>
