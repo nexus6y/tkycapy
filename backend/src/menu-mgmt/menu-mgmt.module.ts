@@ -1,0 +1,1 @@
+import { Module } from '@nestjs/common'; import { MenuMgmtController, PermissionMgmtController } from './menu.controller'; @Module({ controllers: [MenuMgmtController, PermissionMgmtController] }) export class MenuMgmtModule {}

@@ -9,6 +9,7 @@ import { MaterialApprovalModule } from './material-approval/material-approval.mo
 import { ProjectModule } from './project/project.module';
 import { ContractModule } from './contract/contract.module';
 import { TransferOrderModule } from "./transfer-order/transfer-order.module";
+import { MenuMgmtModule } from "./menu-mgmt/menu-mgmt.module";
 import { LogModule } from "./log-mgmt/log.module";
 import { DeptModule } from "./dept/dept.module";
 import { DictMgmtModule } from "./dict-mgmt/dict-mgmt.module";
@@ -38,7 +39,7 @@ import { SalesReturnModule } from './sales-return/sales-return.module';
     MaterialCategoryModule, MaterialModule, MeasurementUnitModule,
     MaterialParamModule, MaterialApprovalModule,
     ProjectModule, ContractModule,
-    TransferOrderModule, LogModule, DeptModule, DictMgmtModule, LendOrderModule, ScrapOrderModule, UserMgmtModule, InboundOrderModule, OutboundOrderModule, CostLedgerModule, WarehouseModule, InventoryModule, BomModule, ProductionOrderModule, InspectionModule, DemandPlanModule, SupplierModule, CustomerModule, QuotationModule, PreOrderModule,
+    TransferOrderModule, MenuMgmtModule, LogModule, DeptModule, DictMgmtModule, LendOrderModule, ScrapOrderModule, UserMgmtModule, InboundOrderModule, OutboundOrderModule, CostLedgerModule, WarehouseModule, InventoryModule, BomModule, ProductionOrderModule, InspectionModule, DemandPlanModule, SupplierModule, CustomerModule, QuotationModule, PreOrderModule,
     SalesOrderModule, SalesShipmentModule, SalesReturnModule,
   ],
 })
