@@ -107,6 +107,8 @@ model Tenant {
   demandPlans        DemandPlan[]
   inboundOrders      InboundOrder[]
   outboundOrders     OutboundOrder[]
+  transferOrders     TransferOrder[]
+  scrapOrders        ScrapOrder[]
   warehouses         Warehouse[]
   costLedgers        CostLedger[]
   inventory          Inventory[]
@@ -888,4 +890,41 @@ model Inspection {
   @@unique([tenantId, inspectionNo])
   @@index([tenantId])
   @@map("inspection")
+}
+
+model TransferOrder {
+  id              String         @id @default(cuid())
+  tenantId        String
+  orderNo         String
+  type            String         // OUT/IN
+  materialName    String?
+  quantity        Decimal?       @db.Decimal(18,6)
+  fromWarehouse   String?
+  toWarehouse     String?
+  approvalStatus  ApprovalStatus @default(DRAFT)
+  businessStatus  String         @default("PENDING")
+  transferDate    DateTime       @default(now())
+  remark          String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  tenant          Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  @@unique([tenantId, orderNo]) @@index([tenantId]) @@map("transfer_order")
+}
+
+model ScrapOrder {
+  id              String         @id @default(cuid())
+  tenantId        String
+  orderNo         String
+  materialName    String?
+  quantity        Decimal?       @db.Decimal(18,6)
+  scrapReason     String?
+  disposalMethod  String?
+  approvalStatus  ApprovalStatus @default(DRAFT)
+  businessStatus  String         @default("PENDING")
+  scrapDate       DateTime       @default(now())
+  remark          String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  tenant          Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  @@unique([tenantId, orderNo]) @@index([tenantId]) @@map("scrap_order")
 }

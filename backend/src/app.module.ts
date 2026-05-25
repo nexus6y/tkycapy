@@ -8,6 +8,8 @@ import { MaterialParamModule } from './material-param/material-param.module';
 import { MaterialApprovalModule } from './material-approval/material-approval.module';
 import { ProjectModule } from './project/project.module';
 import { ContractModule } from './contract/contract.module';
+import { TransferOrderModule } from "./transfer-order/transfer-order.module";
+import { ScrapOrderModule } from "./scrap-order/scrap-order.module";
 import { UserMgmtModule } from "./user-mgmt/user-mgmt.module";
 import { InboundOrderModule } from "./inbound-order/inbound-order.module";
 import { OutboundOrderModule } from "./outbound-order/outbound-order.module";
@@ -32,7 +34,7 @@ import { SalesReturnModule } from './sales-return/sales-return.module';
     MaterialCategoryModule, MaterialModule, MeasurementUnitModule,
     MaterialParamModule, MaterialApprovalModule,
     ProjectModule, ContractModule,
-    UserMgmtModule, InboundOrderModule, OutboundOrderModule, CostLedgerModule, WarehouseModule, InventoryModule, BomModule, ProductionOrderModule, InspectionModule, DemandPlanModule, SupplierModule, CustomerModule, QuotationModule, PreOrderModule,
+    TransferOrderModule, ScrapOrderModule, UserMgmtModule, InboundOrderModule, OutboundOrderModule, CostLedgerModule, WarehouseModule, InventoryModule, BomModule, ProductionOrderModule, InspectionModule, DemandPlanModule, SupplierModule, CustomerModule, QuotationModule, PreOrderModule,
     SalesOrderModule, SalesShipmentModule, SalesReturnModule,
   ],
 })
