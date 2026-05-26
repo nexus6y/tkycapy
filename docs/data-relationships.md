@@ -362,17 +362,35 @@ OutboundOrder (出库单)
 
 TransferOrder (调拨单)
   ├── fromWarehouse → Warehouse (名称, 非 FK)
-  └── toWarehouse → Warehouse (名称, 非 FK)
+  ├── toWarehouse → Warehouse (名称, 非 FK)
+  ├── projectCode/Name → Project (关联项目)
+  └── deptName → Department
 
 LendOrder (借出单)
   └── (借用人, 无 FK 关联)
 
-ScrapOrder (报废单)
-  └── (物料+原因, 无 FK 关联)
+ScrapApply (报废申请)
+  ├── projectCode/Name → Project
+  └── deptName → Department
+
+ScrapHandle (报废处置)
+  ├── projectCode/Name → Project
+  └── deptName → Department
+
+ScrapLedger (报废台账)
+  ├── handleNo → ScrapHandle
+  ├── warehouseName → Warehouse
+  ├── areaName → Area
+  ├── materialCode/Name → Material
+  └── 处置厂家, 单价, 金额 (成本归集)
 
 CheckOrder (盘点单)
-  ├── warehouseName → Warehouse (名称, 非 FK)
-  └── zoneName → Zone (名称, 非 FK)
+  ├── warehouseName → Warehouse (名称)
+  ├── zoneName → Zone (名称)
+  ├── locationCode → Location (货位编码)
+  ├── materialCode/Name → Material
+  ├── 盘点后生成 AdjustOrder (调整单)
+  └── 调整单审核 → 库存修正
 
 Inventory (库存)
   ├── warehouseId → Warehouse
@@ -382,6 +400,15 @@ Inventory (库存)
 ### 4.6 成本管理模块
 
 ```
+AccountingPeriod (会计期间/结转维护)
+  ├── orgName → Organization
+  ├── periodCode/Name (期间编码/名称)
+  ├── periodType (月/季/年)
+  ├── periodNo (第几期)
+  ├── startDate/endDate (期间起止)
+  ├── closeStatus: 未封账/已封账
+  └── carryStatus: 未结转/已结转
+
 CostLedger (成本台账)
   ├── transactionNo (交易单号)
   ├── transactionType: 入库/出库/调拨/调整

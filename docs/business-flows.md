@@ -627,10 +627,29 @@ BOM(APPROVED) + 销售订单 → 生产订单(DRAFT)
 
 ---
 
-### 7.8 领料全追溯
+### 7.8 领料全追溯 (Production Review Query)
 
-- 查询某生产订单的完整领料/退料记录
-- 只读
+#### 完整字段
+| 字段 | 来源系统列名 | 说明 |
+|---|---|---|
+| orderNo | 生产编码 | |
+| orderName | 生产名称 | |
+| orgName | 所属组织 | |
+| prodOrderNo | 生产单号 | |
+| businessStatus | 生产单业务状态 | |
+| productCode/Name | 产品编码/名称 | 成品 |
+| isProduct | 是否成品 | |
+| level | 阶次 | BOM层级 |
+| materialCode/Name | 材料编码/名称 | |
+| spec | 规格型号 | |
+| unit | 计量单位 | |
+| requiredDate | 需求日期 | |
+| shortage | 缺料 | 是否缺料 |
+
+- 查询某生产订单的完整领料/退料/用料记录
+- 含 BOM 阶层展开
+- 可查看每个阶层材料的需求和缺料情况
+- 只读, 可导出
 
 ---
 
@@ -714,45 +733,110 @@ BOM(APPROVED) + 销售订单 → 生产订单(DRAFT)
 | availableQty | 可用数量 |
 | lockedQty | 锁定数量 |
 
-#### 盘点单
-- 盘点方式: 明盘/盲盘
-- 盘点结果: 盘盈/盘亏/平账
-- 差异数量 = 盘点数量 - 库存数量
-- 盘盈/盘亏生成调整单
+#### 盘点单 — 完整字段与流程
+
+| 字段 | 来源系统列名 | 说明 |
+|---|---|---|
+| checkResult | 盘点结果 | 盘盈(1)/盘亏/平账 |
+| checkMethod | 盘点方式 | 明盘点/盲盘点 |
+| hasStock | 是否有库存 | |
+| locationCode | 货位编码 | |
+| materialCode/Name | 物料编码/名称 | |
+| spec | 规格型号 | |
+| unit | 计量单位 | |
+| batchNo | 批次号 | |
+| stockQty | 库存数量 | 系统当前库存 |
+| checkQty | 盘点数量 | 实际盘点 |
+| diffQty | 差异数量 | 盘点-库存 |
+| areaName | 地区 | |
+| warehouseName | 仓库 | |
+| zoneName | 储区 | |
+| inspector | 盘点负责人 | |
+
+**操作流程:** [新增] → [盘点] → 差异≠0 → [生成调整单] → 调整单审核 → 库存修正
 
 #### 调整单审核
-- 审核人确认差异
-- 通过后更新库存
+- 审核人确认差异, [通过] → 库存更新, [拒绝] → 返回重盘
 
 ---
 
-### 8.5 调拨管理
+### 8.5 调拨管理 — 完整字段
 
-- 调出单 + 调入单
+| 字段 | 来源系统列名 | 说明 |
+|---|---|---|
+| approvalStatus | 审批状态 | DRAFT→SUBMITTED→APPROVED |
+| businessStatus | 业务状态 | |
+| orderNo | 调拨单号 | |
+| orgName | 调出所属组织 | |
+| projectCode/Name | 调出项目编码/名称 | 关联项目 |
+| fromWarehouse | 调出仓库 | |
+| deptName | 制单部门 | |
+| creator | 制单人 | |
+| orderDate | 单据日期 | |
+| completeDate | 完成日期 | 调拨完成日期 |
+| type | | OUT/IN |
+- 调出单(OUT) + 调入单(IN) 成对
 - 调出仓库减少, 调入仓库增加
-- 类型: OUT/IN
-- 审批状态: DRAFT → SUBMITTED → APPROVED
 
 ---
 
-### 8.6 报废管理
+### 8.6 报废管理 (三级流转: 申请→处置→台账)
 
-#### 报废申请
+#### 报废申请 → 报废处置 → 报废台账
+
+```
+ScrapApply (报废申请)
+  orderNo, name, scrapReason, disposalMethod
+  deptName, applicant, projectCode/Name
+  approvalStatus: DRAFT → SUBMITTED → APPROVED
+  [提交] [撤回] [流程查看]
+       ↓ 审批通过
+ScrapHandle (报废处置)
+  handleNo, handleName, disposalMethod
+  deptName, handler, businessStatus
+  [提交] [撤回] [流程查看]
+       ↓ 处置完成
+ScrapLedger (报废台账) — 只读
+  handleNo, materialCode/Name/Spec/Unit
+  disposalQty, disposalFactory, unitPrice, totalAmount
+  warehouseName, areaName, batchNo
+  [导出]
+```
+
+#### 报废申请字段
 | 字段 | 说明 |
 |---|---|
 | orderNo | 报废单号 |
-| materialName | 物料 |
-| quantity | 数量 |
-| scrapReason | 报废原因 |
-| disposalMethod | 处置方式 |
-| approvalStatus | |
+| name | 报废名称 |
+| scrapReason | 报废原因 (临期/损坏/过期) |
+| disposalMethod | 建议处置方式 |
+| deptName | 申请部门 |
+| applicant | 申请人 |
+| projectCode/Name | 项目编码/名称 |
 
-#### 报废处置
-- 审批通过后执行处置
-- 库存减少
+#### 报废处置字段
+| 字段 | 说明 |
+|---|---|
+| handleNo | 处置单号 |
+| handleName | 处置名称 |
+| disposalMethod | 处置方式 (退供/销毁/变卖) |
+| deptName | 处置部门 |
+| handler | 处置负责人 |
+| approvalStatus | 审核状态 |
+| businessStatus | 已处置完成/处置中 |
 
-#### 报废台账
-- 所有报废记录汇总查询
+#### 报废台账字段
+| 字段 | 说明 |
+|---|---|
+| handleNo | 处置单号 |
+| materialCode/Name/Spec/Unit | 物料信息 |
+| disposalQty | 处置数量 |
+| disposalFactory | 处置厂家 |
+| unitPrice | 单价(不含税) |
+| totalAmount | 金额(元) |
+| warehouseName | 仓库 |
+| areaName | 地区 |
+| batchNo | 批次号 |
 
 ---
 
@@ -780,9 +864,34 @@ BOM(APPROVED) + 销售订单 → 生产订单(DRAFT)
 
 ### 存货核算
 
-#### 结转维护
-- 会计期间结转
-- 将当期成本数据结转到下期
+#### 结转维护 — 完整字段
+
+| 字段 | 来源系统列名 | 说明 |
+|---|---|---|
+| orgName | 核算组织 | |
+| periodCode | 期间编码 | |
+| periodName | 期间名称 | |
+| periodType | 期间类型 | 月/季/年 |
+| periodNo | 期间号 | 第几期 |
+| startDate | 期间开始时间 | |
+| endDate | 期间结束时间 | |
+| closeStatus | 封账状态 | 已封账/未封账 |
+| carryStatus | 结账状态 | 已结转/未结转 |
+| createdBy | 创建人 | |
+| createdAt | 创建日期 | |
+| createMethod | 创建方式 | |
+
+**操作流程:**
+- [新增] 创建会计期间
+- [封账] — 关闭该期间, 禁止新增交易
+- [取消封账] — 重新打开期间
+- [结转] — 将本期成本余额结转到下期
+- [操作日志] — 查看封账/结转操作记录
+
+**结转规则:**
+- 必须先封账才能结转
+- 结转后不可取消封账
+- 结转方向: 本期期末余额 → 下期期初余额
 
 #### 采购入库 / 采购退供
 - 记录采购入库和退供的成本
