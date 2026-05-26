@@ -16,7 +16,7 @@ export default function TransferInPage() {
 
   const fetch=useCallback(async()=>{
     const p:any={page:pg,pageSize:ps}; if(s.code)p.code=s.code; if(s.name)p.name=s.name; if(s.status)p.status=s.status;
-    const {data}=await api.get('/transfer-orders',{params:p}); setItems(data.items); setTotal(data.total);
+    const {data}=await api.get('/transfer-orders',{params:{...p,type:'IN'}}); setItems(data.items); setTotal(data.total);
   },[pg,ps,s]); useEffect(()=>{fetch();},[fetch]);
 
   return (<TooltipProvider><div className="bg-background rounded-lg border shadow-sm">
