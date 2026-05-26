@@ -21,10 +21,10 @@ export default function PurchasePlanPage() {
 
   const fetch=useCallback(async()=>{
     const p:any={page:pg,pageSize:ps}; if(s.code)p.code=s.code; if(s.name)p.name=s.name; if(s.status)p.status=s.status;
-    const {data}=await api.get('/sales-orders',{params:p}); setItems(data.items); setTotal(data.total);
+    const {data}=await api.get('/purchase-plans',{params:p}); setItems(data.items); setTotal(data.total);
   },[pg,ps,s]); useEffect(()=>{fetch();},[fetch]);
 
-  const doDel=async()=>{if(!del)return;await api.delete(`/sales-orders/${del}`);setDel(null);fetch();};
+  const doDel=async()=>{if(!del)return;await api.delete(`/purchase-plans/${del}`);setDel(null);fetch();};
   const toggleAll=(v:boolean)=>setSel(v?new Set(items.map(i=>i.id)):new Set());
 
   return (<TooltipProvider><div className="bg-background rounded-lg border shadow-sm">

@@ -20,8 +20,8 @@ export default function IssuePage() {
   const [del,setDel]=useState<string|null>(null);
 
   const fetch=useCallback(async()=>{
-    const p:any={page:pg,pageSize:ps}; if(s.code)p.code=s.code; if(s.name)p.name=s.name; if(s.status)p.status=s.status; p.biz='PENDING_ISSUE';
-    const {data}=await api.get('/production-orders',{params:p}); setItems(data.items); setTotal(data.total);
+    const p:any={page:pg,pageSize:ps}; if(s.code)p.code=s.code; if(s.name)p.name=s.name; if(s.status)p.status=s.status;
+    const {data}=await api.get('/issue-orders',{params:p}); setItems(data.items); setTotal(data.total);
   },[pg,ps,s]); useEffect(()=>{fetch();},[fetch]);
 
   const doDel=async()=>{if(!del)return;await api.delete(`/production-orders/${del}`);setDel(null);fetch();};

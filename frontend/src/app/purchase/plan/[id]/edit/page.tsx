@@ -1,7 +1,7 @@
 'use client';import { useState, useEffect } from 'react';import { useRouter, useParams } from 'next/navigation';import api from '@/lib/api';import { Input } from '@/components/ui/input';import { FormLayout,FormSection,FormGrid,FormField } from '@/components/form/form-layout';const FI='h-9 rounded-md border border-border bg-background px-3 text-[13px] w-full';
 export default function PurchasePlanEdit(){const router=useRouter();const {id}=useParams();const [f,setF]=useState({orderNo:'',orderName:'',customerName:'',totalAmount:''} as any);
-useEffect(()=>{api.get('/sales-orders/'+id).then(r=>setF(r.data));},[id]);
-const save=async()=>{await api.put('/sales-orders/'+id,f);router.push('/purchase/plan');};
+useEffect(()=>{api.get('/purchase-plans/'+id).then(r=>setF(r.data));},[id]);
+const save=async()=>{await api.put('/purchase-plans/'+id,f);router.push('/purchase/plan');};
 return(<FormLayout title="修改采购计划" onSave={save} sections={[{id:'b',title:'计划信息'}]} activeSection="b"><FormSection id="b" title="计划信息"><FormGrid>
 <FormField label="计划编号" required><Input className={FI} value={f.orderNo} onChange={e=>setF({...f,orderNo:e.target.value})}/></FormField>
 <FormField label="计划名称" required><Input className={FI} value={f.orderName} onChange={e=>setF({...f,orderName:e.target.value})}/></FormField>
