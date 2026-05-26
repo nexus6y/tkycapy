@@ -21,6 +21,7 @@ import { InboundOrderModule } from "./inbound-order/inbound-order.module";
 import { OutboundOrderModule } from "./outbound-order/outbound-order.module";
 import { CostLedgerModule } from "./cost-ledger/cost-ledger.module";
 import { WarehouseModule } from "./warehouse/warehouse.module";
+import { WarehouseEntityModule } from "./warehouse-entity/warehouse-entity.module";
 import { InventoryModule } from "./inventory/inventory.module";
 import { BomModule } from "./bom/bom.module";
 import { ProductionOrderModule } from "./production-order/production-order.module";
@@ -40,7 +41,7 @@ import { SalesReturnModule } from './sales-return/sales-return.module';
     MaterialCategoryModule, MaterialModule, MeasurementUnitModule,
     MaterialParamModule, MaterialApprovalModule,
     ProjectModule, ContractModule,
-    TransferOrderModule, MenuMgmtModule, LogModule, DeptModule, DictMgmtModule, LendOrderModule, ScrapOrderModule, UserMgmtModule, InboundOrderModule, OutboundOrderModule, CostLedgerModule, WarehouseModule, InventoryModule, BomModule, ProductionOrderModule, InspectionModule, DemandPlanModule, SupplierModule, CustomerModule, QuotationModule, PreOrderModule,
+    TransferOrderModule, MenuMgmtModule, LogModule, DeptModule, DictMgmtModule, LendOrderModule, ScrapOrderModule, UserMgmtModule, InboundOrderModule, OutboundOrderModule, CostLedgerModule, WarehouseModule, WarehouseEntityModule, InventoryModule, BomModule, ProductionOrderModule, InspectionModule, DemandPlanModule, SupplierModule, CustomerModule, QuotationModule, PreOrderModule,
     SalesOrderModule, SalesShipmentModule, SalesReturnModule,
   ],
 })

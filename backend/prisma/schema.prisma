@@ -113,6 +113,11 @@ model Tenant {
   warehouses         Warehouse[]
   costLedgers        CostLedger[]
   inventory          Inventory[]
+  zones              Zone[]
+  passages           Passage[]
+  shelves            Shelf[]
+  locations          Location[]
+  checkOrders        CheckOrder[]
   boms               Bom[]
   productionOrders   ProductionOrder[]
   inspections        Inspection[]
@@ -954,4 +959,120 @@ model ScrapOrder {
   @@unique([tenantId, orderNo])
   @@index([tenantId])
   @@map("scrap_order")
+}
+
+model Zone {
+  id          String   @id @default(cuid())
+  tenantId    String
+  code        String
+  name        String
+  type        String?
+  warehouseId String?
+  warehouseName String?
+  status      String   @default("ACTIVE")
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("zone")
+}
+
+model Passage {
+  id          String   @id @default(cuid())
+  tenantId    String
+  code        String
+  name        String
+  type        String?
+  zoneId      String?
+  zoneName    String?
+  status      String   @default("ACTIVE")
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("passage")
+}
+
+model Shelf {
+  id          String   @id @default(cuid())
+  tenantId    String
+  code        String
+  name        String
+  machineType String?
+  spec        String?
+  passageId   String?
+  passageName String?
+  zoneName    String?
+  warehouseName String?
+  areaName    String?
+  status      String   @default("ACTIVE")
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("shelf")
+}
+
+model Location {
+  id          String   @id @default(cuid())
+  tenantId    String
+  code        String
+  name        String
+  type        String?
+  usageStatus String?
+  shelfId     String?
+  shelfName   String?
+  layer       String?
+  col         String?
+  zoneName    String?
+  warehouseName String?
+  status      String   @default("ACTIVE")
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("location")
+}
+
+model CheckOrder {
+  id              String         @id @default(cuid())
+  tenantId        String
+  orderNo         String
+  checkMethod     String?
+  checkResult     String?
+  locationCode    String?
+  materialCode    String?
+  materialName    String?
+  spec            String?
+  unit            String?
+  batchNo         String?
+  stockQty        Decimal?       @db.Decimal(18,6)
+  checkQty        Decimal?       @db.Decimal(18,6)
+  diffQty         Decimal?       @db.Decimal(18,6)
+  areaName        String?
+  warehouseName   String?
+  zoneName        String?
+  inspector       String?
+  checkDate       DateTime?
+  approvalStatus  ApprovalStatus @default(DRAFT)
+  businessStatus  String         @default("PENDING")
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  deletedAt       DateTime?
+  tenant          Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  @@unique([tenantId, orderNo])
+  @@index([tenantId])
+  @@map("check_order")
 }
