@@ -14,9 +14,9 @@
 
 | 文件 | 用途 |
 |---|---|
-| `ARCHITECTURE.md` | 全局架构文件（AI 可读）：技术栈、布局、菜单树(105叶子节点)、页面类型、组件模式、URL路由、API推断 |
-| `智能制造系统需求文档.md` | PRD：10大模块功能描述、业务状态机(Mermaid)、Prisma Schema(50张表经审查修复)、审查报告 |
-| `新生产制造标准产品功能清单(标准版).xlsx` | 官方功能清单 Excel |
+| `docs/architecture.md` | 全局架构文件（AI 可读）：技术栈、布局、菜单树(105叶子节点)、页面类型、组件模式、URL路由、API推断 |
+| `docs/prd.md` | PRD：10大模块功能描述、业务状态机(Mermaid)、Prisma Schema(50张表经审查修复)、审查报告 |
+| `docs/功能清单.xlsx` | 官方功能清单 Excel |
 | `screenshots/` | 164 张截图，按 11 个业务模块分文件夹 |
 
 ## 截图文件夹结构
