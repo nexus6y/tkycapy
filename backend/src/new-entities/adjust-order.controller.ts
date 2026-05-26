@@ -16,5 +16,16 @@ export class AdjustOrderController {
   @Post() async create(@Body() dto: any) { const tenantId = await this.tid(); return this.prisma.adjustOrder.create({ data: { ...dto, tenantId } as any }); }
   @Put(":id") async update(@Param("id") id: string, @Body() dto: any) { return this.prisma.adjustOrder.update({ where: { id }, data: dto as any }); }
   @Put(":id/submit") async submit(@Param("id") id: string) { return this.prisma.adjustOrder.update({ where: { id }, data: { approvalStatus: "SUBMITTED" } as any }); }
+  @Put(":id/approve") async approve(@Param("id") id: string) {
+    const order = await this.prisma.adjustOrder.update({ where: { id }, data: { approvalStatus: "APPROVED" } as any });
+    // Update inventory: find matching inventory record and adjust quantity
+    const inv = await this.prisma.inventory.findFirst({ where: { materialName: order.materialName, warehouseName: order.warehouseName } });
+    if (inv) {
+      const newQty = (Number(inv.quantity) || 0) + (Number(order.adjustQty) || 0);
+      const newAvail = (Number(inv.availableQty) || 0) + (Number(order.adjustQty) || 0);
+      await this.prisma.inventory.update({ where: { id: inv.id }, data: { quantity: String(newQty), availableQty: String(newAvail) } });
+    }
+    return order;
+  }
   @Delete(":id") async remove(@Param("id") id: string) { await this.prisma.adjustOrder.delete({ where: { id } }); return { message: "删除成功" }; }
 }
