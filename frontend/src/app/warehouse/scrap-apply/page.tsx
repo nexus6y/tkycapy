@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { Download, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { Download, Pencil, Plus, Search, Trash2, GitBranch } from 'lucide-react';
 import { ErpTable,ErpThead,ErpTh,ErpTbody,ErpTr,ErpTd,ErpEmpty,ErpLink,ErpAction,ErpActionBtn,ErpTools,ErpApproval,ErpPagination } from '@/components/ui/erp-table';
 
 interface Item { id:string;orderNo:string;materialName:string|null;quantity:string;scrapReason:string|null;disposalMethod:string|null;approvalStatus:string;scrapDate:string;createdAt:string; }
@@ -25,6 +25,7 @@ export default function ScrapApplyPage() {
   },[pg,ps,s]); useEffect(()=>{fetch();},[fetch]);
 
   const doDel=async()=>{if(!del)return;await api.delete(`/scrap-orders/${del}`);setDel(null);fetch();};
+const genDisposal=async(i:Item)=>{await api.post('/scrap-orders',{orderNo:'HANDLE-'+Date.now(),materialName:i.materialName,quantity:i.quantity,scrapReason:i.scrapReason,disposalMethod:i.disposalMethod||'退供',approvalStatus:'DRAFT'});alert('已生成处置单');fetch();};
   const toggleAll=(v:boolean)=>setSel(v?new Set(items.map(i=>i.id)):new Set());
 
   return (<TooltipProvider><div className="bg-background rounded-lg border shadow-sm">
@@ -47,7 +48,8 @@ export default function ScrapApplyPage() {
     </div>
     <ErpTools onRefresh={fetch}/>
     <div className="overflow-auto"><ErpTable><ErpThead><ErpTh className="w-10"><Checkbox checked={items.length>0&&sel.size===items.length} onCheckedChange={(v:boolean)=>toggleAll(v)}/></ErpTh><ErpTh>审批状态</ErpTh><ErpTh>报废单号</ErpTh><ErpTh>物料</ErpTh><ErpTh>数量</ErpTh><ErpTh>报废原因</ErpTh><ErpTh>处置方式</ErpTh><ErpTh>日期</ErpTh><ErpTh>操作</ErpTh></ErpThead><ErpTbody>
-    {items.map(i=>(<ErpTr key={i.id}><ErpTd><Checkbox checked={sel.has(i.id)} onCheckedChange={(v:boolean)=>{const n=new Set(sel);v?n.add(i.id):n.delete(i.id);setSel(n);}}/></ErpTd><ErpTd><ErpApproval status={i.approvalStatus}/></ErpTd><ErpTd><ErpLink onClick={()=>router.push('/warehouse/scrap-apply/'+i.id+'/edit')}>{i.orderNo}</ErpLink></ErpTd><ErpTd>{i.materialName||'-'}</ErpTd><ErpTd>{i.quantity?Number(i.quantity).toLocaleString():'-'}</ErpTd><ErpTd className="text-muted-foreground">{i.scrapReason||'-'}</ErpTd><ErpTd className="text-muted-foreground">{i.disposalMethod||'-'}</ErpTd><ErpTd className="text-muted-foreground">{i.scrapDate?new Date(i.scrapDate).toLocaleDateString('zh-CN'):'-'}</ErpTd><ErpTd><ErpAction><ErpActionBtn onClick={()=>router.push('/warehouse/scrap-apply/'+i.id+'/edit')}><Pencil className="h-3.5 w-3.5"/>修改</ErpActionBtn><ErpActionBtn danger onClick={()=>setDel(i.id)}><Trash2 className="h-3.5 w-3.5"/>删除</ErpActionBtn></ErpAction></ErpTd></ErpTr>))}
+    {items.map(i=>(<ErpTr key={i.id}><ErpTd><Checkbox checked={sel.has(i.id)} onCheckedChange={(v:boolean)=>{const n=new Set(sel);v?n.add(i.id):n.delete(i.id);setSel(n);}}/></ErpTd><ErpTd><ErpApproval status={i.approvalStatus}/></ErpTd><ErpTd><ErpLink onClick={()=>router.push('/warehouse/scrap-apply/'+i.id+'/edit')}>{i.orderNo}</ErpLink></ErpTd><ErpTd>{i.materialName||'-'}</ErpTd><ErpTd>{i.quantity?Number(i.quantity).toLocaleString():'-'}</ErpTd><ErpTd className="text-muted-foreground">{i.scrapReason||'-'}</ErpTd><ErpTd className="text-muted-foreground">{i.disposalMethod||'-'}</ErpTd><ErpTd className="text-muted-foreground">{i.scrapDate?new Date(i.scrapDate).toLocaleDateString('zh-CN'):'-'}</ErpTd><ErpTd><ErpAction><ErpActionBtn onClick={()=>genDisposal(i)}><GitBranch className="h-3.5 w-3.5"/>生成处置</ErpActionBtn>
+            <ErpActionBtn onClick={()=>router.push('/warehouse/scrap-apply/'+i.id+'/edit')}><Pencil className="h-3.5 w-3.5"/>修改</ErpActionBtn><ErpActionBtn danger onClick={()=>setDel(i.id)}><Trash2 className="h-3.5 w-3.5"/>删除</ErpActionBtn></ErpAction></ErpTd></ErpTr>))}
     {items.length===0&&<ErpEmpty colSpan={9}/>}
     </ErpTbody></ErpTable></div>
     <ErpPagination page={pg} pageSize={ps} total={total} onPage={setPg} onPageSize={v=>setPs(+v)}/>

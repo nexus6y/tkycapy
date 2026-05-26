@@ -4,8 +4,9 @@ import { PrismaService } from '../prisma/prisma.service';
 export class TransferOrderController {
   constructor(private prisma: PrismaService) {}
   private async tid() { return (await this.prisma.tenant.findUniqueOrThrow({ where: { code: 'default' } })).id; }
-  @Get() async findAll(@Query('page') page = 1, @Query('pageSize') pageSize = 30) {
-    const tenantId = await this.tid(); const where = { tenantId };
+  @Get() async findAll(@Query('type') type?: string, @Query('page') page = 1, @Query('pageSize') pageSize = 30) {
+    const tenantId = await this.tid(); const where: any = { tenantId };
+    if (type) where.type = type;
     const [items, total] = await Promise.all([this.prisma.transferOrder.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (+page-1)*+pageSize, take: +pageSize }), this.prisma.transferOrder.count({ where })]);
     return { items, total, page: +page, pageSize: +pageSize };
   }
