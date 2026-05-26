@@ -1,11 +1,14 @@
-'use client';import { useState } from 'react';import { useRouter } from 'next/navigation';import api from '@/lib/api';import { Input } from '@/components/ui/input';import { FormLayout,FormSection,FormGrid,FormField } from '@/components/form/form-layout';const FI='h-9 rounded-md border border-border bg-background px-3 text-[13px] w-full';
-export default function IssueCreate(){const router=useRouter();const [f,setF]=useState({orderNo:'',orderName:'',materialName:'',quantity:'',departmentName:'',startDate:''});
-const save=async()=>{await api.post('/issue-orders',{...f,businessStatus:'PENDING_ISSUE'});router.push('/production/issue');};
+'use client';import { useState, useEffect } from 'react';import { useRouter } from 'next/navigation';import api from '@/lib/api';import { Input } from '@/components/ui/input';import { Select,SelectContent,SelectItem,SelectTrigger,SelectValue } from '@/components/ui/select';import { FormLayout,FormSection,FormGrid,FormField } from '@/components/form/form-layout';const FI='h-9 rounded-md border border-border bg-background px-3 text-[13px] w-full';
+export default function IssueCreate(){const router=useRouter();const [orders,setOrders]=useState<any[]>([]);const [materials,setMaterials]=useState<any[]>([]);const [depts,setDepts]=useState<any[]>([]);
+const [f,setF]=useState({orderNo:'',productionOrderId:'',productionOrderNo:'',materialId:'',materialName:'',spec:'',quantity:'',departmentId:'',departmentName:'',issueDate:new Date().toISOString().split('T')[0]});
+useEffect(()=>{api.get('/production-orders',{params:{status:'APPROVED',pageSize:999}}).then(r=>setOrders(r.data.items));api.get('/materials',{params:{pageSize:999}}).then(r=>setMaterials(r.data.items));api.get('/departments',{params:{pageSize:999}}).then(r=>setDepts(r.data.items));},[]);
+const save=async()=>{await api.post('/issue-orders',f);router.push('/production/issue');};
 return(<FormLayout title="新增领料单" onSave={save} sections={[{id:'b',title:'领料信息'}]} activeSection="b"><FormSection id="b" title="领料信息"><FormGrid>
 <FormField label="领料单号" required><Input className={FI} value={f.orderNo} onChange={e=>setF({...f,orderNo:e.target.value})}/></FormField>
-<FormField label="订单名称" required><Input className={FI} value={f.orderName} onChange={e=>setF({...f,orderName:e.target.value})}/></FormField>
-<FormField label="物料"><Input className={FI} value={f.materialName} onChange={e=>setF({...f,materialName:e.target.value})}/></FormField>
+<FormField label="生产订单"><Select value={f.productionOrderId} onValueChange={v=>{const o=orders.find(x=>x.id===v);setF({...f,productionOrderId:v,productionOrderNo:o?.orderNo||''});}}><SelectTrigger className={FI}><SelectValue placeholder="选择生产订单"/></SelectTrigger><SelectContent>{orders.map(o=><SelectItem key={o.id} value={o.id}>{o.orderNo} {o.orderName}</SelectItem>)}</SelectContent></Select></FormField>
+<FormField label="物料"><Select value={f.materialId} onValueChange={v=>{const m=materials.find(x=>x.id===v);setF({...f,materialId:v,materialName:m?.name||''});}}><SelectTrigger className={FI}><SelectValue placeholder="选择物料"/></SelectTrigger><SelectContent>{materials.map(m=><SelectItem key={m.id} value={m.id}>{m.code} {m.name}</SelectItem>)}</SelectContent></Select></FormField>
+<FormField label="规格"><Input className={FI} value={f.spec} onChange={e=>setF({...f,spec:e.target.value})}/></FormField>
 <FormField label="数量"><Input type="number" className={FI} value={f.quantity} onChange={e=>setF({...f,quantity:e.target.value})}/></FormField>
-<FormField label="领料部门"><Input className={FI} value={f.departmentName} onChange={e=>setF({...f,departmentName:e.target.value})}/></FormField>
-<FormField label="开始日期"><Input type="date" className={FI} value={f.startDate} onChange={e=>setF({...f,startDate:e.target.value})}/></FormField>
+<FormField label="领料部门"><Select value={f.departmentId} onValueChange={v=>{const d=depts.find(x=>x.id===v);setF({...f,departmentId:v,departmentName:d?.name||''});}}><SelectTrigger className={FI}><SelectValue placeholder="选择部门"/></SelectTrigger><SelectContent>{depts.map(d=><SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent></Select></FormField>
+<FormField label="领料日期"><Input type="date" className={FI} value={f.issueDate} onChange={e=>setF({...f,issueDate:e.target.value})}/></FormField>
 </FormGrid></FormSection></FormLayout>);}
