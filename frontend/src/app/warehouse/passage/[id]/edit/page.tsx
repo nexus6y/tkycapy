@@ -1,0 +1,12 @@
+'use client';import { useState, useEffect } from 'react';import { useRouter, useParams } from 'next/navigation';import api from '@/lib/api';import { Input } from '@/components/ui/input';import { Select,SelectContent,SelectItem,SelectTrigger,SelectValue } from '@/components/ui/select';import { RadioGroup,RadioGroupItem } from '@/components/ui/radio-group';import { FormLayout,FormSection,FormGrid,FormField } from '@/components/form/form-layout';const FI='h-9 rounded-md border border-border bg-background px-3 text-[13px] w-full';
+export default function PassageEdit(){const router=useRouter();const {id}=useParams();const [zones,setZones]=useState<any[]>([]);const [f,setF]=useState({code:'',name:'',type:'',zoneId:'',zoneName:'',sortOrder:0,status:'ACTIVE'});
+useEffect(()=>{api.get('/zones',{params:{pageSize:999}}).then(r=>setZones(r.data.items));api.get('/passages/'+id).then(r=>setF(r.data));},[id]);
+const save=async()=>{try{await api.put('/passages/'+id,f);router.push('/warehouse/passage');}catch(e:any){alert(e.response?.data?.message||'保存失败');}};
+return(<FormLayout title="修改通道" onSave={save} sections={[{id:'b',title:'基本信息'}]} activeSection="b"><FormSection id="b" title="基本信息"><FormGrid>
+<FormField label="通道编码" required><Input className={FI} value={f.code} onChange={e=>setF({...f,code:e.target.value})}/></FormField>
+<FormField label="通道名称" required><Input className={FI} value={f.name} onChange={e=>setF({...f,name:e.target.value})}/></FormField>
+<FormField label="通道类型"><Input className={FI} value={f.type} onChange={e=>setF({...f,type:e.target.value})}/></FormField>
+<FormField label="所属储区"><Select value={f.zoneId} onValueChange={v=>{const z=zones.find(x=>x.id===v);setF({...f,zoneId:v,zoneName:z?.name||''});}}><SelectTrigger className={FI}><SelectValue placeholder="请选择"/></SelectTrigger><SelectContent>{zones.map(z=><SelectItem key={z.id} value={z.id}>{z.name}</SelectItem>)}</SelectContent></Select></FormField>
+<FormField label="排序"><Input type="number" className={FI} value={f.sortOrder} onChange={e=>setF({...f,sortOrder:+e.target.value})}/></FormField>
+<FormField label="状态"><RadioGroup value={f.status} onValueChange={v=>setF({...f,status:v})} className="flex gap-4 pt-1.5"><div className="flex items-center gap-1.5"><RadioGroupItem value="ACTIVE" id="a"/><label htmlFor="a" className="text-[13px]">启用</label></div><div className="flex items-center gap-1.5"><RadioGroupItem value="INACTIVE" id="i"/><label htmlFor="i" className="text-[13px]">停用</label></div></RadioGroup></FormField>
+</FormGrid></FormSection></FormLayout>);}

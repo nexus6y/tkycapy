@@ -1,0 +1,13 @@
+'use client';import { useState, useEffect } from 'react';import { useRouter } from 'next/navigation';import api from '@/lib/api';import { Input } from '@/components/ui/input';import { Select,SelectContent,SelectItem,SelectTrigger,SelectValue } from '@/components/ui/select';import { RadioGroup,RadioGroupItem } from '@/components/ui/radio-group';import { FormLayout,FormSection,FormGrid,FormField } from '@/components/form/form-layout';const FI='h-9 rounded-md border border-border bg-background px-3 text-[13px] w-full';
+export default function ShelfCreate(){const router=useRouter();const [passages,setPassages]=useState<any[]>([]);const [f,setF]=useState({code:'',name:'',machineType:'',spec:'',passageId:'',passageName:'',zoneName:'',warehouseName:'',sortOrder:0,status:'ACTIVE'});
+useEffect(()=>{api.get('/passages',{params:{pageSize:999}}).then(r=>setPassages(r.data.items));},[]);
+const save=async()=>{try{await api.post('/shelves',f);router.push('/warehouse/shelf');}catch(e:any){alert(e.response?.data?.message||'保存失败');}};
+return(<FormLayout title="新增货架" onSave={save} sections={[{id:'b',title:'基本信息'}]} activeSection="b"><FormSection id="b" title="基本信息"><FormGrid>
+<FormField label="货架编码" required><Input className={FI} value={f.code} onChange={e=>setF({...f,code:e.target.value})}/></FormField>
+<FormField label="货架名称" required><Input className={FI} value={f.name} onChange={e=>setF({...f,name:e.target.value})}/></FormField>
+<FormField label="机器类型"><Input className={FI} value={f.machineType} onChange={e=>setF({...f,machineType:e.target.value})}/></FormField>
+<FormField label="规格"><Input className={FI} value={f.spec} onChange={e=>setF({...f,spec:e.target.value})}/></FormField>
+<FormField label="所属通道"><Select value={f.passageId} onValueChange={v=>{const p=passages.find(x=>x.id===v);setF({...f,passageId:v,passageName:p?.name||'',zoneName:p?.zoneName||'',warehouseName:p?.warehouseName||''});}}><SelectTrigger className={FI}><SelectValue placeholder="请选择"/></SelectTrigger><SelectContent>{passages.map(p=><SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent></Select></FormField>
+<FormField label="排序"><Input type="number" className={FI} value={f.sortOrder} onChange={e=>setF({...f,sortOrder:+e.target.value})}/></FormField>
+<FormField label="状态"><RadioGroup value={f.status} onValueChange={v=>setF({...f,status:v})} className="flex gap-4 pt-1.5"><div className="flex items-center gap-1.5"><RadioGroupItem value="ACTIVE" id="a"/><label htmlFor="a" className="text-[13px]">启用</label></div><div className="flex items-center gap-1.5"><RadioGroupItem value="INACTIVE" id="i"/><label htmlFor="i" className="text-[13px]">停用</label></div></RadioGroup></FormField>
+</FormGrid></FormSection></FormLayout>);}
