@@ -1,9 +1,12 @@
 'use client';import { useState } from 'react';import { useRouter } from 'next/navigation';import api from '@/lib/api';import { Input } from '@/components/ui/input';import { FormLayout,FormSection,FormGrid,FormField } from '@/components/form/form-layout';
 const FI='h-9 rounded-md border border-border bg-background px-3 text-[13px] w-full';
-export default function ICreate(){const router=useRouter();const [f,setF]=useState({orderNo:'',materialName:'',specification:'',quantity:'',warehouseName:'',unitPrice:'',totalAmount:'',remark:''});
+export default function ICreate(){const router=useRouter();const [f,setF]=useState({orderNo:'',sourceType:'',sourceNo:'',supplierName:'',materialName:'',specification:'',quantity:'',warehouseName:'',unitPrice:'',totalAmount:'',remark:''});
 const save=async()=>{try{await api.post('/inbound-orders',f);router.push('/warehouse/inbound');}catch(e:any){alert(e.response?.data?.message||'保存失败');}};
 return(<FormLayout title="新增入库单" onSave={save} sections={[{id:'b',title:'入库信息'}]} activeSection="b"><FormSection id="b" title="入库信息"><FormGrid>
 <FormField label="入库单号" required><Input className={FI} value={f.orderNo} onChange={e=>setF({...f,orderNo:e.target.value})}/></FormField>
+<FormField label="来源类型"><Input className={FI} value={f.sourceType} placeholder="PURCHASE/INSPECTION/PRODUCTION" onChange={e=>setF({...f,sourceType:e.target.value})}/></FormField>
+<FormField label="来源单号"><Input className={FI} value={f.sourceNo} onChange={e=>setF({...f,sourceNo:e.target.value})}/></FormField>
+<FormField label="供应商"><Input className={FI} value={f.supplierName} onChange={e=>setF({...f,supplierName:e.target.value})}/></FormField>
 <FormField label="物料名称"><Input className={FI} value={f.materialName} onChange={e=>setF({...f,materialName:e.target.value})}/></FormField>
 <FormField label="规格型号"><Input className={FI} value={f.specification} onChange={e=>setF({...f,specification:e.target.value})}/></FormField>
 <FormField label="数量"><Input type="number" className={FI} value={f.quantity} onChange={e=>setF({...f,quantity:e.target.value})}/></FormField>
