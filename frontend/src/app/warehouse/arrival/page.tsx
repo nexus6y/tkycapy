@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { Search } from 'lucide-react';
+import { Search, CheckCircle } from 'lucide-react';
 import { ErpTable,ErpThead,ErpTh,ErpTbody,ErpTr,ErpTd,ErpEmpty,ErpLink,ErpTools,ErpApproval,ErpPagination } from '@/components/ui/erp-table';
 
 interface Item { id:string;orderNo:string;materialName:string|null;specification:string|null;quantity:string;qualifiedQty:string;unqualifiedQty:string;warehouseName:string|null;approvalStatus:string;receiptDate:string; }
@@ -14,6 +14,7 @@ export default function ArrivalPage() {
   const [items,setItems]=useState<Item[]>([]);const [total,setTotal]=useState(0);const [pg,setPg]=useState(1);const [ps,setPs]=useState(30);
   const [s,setS]=useState({code:'',name:'',status:''});
 
+  const confirmArrival=async(i:Item)=>{await api.post('/inbound-orders',{orderNo:'IN'+Date.now(),sourceType:'PURCHASE',sourceNo:i.orderNo,materialName:i.materialName,specification:i.specification,quantity:i.quantity,qualifiedQty:i.quantity,warehouseName:i.warehouseName,approvalStatus:'DRAFT',receiptDate:new Date().toISOString()});alert('已生成入库单');fetch();};
   const fetch=useCallback(async()=>{
     const p:any={page:pg,pageSize:ps}; if(s.code)p.code=s.code; if(s.name)p.name=s.name; if(s.status)p.status=s.status;
     const {data}=await api.get('/inbound-orders',{params:p}); setItems(data.items); setTotal(data.total);
@@ -32,9 +33,9 @@ export default function ArrivalPage() {
       <F label="物料"><Input className="w-[140px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.name} onChange={e=>setS({...s,name:e.target.value})}/></F>
     </div>
     <ErpTools onRefresh={fetch}/>
-    <div className="overflow-auto"><ErpTable><ErpThead><ErpTh>入库单号</ErpTh><ErpTh>物料</ErpTh><ErpTh>规格</ErpTh><ErpTh>数量</ErpTh><ErpTh>合格数</ErpTh><ErpTh>不合格数</ErpTh><ErpTh>仓库</ErpTh><ErpTh>审批状态</ErpTh><ErpTh>收货日期</ErpTh></ErpThead><ErpTbody>
-    {items.map(i=>(<ErpTr key={i.id}><ErpTd><ErpLink>{i.orderNo}</ErpLink></ErpTd><ErpTd>{i.materialName||'-'}</ErpTd><ErpTd className="text-muted-foreground">{i.specification||'-'}</ErpTd><ErpTd>{i.quantity?Number(i.quantity).toLocaleString():'-'}</ErpTd><ErpTd className="text-[#67c23a]">{i.qualifiedQty?Number(i.qualifiedQty).toLocaleString():'-'}</ErpTd><ErpTd className="text-[#f56c6c]">{i.unqualifiedQty?Number(i.unqualifiedQty).toLocaleString():'-'}</ErpTd><ErpTd className="text-muted-foreground">{i.warehouseName||'-'}</ErpTd><ErpTd><ErpApproval status={i.approvalStatus}/></ErpTd><ErpTd className="text-muted-foreground">{i.receiptDate?new Date(i.receiptDate).toLocaleDateString('zh-CN'):'-'}</ErpTd></ErpTr>))}
-    {items.length===0&&<ErpEmpty colSpan={10}/>}
+    <div className="overflow-auto"><ErpTable><ErpThead><ErpTh>入库单号</ErpTh><ErpTh>物料</ErpTh><ErpTh>规格</ErpTh><ErpTh>数量</ErpTh><ErpTh>合格数</ErpTh><ErpTh>不合格数</ErpTh><ErpTh>仓库</ErpTh><ErpTh>审批状态</ErpTh><ErpTh>收货日期</ErpTh><ErpTh>操作</ErpTh></ErpThead><ErpTbody>
+    {items.map(i=>(<ErpTr key={i.id}><ErpTd><ErpLink>{i.orderNo}</ErpLink></ErpTd><ErpTd>{i.materialName||'-'}</ErpTd><ErpTd className="text-muted-foreground">{i.specification||'-'}</ErpTd><ErpTd>{i.quantity?Number(i.quantity).toLocaleString():'-'}</ErpTd><ErpTd className="text-[#67c23a]">{i.qualifiedQty?Number(i.qualifiedQty).toLocaleString():'-'}</ErpTd><ErpTd className="text-[#f56c6c]">{i.unqualifiedQty?Number(i.unqualifiedQty).toLocaleString():'-'}</ErpTd><ErpTd className="text-muted-foreground">{i.warehouseName||'-'}</ErpTd><ErpTd><ErpApproval status={i.approvalStatus}/></ErpTd><ErpTd className="text-muted-foreground">{i.receiptDate?new Date(i.receiptDate).toLocaleDateString('zh-CN'):'-'}</ErpTd><ErpTd><button onClick={()=>confirmArrival(i)} className="text-[#67c23a] text-[13px] hover:underline"><CheckCircle className="h-3.5 w-3.5 inline mr-0.5"/>确认到货</button></ErpTd></ErpTr>))}
+    {items.length===0&&<ErpEmpty colSpan={11}/>}
     </ErpTbody></ErpTable></div>
     <ErpPagination page={pg} pageSize={ps} total={total} onPage={setPg} onPageSize={v=>setPs(+v)}/>
   </div></TooltipProvider>);
