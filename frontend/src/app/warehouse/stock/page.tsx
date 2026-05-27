@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { exportCSV } from '@/lib/export';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Download, Search } from 'lucide-react';
 import { ErpTable, ErpThead, ErpTh, ErpTbody, ErpTr, ErpTd, ErpEmpty, ErpTools, ErpPagination } from '@/components/ui/erp-table';
@@ -21,7 +22,7 @@ export default function StockPage() {
   return (<TooltipProvider><div className="bg-background rounded-lg border shadow-sm">
     <div className="flex items-center justify-between px-4 h-14 border-b border-border">
       <div className="flex items-center gap-1">
-        <Button variant="outline" size="sm"><Download className="h-3.5 w-3.5 mr-1"/>导出</Button>
+        <Button variant="outline" size="sm" onClick={()=>exportCSV(items,'库存查询')}><Download className="h-3.5 w-3.5 mr-1"/>导出</Button>
       </div>
       <div className="flex items-center gap-1">
         <Button variant="ghost" size="sm" onClick={()=>setS({code:'',name:''})}>重置</Button>

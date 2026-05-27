@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Download, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { exportCSV } from '@/lib/export';
 import { ErpTable,ErpThead,ErpTh,ErpTbody,ErpTr,ErpTd,ErpEmpty,ErpLink,ErpAction,ErpActionBtn,ErpTools,ErpApproval,ErpPagination } from '@/components/ui/erp-table';
 
 interface Item { id:string;orderNo:string;materialName:string|null;specification:string|null;quantity:string;qualifiedQty:string;unqualifiedQty:string;warehouseName:string|null;totalAmount:string|null;approvalStatus:string;businessStatus:string;receiptDate:string;createdAt:string; }
@@ -35,7 +36,7 @@ export default function InboundPage() {
         <Button variant="secondary" size="sm" onClick={()=>router.push('/warehouse/inbound/create')}><Plus className="h-3.5 w-3.5"/>新增</Button>
         <Button variant="outline" size="sm" disabled={sel.size===0}>修改</Button>
         <Button variant="outline" size="sm" disabled={sel.size===0}>删除</Button>
-        <Button variant="outline" size="sm"><Download className="h-3.5 w-3.5 mr-1"/>导出</Button>
+        <Button variant="outline" size="sm" onClick={()=>exportCSV(items,'入库单')}><Download className="h-3.5 w-3.5 mr-1"/>导出</Button>
       </div>
       <div className="flex items-center gap-1">
         <Button variant="ghost" size="sm" onClick={()=>setS({code:'',name:'',status:'',biz:''})}>重置</Button>
