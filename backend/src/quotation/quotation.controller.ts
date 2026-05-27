@@ -58,4 +58,15 @@ export class QuotationController {
     } as any });
     return order;
   }
+  @Put(':id/withdraw')
+  async withdraw(@Param('id') id: string) {
+    const order = await this.prisma.quotation.findUniqueOrThrow({ where: { id } });
+    if (order.approvalStatus !== 'SUBMITTED') throw new Error('只能撤回已提交的报价单');
+    return this.prisma.quotation.update({ where: { id }, data: { approvalStatus: 'DRAFT' } as any });
+  }
+  @Put(':id/mark-result')
+  async markResult(@Param('id') id: string, @Body() dto: { markResult: string }) {
+    if (!['WON', 'LOST', 'PENDING'].includes(dto.markResult)) throw new Error('标记结果必须为 WON/LOST/PENDING');
+    return this.prisma.quotation.update({ where: { id }, data: { markResult: dto.markResult } as any });
+  }
 }
