@@ -14,4 +14,8 @@ export class SalesReturnController {
   @Put(':id') async update(@Param('id') id: string, @Body() dto: any) { return this.prisma.salesReturn.update({ where: { id }, data: dto as any }); }
   @Delete(':id') async remove(@Param('id') id: string) { await this.prisma.salesReturn.delete({ where: { id } }); return { message: '删除成功' }; }
   @Put(':id/submit') async submit(@Param('id') id: string) { return this.prisma.salesReturn.update({ where: { id }, data: { approvalStatus: 'SUBMITTED' } as any }); }
+  @Put(':id/approve') async approve(@Param('id') id: string) {
+    const order = await this.prisma.salesReturn.update({ where: { id }, data: { approvalStatus: 'APPROVED' } as any });
+    return order;
+  }
 }
