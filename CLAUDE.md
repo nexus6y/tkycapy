@@ -14,26 +14,9 @@
 | 层 | 技术 |
 |---|---|
 | 前端 | Next.js 16 (App Router) + React 19 + TypeScript + Tailwind CSS 4 |
-| UI | shadcn/ui + 自定义 ErpTable 系列组件 + Lucide React 图标 |
+| UI | shadcn/ui + 自定义 ErpTable 系列 + Lucide React 图标 |
 | 后端 | NestJS 11 + Prisma 7.8 + PostgreSQL |
 | 认证 | JWT (localStorage token) + bcryptjs |
-
-## AI 参考文档 (必读)
-
-| 文件 | 用途 |
-|---|---|
-| `docs/architecture.md` | 全局架构：菜单树、页面类型(A-F)、路由映射、组件模式 |
-| `docs/business-flows.md` | 10模块业务流、状态机、push-down下推链、workflow按钮模式 |
-| `docs/data-relationships.md` | 实体关联图、溯源字段策略、下拉数据源API映射、缺失字段清单 |
-| `docs/prd.md` | 原始PRD、Mermaid状态机、Prisma Schema审查报告 |
-
-## 当前系统状态
-
-- **180 个功能页面**，零空壳/SKEL
-- **40+ Prisma 模型**，50+ API 端点
-- **5 条跨模块下推链**：制损→采购 / 到货→入库 / 盘点→调整→库存 / 销售出货→出库 / 报废→处置
-- **10 种库存自动化操作**：入库/出库/调拨/报废/借出/归还/领料/退料/完工/调整
-- **成本台账自动写入**：所有库存变动自动记录 cost_ledger
 
 ## 关键命令
 
@@ -48,33 +31,58 @@ cd backend && pnpm start:dev
 cd backend && npx prisma db push
 
 # Playwright 浏览器
-playwright-cli open --headed --persistent <URL>
+playwright-cli open --headed --persistent http://localhost:3000
 ```
 
-## 新增模型 (相对于目标系统)
+## 系统规模
 
-| 模型 | 表名 | 用途 |
-|---|---|---|
-| IssueOrder | issue_order | 领料单 |
-| ReturnOrder | return_order | 退料单 |
-| PurchasePlan | purchase_plan | 采购计划 |
-| AdjustOrder | adjust_order | 调整单 |
-| CompleteReport | complete_report | 完工报告 |
-| Zone/Passage/Shelf/Location | zone/passage/shelf/location | 仓储层级 |
+| 指标 | 数值 |
+|---|---|
+| 前端页面 | 172 (零 SKEL) |
+| Prisma 模型 | 45+ |
+| API 端点 | 50+ |
+| 提交数 | 52 |
 
-## 库存自动化规则
+## AI 参考文档
 
-审批通过后自动执行：
-- 入库 → 库存↑ + 成本(入库)
-- 出库 → 库存↓ + 成本(出库)
-- 调拨 → 调出仓↓调入仓↑
-- 领料 → 库存↓ + 成本(领料)
-- 退料 → 库存↑ + 成本(退料)
-- 完工 → 成品入库 + 成本(产品入库)
-- 报废 → 库存↓
-- 借出 → 可用↓锁定↑
-- 归还 → 可用↑锁定↓
-- 调整 → 库存±
+| 文件 | 内容 |
+|---|---|
+| `docs/architecture.md` | 架构、菜单树、页面类型(A-F)、路由映射 |
+| `docs/business-flows.md` | 10模块业务流、状态机、12条push-down链、workflow模式 |
+| `docs/data-relationships.md` | 实体关联图、溯源字段、下拉数据源、缺失字段清单 |
+| `docs/backend-business-logic.md` | 编码规则、状态机定义、库存规则、成本核算、质检逻辑 |
+| `docs/prd.md` | 原始PRD、Mermaid状态机、Schema审查 |
+
+## 后端业务逻辑 (已实现)
+
+| 功能 | 覆盖 |
+|---|---|
+| 编码自动生成 | Zone/Shipment/Inbound/Outbound/PPlan/Issue/Return/Check (8实体) |
+| 状态机守卫 | 13个controller (submit: DRAFT→SUBMITTED, approve: SUBMITTED→APPROVED) |
+| 库存校验 | 出库/领料审批前检查可用库存 |
+| 业务状态流转 | 出货→订单PARTIAL_SHIP, 领料→生产ISSUING, 完工→COMPLETED, 退料→ISSUING |
+| 加权平均成本 | 出库/领料从入库均价计算成本 |
+| 库存自动更新 | 入库/出库/调拨/领料/退料/报废/借出/归还/完工/调整 (10种) |
+| 成本台账 | 所有库存变动自动写入cost_ledger |
+| Prisma异常 | P2002唯一冲突/P2003外键/P2025未找到 → 中文消息 |
+| 下推链 | 12条 (报价→分劈→订单→生产→出货→出库→成本...) |
+
+## 下推链清单
+
+```
+1. 报价(APPROVED) → 分劈单
+2. 分劈(APPROVED) → 销售订单
+3. 销售订单(APPROVED) → 生产订单
+4. 销售出货(APPROVED) → 出库单
+5. 需求计划(APPROVED) → 采购计划
+6. 采购计划(APPROVED) → 采购订单
+7. 质检(APPROVED) → 入库单(合格品)
+8. 制损 → 采购计划(补料)
+9. 到货确认 → 入库单
+10. 盘点(差异) → 调整单 → 库存修正
+11. 报废申请 → 处置单
+12. 完工报告(APPROVED) → 产品入库
+```
 
 ## 测试账号
 
