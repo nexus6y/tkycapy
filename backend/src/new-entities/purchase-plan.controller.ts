@@ -16,5 +16,15 @@ export class PurchasePlanController {
   @Post() async create(@Body() dto: any) { const tenantId = await this.tid(); return this.prisma.purchasePlan.create({ data: { ...dto, tenantId } as any }); }
   @Put(":id") async update(@Param("id") id: string, @Body() dto: any) { return this.prisma.purchasePlan.update({ where: { id }, data: dto as any }); }
   @Put(":id/submit") async submit(@Param("id") id: string) { return this.prisma.purchasePlan.update({ where: { id }, data: { approvalStatus: "SUBMITTED" } as any }); }
+  @Put(":id/approve") async approve(@Param("id") id: string) {
+    const plan = await this.prisma.purchasePlan.update({ where: { id }, data: { approvalStatus: "APPROVED" } as any });
+    const tenantId = await this.tid();
+    // Auto-create purchase order (via sales-orders as proxy)
+    await this.prisma.salesOrder.create({ data: {
+      tenantId, orderNo: 'PO-' + plan.orderNo, orderName: plan.orderName, customerName: plan.supplierName,
+      approvalStatus: 'DRAFT',
+    } as any });
+    return plan;
+  }
   @Delete(":id") async remove(@Param("id") id: string) { await this.prisma.purchasePlan.delete({ where: { id } }); return { message: "删除成功" }; }
 }
