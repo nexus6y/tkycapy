@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { guardSubmit, guardApprove } from '../common/business-rules.helper';
 
 @Controller('quotations')
 export class QuotationController {
@@ -43,11 +44,13 @@ export class QuotationController {
 
   @Put(':id/submit')
   async submit(@Param('id') id: string) {
+    await guardSubmit(this.prisma, 'quotation', id);
     return this.prisma.quotation.update({ where: { id }, data: { approvalStatus: 'SUBMITTED' } as any });
   }
   @Put(':id/approve')
   async approve(@Param('id') id: string) {
-    const order = await this.prisma.quotation.update({ where: { id }, data: { approvalStatus: 'APPROVED' } as any });
+    const order = await guardApprove(this.prisma, 'quotation', id);
+    await this.prisma.quotation.update({ where: { id }, data: { approvalStatus: 'APPROVED' } as any });
     const tenantId = await this.getTenantId();
     await this.prisma.preOrder.create({ data: {
       tenantId, orderNo: 'PRE-' + order.quotationNo, orderName: order.quotationName, customerName: order.customerName,

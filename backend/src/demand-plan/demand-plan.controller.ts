@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { guardSubmit, guardApprove } from '../common/business-rules.helper';
 @Controller('demand-plans')
 export class DemandPlanController {
   constructor(private prisma: PrismaService) {}
@@ -19,15 +20,17 @@ export class DemandPlanController {
   @Post() async create(@Body() dto: any) { const tenantId = await this.tid(); return this.prisma.demandPlan.create({ data: { ...dto, tenantId } as any }); }
   @Put(':id') async update(@Param('id') id: string, @Body() dto: any) { return this.prisma.demandPlan.update({ where: { id }, data: dto as any }); }
   @Delete(':id') async remove(@Param('id') id: string) { await this.prisma.demandPlan.delete({ where: { id } }); return { message: '删除成功' }; }
-  @Put(':id/submit') async submit(@Param('id') id: string) { return this.prisma.demandPlan.update({ where: { id }, data: { approvalStatus: 'SUBMITTED' } as any }); }
+  @Put(':id/submit') async submit(@Param('id') id: string) {
+    await guardSubmit(this.prisma, 'demandPlan', id); return this.prisma.demandPlan.update({ where: { id }, data: { approvalStatus: 'SUBMITTED' } as any }); }
   @Put(':id/approve') async approve(@Param('id') id: string) {
-    const plan = await this.prisma.demandPlan.update({ where: { id }, data: { approvalStatus: 'APPROVED' } as any });
+    const order = await guardApprove(this.prisma, 'demandPlan', id);
+    await this.prisma.demandPlan.update({ where: { id }, data: { approvalStatus: 'APPROVED' } as any });
     const tenantId = await this.tid();
     await this.prisma.purchasePlan.create({ data: {
-      tenantId, orderNo: 'PPLAN-' + plan.planNo, orderName: plan.planName, demandPlanId: plan.id, demandPlanNo: plan.planNo,
-      materialName: plan.demandSource || plan.planName, quantity: plan.totalQuantity ? String(plan.totalQuantity) : '0',
-      requiredDate: plan.requiredDate, approvalStatus: 'DRAFT',
+      tenantId, orderNo: 'PPLAN-' + order.planNo, orderName: order.planName, demandPlanId: order.id, demandPlanNo: order.planNo,
+      materialName: order.demandSource || order.planName, quantity: order.totalQuantity ? String(order.totalQuantity) : '0',
+      requiredDate: order.requiredDate, approvalStatus: 'DRAFT',
     } as any });
-    return plan;
+    return order;
   }
 }

@@ -1,9 +1,11 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import { guardSubmit, guardApprove } from "../common/business-rules.helper";
+import { CodeGeneratorService } from "../common/code-generator.service";
 
 @Controller("purchase-plans")
 export class PurchasePlanController {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private codeGen: CodeGeneratorService) {}
   private async tid() { return (await this.prisma.tenant.findUniqueOrThrow({ where: { code: "default" } })).id; }
 
   @Get() async findAll(@Query("status") status?: string, @Query("code") code?: string, @Query("page") page = 1, @Query("pageSize") pageSize = 30) {
@@ -13,11 +15,13 @@ export class PurchasePlanController {
     return { items, total, page: +page, pageSize: +pageSize };
   }
   @Get(":id") async findOne(@Param("id") id: string) { return this.prisma.purchasePlan.findUniqueOrThrow({ where: { id } }); }
-  @Post() async create(@Body() dto: any) { const tenantId = await this.tid(); return this.prisma.purchasePlan.create({ data: { ...dto, tenantId } as any }); }
+  @Post() async create(@Body() dto: any) { const tenantId = await this.tid(); if (!dto.orderNo) dto.orderNo = await this.codeGen.generate('PPLAN', 'purchasePlan', 'orderNo'); return this.prisma.purchasePlan.create({ data: { ...dto, tenantId } as any }); }
   @Put(":id") async update(@Param("id") id: string, @Body() dto: any) { return this.prisma.purchasePlan.update({ where: { id }, data: dto as any }); }
-  @Put(":id/submit") async submit(@Param("id") id: string) { return this.prisma.purchasePlan.update({ where: { id }, data: { approvalStatus: "SUBMITTED" } as any }); }
+  @Put(":id/submit") async submit(@Param("id") id: string) {
+    await guardSubmit(this.prisma, 'purchasePlan', id); return this.prisma.purchasePlan.update({ where: { id }, data: { approvalStatus: "SUBMITTED" } as any }); }
   @Put(":id/approve") async approve(@Param("id") id: string) {
-    const plan = await this.prisma.purchasePlan.update({ where: { id }, data: { approvalStatus: "APPROVED" } as any });
+    const plan = await guardApprove(this.prisma, 'purchasePlan', id);
+    await this.prisma.purchasePlan.update({ where: { id }, data: { approvalStatus: "APPROVED" } as any });
     const tenantId = await this.tid();
     // Auto-create purchase order (via sales-orders as proxy)
     await this.prisma.salesOrder.create({ data: {
