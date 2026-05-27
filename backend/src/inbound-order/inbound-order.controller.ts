@@ -1,8 +1,9 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { CodeGeneratorService } from '../common/code-generator.service';
 @Controller('inbound-orders')
 export class InboundOrderController {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private codeGen: CodeGeneratorService) {}
   private async tid() { return (await this.prisma.tenant.findUniqueOrThrow({ where: { code: 'default' } })).id; }
   @Get() async findAll(@Query('status') status?: string, @Query('code') code?: string, @Query('page') page = 1, @Query('pageSize') pageSize = 30) {
     const tenantId = await this.tid(); const where: any = { tenantId };
@@ -16,7 +17,7 @@ export class InboundOrderController {
     return this.prisma.inboundOrder.findUniqueOrThrow({ where: { id } });
 
   }
-  @Post() async create(@Body() dto: any) { const tenantId = await this.tid(); return this.prisma.inboundOrder.create({ data: { ...dto, tenantId } as any }); }
+  @Post() async create(@Body() dto: any) { const tenantId = await this.tid(); if (!dto.orderNo) dto.orderNo = await this.codeGen.generate('IN', 'inboundOrder', 'orderNo'); return this.prisma.inboundOrder.create({ data: { ...dto, tenantId } as any }); }
   @Put(':id') async update(@Param('id') id: string, @Body() dto: any) { return this.prisma.inboundOrder.update({ where: { id }, data: dto as any }); }
   @Put(':id/approve') async approve(@Param('id') id: string) {
     const order = await this.prisma.inboundOrder.update({ where: { id }, data: { approvalStatus: 'APPROVED', businessStatus: 'RECEIVED' } as any });

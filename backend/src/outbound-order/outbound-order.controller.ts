@@ -1,8 +1,9 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { CodeGeneratorService } from '../common/code-generator.service';
 @Controller('outbound-orders')
 export class OutboundOrderController {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private codeGen: CodeGeneratorService) {}
   private async tid() { return (await this.prisma.tenant.findUniqueOrThrow({ where: { code: 'default' } })).id; }
   @Get() async findAll(@Query('status') status?: string, @Query('code') code?: string, @Query('page') page = 1, @Query('pageSize') pageSize = 30) {
     const tenantId = await this.tid(); const where: any = { tenantId };
@@ -16,7 +17,7 @@ export class OutboundOrderController {
     return this.prisma.outboundOrder.findUniqueOrThrow({ where: { id } });
 
   }
-  @Post() async create(@Body() dto: any) { const tenantId = await this.tid(); return this.prisma.outboundOrder.create({ data: { ...dto, tenantId } as any }); }
+  @Post() async create(@Body() dto: any) { const tenantId = await this.tid(); if (!dto.orderNo) dto.orderNo = await this.codeGen.generate('OUT', 'outboundOrder', 'orderNo'); return this.prisma.outboundOrder.create({ data: { ...dto, tenantId } as any }); }
   @Put(':id') async update(@Param('id') id: string, @Body() dto: any) { return this.prisma.outboundOrder.update({ where: { id }, data: dto as any }); }
   @Put(':id/approve') async approve(@Param('id') id: string) {
     const order = await this.prisma.outboundOrder.findUniqueOrThrow({ where: { id } });

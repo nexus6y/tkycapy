@@ -26,6 +26,13 @@ export class CompleteReportController {
       await this.prisma.inventory.create({ data: { tenantId, materialName: order.materialName || '', warehouseName: order.deptName || '', quantity: String(order.actualQty || 0), availableQty: String(order.actualQty || 0), lockedQty: '0' } as any });
     }
     await this.prisma.costLedger.create({ data: { tenantId, transactionNo: order.reportNo, transactionType: '产品入库', materialName: order.materialName, quantity: String(order.actualQty || 0), transactionDate: new Date() } as any });
+        // Auto-transition production order: PENDING_STOCK → COMPLETED
+    if (order.productionOrderId) {
+      const prod = await this.prisma.productionOrder.findUnique({ where: { id: order.productionOrderId } });
+      if (prod && prod.businessStatus === 'PENDING_STOCK') {
+        await this.prisma.productionOrder.update({ where: { id: order.productionOrderId }, data: { businessStatus: 'COMPLETED' } as any });
+      }
+    }
     return order;
   }
   @Delete(":id") async remove(@Param("id") id: string) { await this.prisma.completeReport.delete({ where: { id } }); return { message: "删除成功" }; }
