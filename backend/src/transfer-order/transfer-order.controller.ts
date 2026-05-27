@@ -12,6 +12,7 @@ export class TransferOrderController {
   }
   @Get(':id') async findOne(@Param('id') id: string) { return this.prisma.transferOrder.findUniqueOrThrow({ where: { id } }); }
   @Post() async create(@Body() dto: any) { const tenantId = await this.tid(); return this.prisma.transferOrder.create({ data: { ...dto, tenantId } as any }); }
+  @Put(':id/submit') async submit(@Param('id') id: string) { return this.prisma.transferOrder.update({ where: { id }, data: { approvalStatus: "SUBMITTED" } as any }); }
   @Put(':id') async update(@Param('id') id: string, @Body() dto: any) { return this.prisma.transferOrder.update({ where: { id }, data: dto as any }); }
   @Put(':id/approve') async approve(@Param('id') id: string) {
     const order = await this.prisma.transferOrder.update({ where: { id }, data: { approvalStatus: 'APPROVED' } as any });

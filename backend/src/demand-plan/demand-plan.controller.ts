@@ -20,4 +20,14 @@ export class DemandPlanController {
   @Put(':id') async update(@Param('id') id: string, @Body() dto: any) { return this.prisma.demandPlan.update({ where: { id }, data: dto as any }); }
   @Delete(':id') async remove(@Param('id') id: string) { await this.prisma.demandPlan.delete({ where: { id } }); return { message: '删除成功' }; }
   @Put(':id/submit') async submit(@Param('id') id: string) { return this.prisma.demandPlan.update({ where: { id }, data: { approvalStatus: 'SUBMITTED' } as any }); }
+  @Put(':id/approve') async approve(@Param('id') id: string) {
+    const plan = await this.prisma.demandPlan.update({ where: { id }, data: { approvalStatus: 'APPROVED' } as any });
+    const tenantId = await this.tid();
+    await this.prisma.purchasePlan.create({ data: {
+      tenantId, orderNo: 'PPLAN-' + plan.planNo, orderName: plan.planName, demandPlanId: plan.id, demandPlanNo: plan.planNo,
+      materialName: plan.demandSource || plan.planName, quantity: plan.totalQuantity ? String(plan.totalQuantity) : '0',
+      requiredDate: plan.requiredDate, approvalStatus: 'DRAFT',
+    } as any });
+    return plan;
+  }
 }
