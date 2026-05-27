@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { toast } from '@/components/ui/toast';
 import { Search, CheckCircle, XCircle, GitBranch } from 'lucide-react';
 import { ErpTable,ErpThead,ErpTh,ErpTbody,ErpTr,ErpTd,ErpEmpty,ErpLink,ErpTools,ErpApproval,ErpPagination } from '@/components/ui/erp-table';
 
@@ -20,7 +21,7 @@ export default function DamageAuditPage() {
   },[pg,ps,s]); useEffect(()=>{fetch();},[fetch]);
 
   const audit=async(id:string,status:string)=>{await api.put(`/production-orders/${id}`,{approvalStatus:status}); fetch();};
-const pushPlan=async(i:Item)=>{await api.post('/purchase-plans',{orderNo:'PLAN-'+Date.now(),orderName:'补采购-'+i.materialName,supplierName:'',materialName:i.materialName,quantity:i.quantity,requiredDate:new Date().toISOString().split('T')[0]});alert('已生成采购计划');fetch();};
+const pushPlan=async(i:Item)=>{await api.post('/purchase-plans',{orderNo:'PLAN-'+Date.now(),orderName:'补采购-'+i.materialName,supplierName:'',materialName:i.materialName,quantity:i.quantity,requiredDate:new Date().toISOString().split('T')[0]});toast('已生成采购计划', 'info');fetch();};
 
   return (<TooltipProvider><div className="bg-background rounded-lg border shadow-sm">
     <div className="flex items-center justify-between px-4 h-14 border-b border-border">

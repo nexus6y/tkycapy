@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { toast } from '@/components/ui/toast';
 import { Download, Pencil, Plus, Search, Trash2, GitBranch } from 'lucide-react';
 import { ErpTable,ErpThead,ErpTh,ErpTbody,ErpTr,ErpTd,ErpEmpty,ErpLink,ErpAction,ErpActionBtn,ErpTools,ErpApproval,ErpPagination } from '@/components/ui/erp-table';
 
@@ -25,7 +26,7 @@ export default function ScrapApplyPage() {
   },[pg,ps,s]); useEffect(()=>{fetch();},[fetch]);
 
   const doDel=async()=>{if(!del)return;await api.delete(`/scrap-orders/${del}`);setDel(null);fetch();};
-const genDisposal=async(i:Item)=>{await api.post('/scrap-orders',{orderNo:'HANDLE-'+Date.now(),materialName:i.materialName,quantity:i.quantity,scrapReason:i.scrapReason,disposalMethod:i.disposalMethod||'退供',approvalStatus:'DRAFT'});alert('已生成处置单');fetch();};
+const genDisposal=async(i:Item)=>{await api.post('/scrap-orders',{orderNo:'HANDLE-'+Date.now(),materialName:i.materialName,quantity:i.quantity,scrapReason:i.scrapReason,disposalMethod:i.disposalMethod||'退供',approvalStatus:'DRAFT'});toast('已生成处置单', 'info');fetch();};
   const toggleAll=(v:boolean)=>setSel(v?new Set(items.map(i=>i.id)):new Set());
 
   return (<TooltipProvider><div className="bg-background rounded-lg border shadow-sm">

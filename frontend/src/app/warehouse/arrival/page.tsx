@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { toast } from '@/components/ui/toast';
 import { Search, CheckCircle } from 'lucide-react';
 import { ErpTable,ErpThead,ErpTh,ErpTbody,ErpTr,ErpTd,ErpEmpty,ErpLink,ErpTools,ErpApproval,ErpPagination } from '@/components/ui/erp-table';
 
@@ -14,7 +15,7 @@ export default function ArrivalPage() {
   const [items,setItems]=useState<Item[]>([]);const [total,setTotal]=useState(0);const [pg,setPg]=useState(1);const [ps,setPs]=useState(30);
   const [s,setS]=useState({code:'',name:'',status:''});
 
-  const confirmArrival=async(i:Item)=>{await api.post('/inbound-orders',{orderNo:'IN'+Date.now(),sourceType:'PURCHASE',sourceNo:i.orderNo,materialName:i.materialName,specification:i.specification,quantity:i.quantity,qualifiedQty:i.quantity,warehouseName:i.warehouseName,approvalStatus:'DRAFT',receiptDate:new Date().toISOString()});alert('已生成入库单');fetch();};
+  const confirmArrival=async(i:Item)=>{await api.post('/inbound-orders',{orderNo:'IN'+Date.now(),sourceType:'PURCHASE',sourceNo:i.orderNo,materialName:i.materialName,specification:i.specification,quantity:i.quantity,qualifiedQty:i.quantity,warehouseName:i.warehouseName,approvalStatus:'DRAFT',receiptDate:new Date().toISOString()});toast('已生成入库单', 'info');fetch();};
   const fetch=useCallback(async()=>{
     const p:any={page:pg,pageSize:ps}; if(s.code)p.code=s.code; if(s.name)p.name=s.name; if(s.status)p.status=s.status;
     const {data}=await api.get('/inbound-orders',{params:p}); setItems(data.items); setTotal(data.total);

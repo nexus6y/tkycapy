@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { toast } from '@/components/ui/toast';
 import { ChevronDown, Download, Pencil, Plus, Search, Trash2, Upload } from 'lucide-react';
 import { ErpTable, ErpThead, ErpTh, ErpTbody, ErpTr, ErpTd, ErpEmpty, ErpLink, ErpAction, ErpActionBtn, ErpTools, ErpApproval, ErpPagination } from '@/components/ui/erp-table';
 
@@ -28,8 +29,8 @@ export default function InspectionPage() {
     <div className="flex items-center justify-between px-4 h-14 border-b border-border">
       <div className="flex items-center gap-1">
         <Button variant="secondary" size="sm" onClick={()=>router.push('/quality/inspection/create')}><Plus className="h-3.5 w-3.5"/>新增</Button>
-        <Button variant="outline" size="sm" onClick={()=>alert('请先勾选数据')}>修改</Button>
-        <Button variant="outline" size="sm" onClick={()=>alert('请先勾选数据')}>删除</Button>
+        <Button variant="outline" size="sm" onClick={()=>toast('请先勾选数据', 'info')}>修改</Button>
+        <Button variant="outline" size="sm" onClick={()=>toast('请先勾选数据', 'info')}>删除</Button>
         <Button variant="outline" size="sm"><Download className="h-3.5 w-3.5 mr-1"/>导出</Button>
       </div>
       <div className="flex items-center gap-1">
