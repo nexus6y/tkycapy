@@ -36,7 +36,7 @@ export default function QuotationPage() {
         <Button variant="secondary" size="sm" onClick={()=>router.push('/sales/quotation/create')}><Plus className="h-3.5 w-3.5"/>新增</Button>
         <Button variant="outline" size="sm" disabled={selected.size===0}>修改</Button>
         <Button variant="outline" size="sm" disabled={selected.size===0}>删除</Button>
-        <Button variant="outline" size="sm">导入 <ChevronDown className="h-3 w-3 ml-0.5"/>
+        
         <Button variant="outline" size="sm"><Download className="h-3.5 w-3.5 mr-1"/>导出</Button>
       </div>
       <div className="flex items-center gap-1">

@@ -35,7 +35,7 @@ export default function CustomerPage() {
         <Button variant="secondary" size="sm" onClick={()=>router.push('/sales/customer/create')}><Plus className="h-3.5 w-3.5"/>新增</Button>
         <Button variant="outline" size="sm" disabled={selected.size===0} onClick={()=>alert('请先勾选数据')}>修改</Button>
         <Button variant="outline" size="sm" disabled={selected.size===0} onClick={()=>alert('请先勾选数据')}>删除</Button>
-        <DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" size="sm">导入 <ChevronDown className="h-3 w-3 ml-0.5"/></Button></DropdownMenuTrigger><DropdownMenuContent><DropdownMenuItem><Upload className="h-3.5 w-3.5 mr-2"/>导入数据</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
+        <DropdownMenu><DropdownMenuTrigger asChild></Button></DropdownMenuTrigger><DropdownMenuContent><DropdownMenuItem><Upload className="h-3.5 w-3.5 mr-2"/>导入数据</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
         <Button variant="outline" size="sm"><Download className="h-3.5 w-3.5 mr-1"/>导出</Button>
       </div>
       <div className="flex items-center gap-1"><Button variant="ghost" size="sm" onClick={()=>setS({code:'',name:'',status:''})}>重置</Button><Button variant="default" size="sm" onClick={fetch}><Search className="h-3.5 w-3.5 mr-1"/>搜索</Button></div>

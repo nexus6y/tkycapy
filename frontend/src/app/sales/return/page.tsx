@@ -33,7 +33,7 @@ export default function SalesReturnPage() {
       <div className="flex items-center gap-1">
         <Button variant="secondary" size="sm" onClick={()=>router.push('/sales/return/create')}><Plus className="h-3.5 w-3.5"/>新增</Button>
         <Button variant="outline" size="sm" disabled={sel.size===0}>修改</Button><Button variant="outline" size="sm" disabled={sel.size===0}>删除</Button>
-        <Button variant="outline" size="sm">导入 <ChevronDown className="h-3 w-3 ml-0.5"/>
+        
         <Button variant="outline" size="sm"><Download className="h-3.5 w-3.5 mr-1"/>导出</Button>
       </div>
       <div className="flex items-center gap-1"><Button variant="ghost" size="sm" onClick={()=>setS({code:'',name:'',status:''})}>重置</Button><Button variant="default" size="sm" onClick={fetch}><Search className="h-3.5 w-3.5 mr-1"/>搜索</Button></div>
