@@ -32,6 +32,14 @@ export class DashboardService {
       } catch {}
     }
 
-    return { pending, mySubmissions, reviewed };
+    const [invCount, invTotalQty, inboundCount, outboundCount, costCount] = await Promise.all([
+      this.prisma.inventory.count().catch(() => 0),
+      this.prisma.inventory.findMany().then(items => items.reduce((s: number, i: any) => s + (Number(i.quantity) || 0), 0)).catch(() => 0),
+      this.prisma.inboundOrder.count({ where: { approvalStatus: 'APPROVED' } }).catch(() => 0),
+      this.prisma.outboundOrder.count({ where: { approvalStatus: 'APPROVED' } }).catch(() => 0),
+      this.prisma.costLedger.count().catch(() => 0),
+    ]);
+
+    return { pending, mySubmissions, reviewed, inventoryItems: invCount, inventoryQty: invTotalQty, inboundApproved: inboundCount, outboundApproved: outboundCount, costEntries: costCount };
   }
 }

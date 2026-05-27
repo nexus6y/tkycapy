@@ -87,7 +87,7 @@ function Calendar() {
 export default function DashboardPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const [stats, setStats] = useState({ pending: 0, mySubmissions: 0, reviewed: 0 });
+  const [stats, setStats] = useState({ pending: 0, mySubmissions: 0, reviewed: 0, inventoryItems:0, inventoryQty:0, inboundApproved:0, outboundApproved:0, costEntries:0 });
 
   const fetchStats = useCallback(async () => {
     try {
@@ -111,11 +111,14 @@ export default function DashboardPage() {
         {/* Welcome + Stats */}
         <div className="bg-background rounded-lg border border-border p-5 shrink-0">
           <h3 className="text-base font-medium text-foreground mb-4">你好，{user.name}，欢迎回来！</h3>
-          <div className="flex gap-4">
+          <div className="flex gap-4 flex-wrap">
             {[
               { label: '待审核', value: stats.pending, color: 'text-[#e6a23c]', bg: 'bg-[#fdf6ec]' },
               { label: '我的发起', value: stats.mySubmissions, color: 'text-[#409eff]', bg: 'bg-[#ecf5ff]' },
               { label: '已审核', value: stats.reviewed, color: 'text-[#67c23a]', bg: 'bg-[#f0f9eb]' },
+              { label: '库存品种', value: stats.inventoryItems, color: 'text-[#909399]', bg: 'bg-[#f4f4f5]' },
+              { label: '入库单(已审)', value: stats.inboundApproved, color: 'text-[#67c23a]', bg: 'bg-[#f0f9eb]' },
+              { label: '出库单(已审)', value: stats.outboundApproved, color: 'text-[#e6a23c]', bg: 'bg-[#fdf6ec]' },
             ].map(s => (
               <div key={s.label} className={`flex items-center gap-3 ${s.bg} rounded-lg px-5 py-4 flex-1`}>
                 <div>
