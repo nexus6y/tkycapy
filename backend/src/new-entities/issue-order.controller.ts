@@ -16,5 +16,16 @@ export class IssueOrderController {
   @Post() async create(@Body() dto: any) { const tenantId = await this.tid(); return this.prisma.issueOrder.create({ data: { ...dto, tenantId } as any }); }
   @Put(":id") async update(@Param("id") id: string, @Body() dto: any) { return this.prisma.issueOrder.update({ where: { id }, data: dto as any }); }
   @Put(":id/submit") async submit(@Param("id") id: string) { return this.prisma.issueOrder.update({ where: { id }, data: { approvalStatus: "SUBMITTED" } as any }); }
+  @Put(":id/approve") async approve(@Param("id") id: string) {
+    const order = await this.prisma.issueOrder.update({ where: { id }, data: { approvalStatus: "APPROVED" } as any });
+    const inv = await this.prisma.inventory.findFirst({ where: { materialName: order.materialName || '' } });
+    if (inv) {
+      const newQty = String(Math.max(0, (Number(inv.quantity) || 0) - (Number(order.quantity) || 0)));
+      await this.prisma.inventory.update({ where: { id: inv.id }, data: { quantity: newQty, availableQty: newQty } });
+    }
+    const tenantId = await this.tid();
+    await this.prisma.costLedger.create({ data: { tenantId, transactionNo: order.orderNo, transactionType: '领料出库', materialName: order.materialName, quantity: String(order.quantity || 0), transactionDate: new Date() } as any });
+    return order;
+  }
   @Delete(":id") async remove(@Param("id") id: string) { await this.prisma.issueOrder.delete({ where: { id } }); return { message: "删除成功" }; }
 }

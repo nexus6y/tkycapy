@@ -15,5 +15,18 @@ export class CompleteReportController {
   @Get(":id") async findOne(@Param("id") id: string) { return this.prisma.completeReport.findUniqueOrThrow({ where: { id } }); }
   @Post() async create(@Body() dto: any) { const tenantId = await this.tid(); return this.prisma.completeReport.create({ data: { ...dto, tenantId } as any }); }
   @Put(":id") async update(@Param("id") id: string, @Body() dto: any) { return this.prisma.completeReport.update({ where: { id }, data: dto as any }); }
+  @Put(":id/approve") async approve(@Param("id") id: string) {
+    const order = await this.prisma.completeReport.update({ where: { id }, data: { approvalStatus: "APPROVED" } as any });
+    const tenantId = await this.tid();
+    const inv = await this.prisma.inventory.findFirst({ where: { materialName: order.materialName || '' } });
+    if (inv) {
+      const newQty = String((Number(inv.quantity) || 0) + (Number(order.actualQty) || 0));
+      await this.prisma.inventory.update({ where: { id: inv.id }, data: { quantity: newQty, availableQty: newQty } });
+    } else {
+      await this.prisma.inventory.create({ data: { tenantId, materialName: order.materialName || '', warehouseName: order.deptName || '', quantity: String(order.actualQty || 0), availableQty: String(order.actualQty || 0), lockedQty: '0' } as any });
+    }
+    await this.prisma.costLedger.create({ data: { tenantId, transactionNo: order.reportNo, transactionType: '产品入库', materialName: order.materialName, quantity: String(order.actualQty || 0), transactionDate: new Date() } as any });
+    return order;
+  }
   @Delete(":id") async remove(@Param("id") id: string) { await this.prisma.completeReport.delete({ where: { id } }); return { message: "删除成功" }; }
 }
