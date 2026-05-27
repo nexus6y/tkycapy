@@ -25,6 +25,13 @@ export class SalesShipmentController {
       tenantId, orderNo: 'OUT-' + order.shipmentNo, sourceType: 'SALES_SHIPMENT', sourceNo: order.shipmentNo,
       quantity: String(order.totalQuantity || 0), totalAmount: String(order.totalAmount || 0), approvalStatus: 'DRAFT',
     } as any });
+    // Auto-transition sales order business status
+    if (order.orderId) {
+      const salesOrder = await this.prisma.salesOrder.findUnique({ where: { id: order.orderId } });
+      if (salesOrder && salesOrder.businessStatus === 'PENDING_SHIP') {
+        await this.prisma.salesOrder.update({ where: { id: order.orderId }, data: { businessStatus: 'PARTIAL_SHIP' } as any });
+      }
+    }
     return order;
   }
 }
