@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from './prisma/prisma.module';
+import { CommonModule } from './common/common.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { AuthModule } from './auth/auth.module';
 import { MaterialCategoryModule } from './material-category/material-category.module';
@@ -38,7 +39,7 @@ import { SalesReturnModule } from './sales-return/sales-return.module';
 
 @Module({
   imports: [
-    PrismaModule, AuthModule, DashboardModule,
+    PrismaModule, CommonModule, AuthModule, DashboardModule,
     MaterialCategoryModule, MaterialModule, MeasurementUnitModule,
     MaterialParamModule, MaterialApprovalModule,
     ProjectModule, ContractModule,

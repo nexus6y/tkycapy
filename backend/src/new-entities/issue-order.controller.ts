@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query } from "@nestjs/common";
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, BadRequestException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 
 @Controller("issue-orders")
@@ -17,7 +17,14 @@ export class IssueOrderController {
   @Put(":id") async update(@Param("id") id: string, @Body() dto: any) { return this.prisma.issueOrder.update({ where: { id }, data: dto as any }); }
   @Put(":id/submit") async submit(@Param("id") id: string) { return this.prisma.issueOrder.update({ where: { id }, data: { approvalStatus: "SUBMITTED" } as any }); }
   @Put(":id/approve") async approve(@Param("id") id: string) {
-    const order = await this.prisma.issueOrder.update({ where: { id }, data: { approvalStatus: "APPROVED" } as any });
+    const order = await this.prisma.issueOrder.findUniqueOrThrow({ where: { id } });
+    if (order.approvalStatus !== 'SUBMITTED') throw new BadRequestException('只能审批已提交的领料单');
+    const qty = Number(order.quantity) || 0;
+    if (qty > 0) {
+      const inv = await this.prisma.inventory.findFirst({ where: { materialName: order.materialName || '' } });
+      if (!inv || Number(inv.availableQty) < qty) throw new BadRequestException(`库存不足: 可用${inv ? Number(inv.availableQty) : 0}, 需要${qty}`);
+    }
+    await this.prisma.issueOrder.update({ where: { id }, data: { approvalStatus: "APPROVED" } as any });
     const inv = await this.prisma.inventory.findFirst({ where: { materialName: order.materialName || '' } });
     if (inv) {
       const newQty = String(Math.max(0, (Number(inv.quantity) || 0) - (Number(order.quantity) || 0)));
