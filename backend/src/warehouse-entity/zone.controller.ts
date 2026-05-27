@@ -68,7 +68,7 @@ export class LocationController {
 
 @Controller("check-orders")
 export class CheckOrderController {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private codeGen: CodeGeneratorService) {}
   private async tid() { return (await this.prisma.tenant.findUniqueOrThrow({ where: { code: "default" } })).id; }
   @Get() async findAll(@Query("code") code?: string, @Query("name") name?: string, @Query("status") status?: string, @Query("page") page = 1, @Query("pageSize") pageSize = 30) {
     const tenantId = await this.tid(); const where: any = { tenantId };
@@ -77,7 +77,7 @@ export class CheckOrderController {
     return { items, total, page: +page, pageSize: +pageSize };
   }
   @Get(":id") async findOne(@Param("id") id: string) { return this.prisma.checkOrder.findUniqueOrThrow({ where: { id } }); }
-  @Post() async create(@Body() dto: any) { const tenantId = await this.tid(); return this.prisma.checkOrder.create({ data: { ...dto, tenantId } }); }
+  @Post() async create(@Body() dto: any) { const tenantId = await this.tid(); if (!dto.orderNo) dto.orderNo = await this.codeGen.generate('CHK', 'checkOrder', 'orderNo'); return this.prisma.checkOrder.create({ data: { ...dto, tenantId } }); }
   @Put(":id") async update(@Param("id") id: string, @Body() dto: any) { return this.prisma.checkOrder.update({ where: { id }, data: dto }); }
   @Delete(":id") async remove(@Param("id") id: string) { await this.prisma.checkOrder.delete({ where: { id } }); return { message: "删除成功" }; }
 }
