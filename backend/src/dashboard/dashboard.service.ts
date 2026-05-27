@@ -9,9 +9,10 @@ export class DashboardService {
     const tables = [
       "material", "materialApproval", "quotation", "preOrder",
       "salesOrder", "salesShipment", "salesReturn", "demandPlan",
-      "purchasePlan", "purchaseOrder", "purchaseReturn", "inspection",
-      "productionOrder", "inboundOrder", "outboundOrder",
-      "transferOrder", "lendOrder", "scrapOrder",
+      "purchasePlan", "inspection", "productionOrder",
+      "inboundOrder", "outboundOrder", "transferOrder",
+      "lendOrder", "scrapOrder", "issueOrder", "returnOrder",
+      "adjustOrder", "completeReport", "checkOrder",
     ];
 
     let pending = 0;

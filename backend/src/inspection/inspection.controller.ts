@@ -14,4 +14,15 @@ export class InspectionController {
   @Put(':id') async update(@Param('id') id: string, @Body() dto: any) { return this.prisma.inspection.update({ where: { id }, data: dto as any }); }
   @Delete(':id') async remove(@Param('id') id: string) { await this.prisma.inspection.delete({ where: { id } }); return { message: '删除成功' }; }
   @Put(':id/submit') async submit(@Param('id') id: string) { return this.prisma.inspection.update({ where: { id }, data: { approvalStatus: 'SUBMITTED' } as any }); }
+  @Put(':id/approve') async approve(@Param('id') id: string) {
+    const order = await this.prisma.inspection.update({ where: { id }, data: { approvalStatus: 'APPROVED' } as any });
+    const tenantId = await this.tid();
+    // Auto-create inbound order for qualified goods
+    await this.prisma.inboundOrder.create({ data: {
+      tenantId, orderNo: 'IN-INS-' + order.inspectionNo, sourceType: 'INSPECTION', sourceNo: order.inspectionNo,
+      materialName: order.materialName, quantity: String(order.qualifiedQty || 0), qualifiedQty: String(order.qualifiedQty || 0),
+      unqualifiedQty: String(order.unqualifiedQty || 0), approvalStatus: 'DRAFT',
+    } as any });
+    return order;
+  }
 }
