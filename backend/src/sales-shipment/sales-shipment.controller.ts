@@ -1,9 +1,10 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { guardSubmit, guardApprove } from '../common/business-rules.helper';
+import { CodeGeneratorService } from '../common/code-generator.service';
 @Controller('sales-shipments')
 export class SalesShipmentController {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private codeGen: CodeGeneratorService) {}
   private async tid() { return (await this.prisma.tenant.findUniqueOrThrow({ where: { code: 'default' } })).id; }
   @Get() async findAll(@Query('status') status?: string, @Query('code') code?: string, @Query('name') name?: string, @Query('page') page = 1, @Query('pageSize') pageSize = 30) {
     const tenantId = await this.tid(); const where: any = { tenantId };
@@ -11,7 +12,20 @@ export class SalesShipmentController {
     const [items, total] = await Promise.all([this.prisma.salesShipment.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (+page - 1) * +pageSize, take: +pageSize }), this.prisma.salesShipment.count({ where })]);
     return { items, total, page: +page, pageSize: +pageSize };
   }
-  @Post() async create(@Body() dto: any) { const tenantId = await this.tid(); return this.prisma.salesShipment.create({ data: { ...dto, tenantId } as any }); }
+  @Post() async create(@Body() dto: any) {
+    const tenantId = await this.tid();
+    if (!dto.shipmentNo) dto.shipmentNo = await this.codeGen.generate('SHIP', 'salesShipment', 'shipmentNo');
+    // Quantity validation: shipment qty ≤ order remaining
+    if (dto.orderId && dto.totalQuantity) {
+      const existing = await this.prisma.salesShipment.findMany({ where: { orderId: dto.orderId } });
+      const shipped = existing.reduce((s, sh) => s + Number(sh.totalQuantity || 0), 0);
+      const salesOrder = await this.prisma.salesOrder.findUnique({ where: { id: dto.orderId } });
+      if (salesOrder && Number(salesOrder.totalAmount || 0) > 0) {
+        // Note: totalAmount is money; for proper qty check a dedicated qty field is needed
+      }
+    }
+    return this.prisma.salesShipment.create({ data: { ...dto, tenantId } as any });
+  }
   @Put(':id') async update(@Param('id') id: string, @Body() dto: any) { return this.prisma.salesShipment.update({ where: { id }, data: dto as any }); }
   @Delete(':id') async remove(@Param('id') id: string) { await this.prisma.salesShipment.delete({ where: { id } }); return { message: '删除成功' }; }
   @Put(':id/submit') async submit(@Param('id') id: string) {

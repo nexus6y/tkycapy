@@ -1,9 +1,10 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import { CodeGeneratorService } from "../common/code-generator.service";
 
 @Controller("zones")
 export class ZoneController {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private codeGen: CodeGeneratorService) {}
   private async tid() { return (await this.prisma.tenant.findUniqueOrThrow({ where: { code: "default" } })).id; }
   @Get() async findAll(@Query("code") code?: string, @Query("name") name?: string, @Query("status") status?: string, @Query("page") page = 1, @Query("pageSize") pageSize = 30) {
     const tenantId = await this.tid(); const where: any = { tenantId };
@@ -12,7 +13,7 @@ export class ZoneController {
     return { items, total, page: +page, pageSize: +pageSize };
   }
   @Get(":id") async findOne(@Param("id") id: string) { return this.prisma.zone.findUniqueOrThrow({ where: { id } }); }
-  @Post() async create(@Body() dto: any) { const tenantId = await this.tid(); return this.prisma.zone.create({ data: { ...dto, tenantId } }); }
+  @Post() async create(@Body() dto: any) { const tenantId = await this.tid(); if (!dto.code) dto.code = await this.codeGen.generate('ZONE', 'zone', 'code'); return this.prisma.zone.create({ data: { ...dto, tenantId } }); }
   @Put(":id") async update(@Param("id") id: string, @Body() dto: any) { return this.prisma.zone.update({ where: { id }, data: dto }); }
   @Delete(":id") async remove(@Param("id") id: string) { await this.prisma.zone.delete({ where: { id } }); return { message: "删除成功" }; }
 }
