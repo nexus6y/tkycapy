@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { guardSubmit, guardApprove } from '../common/business-rules.helper';
+import { guardSubmit, guardApprove, guardWithdraw } from '../common/business-rules.helper';
 @Controller('production-orders')
 export class ProductionOrderController {
   constructor(private prisma: PrismaService) {}
@@ -19,6 +19,10 @@ export class ProductionOrderController {
   }
   @Post() async create(@Body() dto: any) { const tenantId = await this.tid(); return this.prisma.productionOrder.create({ data: { ...dto, tenantId } as any }); }
   @Put(':id') async update(@Param('id') id: string, @Body() dto: any) { return this.prisma.productionOrder.update({ where: { id }, data: dto as any }); }
+  @Put(':id/withdraw') async withdraw(@Param('id') id: string) {
+    await guardWithdraw(this.prisma, 'productionOrder', id);
+    return this.prisma.productionOrder.update({ where: { id }, data: { approvalStatus: 'DRAFT' } as any });
+  }
   @Delete(':id') async remove(@Param('id') id: string) { await this.prisma.productionOrder.delete({ where: { id } }); return { message: '删除成功' }; }
   @Put(':id/submit') async submit(@Param('id') id: string) {
     await guardSubmit(this.prisma, 'productionOrder', id); return this.prisma.productionOrder.update({ where: { id }, data: { approvalStatus: 'SUBMITTED' } as any }); }

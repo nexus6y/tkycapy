@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { guardSubmit, guardApprove } from '../common/business-rules.helper';
+import { guardSubmit, guardApprove, guardWithdraw } from '../common/business-rules.helper';
 @Controller('scrap-orders')
 export class ScrapOrderController {
   constructor(private prisma: PrismaService) {}
@@ -25,6 +25,10 @@ export class ScrapOrderController {
       await this.prisma.inventory.update({ where: { id: inv.id }, data: { quantity: newQty, availableQty: newQty } });
     }
     return order;
+  }
+  @Put(':id/withdraw') async withdraw(@Param('id') id: string) {
+    await guardWithdraw(this.prisma, 'scrapOrder', id);
+    return this.prisma.scrapOrder.update({ where: { id }, data: { approvalStatus: 'DRAFT' } as any });
   }
   @Delete(':id') async remove(@Param('id') id: string) { await this.prisma.scrapOrder.delete({ where: { id } }); return { message: '删除成功' }; }
 }

@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { guardSubmit, guardApprove } from '../common/business-rules.helper';
+import { guardSubmit, guardApprove, guardWithdraw } from '../common/business-rules.helper';
 @Controller('transfer-orders')
 export class TransferOrderController {
   constructor(private prisma: PrismaService) {}
@@ -38,6 +38,10 @@ export class TransferOrderController {
     await this.prisma.costLedger.create({ data: { tenantId, transactionNo: order.orderNo + '-OUT', transactionType: '调拨出', materialName: order.materialName, quantity: String(order.quantity || 0), totalAmount: '0', transactionDate: new Date() } as any });
     await this.prisma.costLedger.create({ data: { tenantId, transactionNo: order.orderNo + '-IN', transactionType: '调拨入', materialName: order.materialName, quantity: String(order.quantity || 0), totalAmount: '0', transactionDate: new Date() } as any });
     return order;
+  }
+  @Put(':id/withdraw') async withdraw(@Param('id') id: string) {
+    await guardWithdraw(this.prisma, 'transferOrder', id);
+    return this.prisma.transferOrder.update({ where: { id }, data: { approvalStatus: 'DRAFT' } as any });
   }
   @Delete(':id') async remove(@Param('id') id: string) { await this.prisma.transferOrder.delete({ where: { id } }); return { message: '删除成功' }; }
 }
