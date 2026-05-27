@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CodeGeneratorService } from '../common/code-generator.service';
+import { guardSubmit } from '../common/business-rules.helper';
 @Controller('outbound-orders')
 export class OutboundOrderController {
   constructor(private prisma: PrismaService, private codeGen: CodeGeneratorService) {}
@@ -19,6 +20,7 @@ export class OutboundOrderController {
   }
   @Post() async create(@Body() dto: any) { const tenantId = await this.tid(); if (!dto.orderNo) dto.orderNo = await this.codeGen.generate('OUT', 'outboundOrder', 'orderNo'); return this.prisma.outboundOrder.create({ data: { ...dto, tenantId } as any }); }
   @Put(':id') async update(@Param('id') id: string, @Body() dto: any) { return this.prisma.outboundOrder.update({ where: { id }, data: dto as any }); }
+  @Put(':id/submit') async submit(@Param('id') id: string) { await guardSubmit(this.prisma, 'outboundOrder', id); return this.prisma.outboundOrder.update({ where: { id }, data: { approvalStatus: 'SUBMITTED' } as any }); }
   @Put(':id/approve') async approve(@Param('id') id: string) {
     const order = await this.prisma.outboundOrder.findUniqueOrThrow({ where: { id } });
     if (order.approvalStatus !== 'SUBMITTED') throw new BadRequestException('只能审批已提交的出库单');
@@ -36,9 +38,24 @@ export class OutboundOrderController {
       const newAvail = String(Math.max(0, (Number(existing.availableQty) || 0) - (Number(order.quantity) || 0)));
       await this.prisma.inventory.update({ where: { id: existing.id }, data: { quantity: newQty, availableQty: newAvail } });
     }
-    // Write cost ledger entry
+    // Write cost ledger entry with weighted average cost
     const tenantId = await this.tid();
-    await this.prisma.costLedger.create({ data: { tenantId, transactionNo: order.orderNo, transactionType: '出库', materialName: order.materialName, quantity: String(order.quantity || 0), unitPrice: String(order.unitPrice || 0), totalAmount: String(order.totalAmount || 0), transactionDate: new Date() } as any });
+    let unitCost = Number(order.unitPrice || 0);
+    if (!unitCost && order.materialName) {
+      // Calculate weighted average from recent inbound entries
+      const recentInbound = await this.prisma.costLedger.findMany({
+        where: { materialName: order.materialName, transactionType: '入库' },
+        orderBy: { createdAt: 'desc' }, take: 5,
+      });
+      if (recentInbound.length > 0) {
+        const totalQty = recentInbound.reduce((s, e) => s + Number(e.quantity || 0), 0);
+        const totalAmt = recentInbound.reduce((s, e) => s + Number(e.totalAmount || 0), 0);
+        unitCost = totalQty > 0 ? totalAmt / totalQty : 0;
+      }
+    }
+    const outQty = Number(order.quantity || 0);
+    const outAmount = outQty * unitCost;
+    await this.prisma.costLedger.create({ data: { tenantId, transactionNo: order.orderNo, transactionType: '出库', materialName: order.materialName, quantity: String(outQty), unitPrice: String(unitCost), totalAmount: String(outAmount), transactionDate: new Date() } as any });
     return order;
   }
   @Delete(':id') async remove(@Param('id') id: string) { await this.prisma.outboundOrder.delete({ where: { id } }); return { message: '删除成功' }; }

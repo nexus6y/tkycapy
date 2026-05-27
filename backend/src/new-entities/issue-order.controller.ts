@@ -32,7 +32,20 @@ export class IssueOrderController {
       await this.prisma.inventory.update({ where: { id: inv.id }, data: { quantity: newQty, availableQty: newQty } });
     }
     const tenantId = await this.tid();
-    await this.prisma.costLedger.create({ data: { tenantId, transactionNo: order.orderNo, transactionType: '领料出库', materialName: order.materialName, quantity: String(order.quantity || 0), transactionDate: new Date() } as any });
+    let unitCost = 0;
+    if (order.materialName) {
+      const recentInbound = await this.prisma.costLedger.findMany({
+        where: { materialName: order.materialName, transactionType: '入库' },
+        orderBy: { createdAt: 'desc' }, take: 5,
+      });
+      if (recentInbound.length > 0) {
+        const totalQty = recentInbound.reduce((s, e) => s + Number(e.quantity || 0), 0);
+        const totalAmt = recentInbound.reduce((s, e) => s + Number(e.totalAmount || 0), 0);
+        unitCost = totalQty > 0 ? totalAmt / totalQty : 0;
+      }
+    }
+    const issQty = Number(order.quantity || 0);
+    await this.prisma.costLedger.create({ data: { tenantId, transactionNo: order.orderNo, transactionType: '领料出库', materialName: order.materialName, quantity: String(issQty), unitPrice: String(unitCost), totalAmount: String(issQty * unitCost), transactionDate: new Date() } as any });
     // Auto-transition production order: PENDING_ISSUE → ISSUING
     if (order.productionOrderId) {
       const prod = await this.prisma.productionOrder.findUnique({ where: { id: order.productionOrderId } });
