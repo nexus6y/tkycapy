@@ -45,4 +45,14 @@ export class QuotationController {
   async submit(@Param('id') id: string) {
     return this.prisma.quotation.update({ where: { id }, data: { approvalStatus: 'SUBMITTED' } as any });
   }
+  @Put(':id/approve')
+  async approve(@Param('id') id: string) {
+    const order = await this.prisma.quotation.update({ where: { id }, data: { approvalStatus: 'APPROVED' } as any });
+    const tenantId = await this.getTenantId();
+    await this.prisma.preOrder.create({ data: {
+      tenantId, orderNo: 'PRE-' + order.quotationNo, orderName: order.quotationName, customerName: order.customerName,
+      totalAmount: order.totalAmount, approvalStatus: 'DRAFT',
+    } as any });
+    return order;
+  }
 }
