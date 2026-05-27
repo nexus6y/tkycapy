@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { exportCSV } from '@/lib/export';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Download, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { ErpTable, ErpThead, ErpTh, ErpTbody, ErpTr, ErpTd, ErpEmpty, ErpLink, ErpAction, ErpActionBtn, ErpTools, ErpApproval, ErpPagination } from '@/components/ui/erp-table';
@@ -28,7 +29,7 @@ export default function ProductionOrderPage() {
       <div className="flex items-center gap-1">
         <Button variant="secondary" size="sm" onClick={()=>router.push('/production/order/create')}><Plus className="h-3.5 w-3.5"/>新增</Button>
         <Button variant="outline" size="sm">修改</Button><Button variant="outline" size="sm">删除</Button>
-        <Button variant="outline" size="sm"><Download className="h-3.5 w-3.5 mr-1"/>导出</Button>
+        <Button variant="outline" size="sm" onClick={()=>exportCSV(items,'export')}><Download className="h-3.5 w-3.5 mr-1"/>导出</Button>
       </div>
       <div className="flex items-center gap-1">
         <Button variant="ghost" size="sm" onClick={()=>setS({code:'',status:'',biz:''})}>重置</Button>
