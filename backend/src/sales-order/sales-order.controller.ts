@@ -14,4 +14,15 @@ export class SalesOrderController {
   @Put(':id') async update(@Param('id') id: string, @Body() dto: any) { return this.prisma.salesOrder.update({ where: { id }, data: dto as any }); }
   @Delete(':id') async remove(@Param('id') id: string) { await this.prisma.salesOrder.delete({ where: { id } }); return { message: '删除成功' }; }
   @Put(':id/submit') async submit(@Param('id') id: string) { return this.prisma.salesOrder.update({ where: { id }, data: { approvalStatus: 'SUBMITTED' } as any }); }
+  @Put(':id/approve') async approve(@Param('id') id: string) {
+    const order = await this.prisma.salesOrder.update({ where: { id }, data: { approvalStatus: 'APPROVED' } as any });
+    const tenantId = await this.tid();
+    // Auto-create production order for manufactured goods
+    await this.prisma.productionOrder.create({ data: {
+      tenantId, orderNo: 'PROD-' + order.orderNo, orderName: '生产-' + order.orderName,
+      materialName: order.orderName, quantity: '0', departmentName: '生产部',
+      approvalStatus: 'DRAFT',
+    } as any });
+    return order;
+  }
 }
