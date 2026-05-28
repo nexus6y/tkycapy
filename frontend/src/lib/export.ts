@@ -1,5 +1,7 @@
+import { toast } from '@/components/ui/toast';
+
 export function exportCSV(data: Record<string, any>[], filename: string) {
-  if (!data.length) return alert('没有数据可导出');
+  if (!data.length) return toast('没有数据可导出', 'info');
   const headers = Object.keys(data[0]);
   const csv = [
     headers.join(','),

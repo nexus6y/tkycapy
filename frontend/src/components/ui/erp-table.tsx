@@ -85,7 +85,7 @@ export function ErpPagination({ page, pageSize, total, onPage, onPageSize }: {
   return (
     <div className="flex items-center justify-end px-4 py-2.5 border-t border-[#ebeef5] gap-3">
       <span className="text-[13px] text-[#909399]">共 <span className="text-[#409eff]">{total}</span> 条</span>
-      <Select value={String(pageSize)} onValueChange={v => { onPageSize(v); onPage(1); }}>
+      <Select value={String(pageSize)} onValueChange={v => { if (v) { onPageSize(v); onPage(1); } }}>
         <SelectTrigger className="w-[100px] h-9 rounded-md border border-border bg-background px-3 text-[13px]"><SelectValue /></SelectTrigger>
         <SelectContent>{[20, 30, 50, 100].map(n => <SelectItem key={n} value={String(n)}>{n}条/页</SelectItem>)}</SelectContent>
       </Select>

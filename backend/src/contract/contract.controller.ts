@@ -30,12 +30,22 @@ export class ContractController {
   @Post()
   async create(@Body() dto: any) {
     const tenantId = await this.getTenantId();
-    return this.prisma.contract.create({ data: { ...dto, tenantId } as any });
+    const data: any = { ...dto, tenantId };
+    if (data.startDate) data.startDate = new Date(data.startDate);
+    if (data.endDate) data.endDate = new Date(data.endDate);
+    if (data.totalAmount != null && data.totalAmount !== '') data.totalAmount = String(data.totalAmount);
+    else delete data.totalAmount;
+    return this.prisma.contract.create({ data });
   }
 
   @Put(':id')
   async update(@Param('id') id: string, @Body() dto: any) {
-    return this.prisma.contract.update({ where: { id }, data: dto as any });
+    const data: any = { ...dto };
+    if (data.startDate) data.startDate = new Date(data.startDate);
+    if (data.endDate) data.endDate = new Date(data.endDate);
+    if (data.totalAmount != null && data.totalAmount !== '') data.totalAmount = String(data.totalAmount);
+    else delete data.totalAmount;
+    return this.prisma.contract.update({ where: { id }, data });
   }
 
   @Delete(':id')

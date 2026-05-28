@@ -68,7 +68,7 @@ export class MaterialCategoryService {
     }
 
     return this.prisma.materialCategory.create({
-      data: { ...dto, tenantId },
+      data: { ...dto, tenantId } as any,
       include: { parent: { select: { code: true, name: true } } },
     });
   }
@@ -77,7 +77,7 @@ export class MaterialCategoryService {
     await this.findOne(id);
     return this.prisma.materialCategory.update({
       where: { id },
-      data: dto,
+      data: dto as any,
       include: { parent: { select: { code: true, name: true } } },
     });
   }

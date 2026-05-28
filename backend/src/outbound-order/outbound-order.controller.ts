@@ -38,24 +38,26 @@ export class OutboundOrderController {
       const newAvail = String(Math.max(0, (Number(existing.availableQty) || 0) - (Number(order.quantity) || 0)));
       await this.prisma.inventory.update({ where: { id: existing.id }, data: { quantity: newQty, availableQty: newAvail } });
     }
-    // Write cost ledger entry with weighted average cost
+    // Calculate weighted average cost from ALL inbound entries for this material
     const tenantId = await this.tid();
+    const outQty = Number(order.quantity || 0);
     let unitCost = Number(order.unitPrice || 0);
     if (!unitCost && order.materialName) {
-      // Calculate weighted average from recent inbound entries
-      const recentInbound = await this.prisma.costLedger.findMany({
+      const allInbound = await this.prisma.costLedger.findMany({
         where: { materialName: order.materialName, transactionType: '入库' },
-        orderBy: { createdAt: 'desc' }, take: 5,
+        orderBy: { createdAt: 'desc' },
       });
-      if (recentInbound.length > 0) {
-        const totalQty = recentInbound.reduce((s, e) => s + Number(e.quantity || 0), 0);
-        const totalAmt = recentInbound.reduce((s, e) => s + Number(e.totalAmount || 0), 0);
+      if (allInbound.length > 0) {
+        const totalQty = allInbound.reduce((s, e) => s + Number(e.quantity || 0), 0);
+        const totalAmt = allInbound.reduce((s, e) => s + Number(e.totalAmount || 0), 0);
         unitCost = totalQty > 0 ? totalAmt / totalQty : 0;
       }
     }
-    const outQty = Number(order.quantity || 0);
     const outAmount = outQty * unitCost;
+    // Write cost ledger entry
     await this.prisma.costLedger.create({ data: { tenantId, transactionNo: order.orderNo, transactionType: '出库', materialName: order.materialName, quantity: String(outQty), unitPrice: String(unitCost), totalAmount: String(outAmount), transactionDate: new Date() } as any });
+    // Update outbound order with calculated amount
+    await this.prisma.outboundOrder.update({ where: { id }, data: { totalAmount: String(outAmount) } as any });
     return order;
   }
   @Delete(':id') async remove(@Param('id') id: string) { await this.prisma.outboundOrder.delete({ where: { id } }); return { message: '删除成功' }; }

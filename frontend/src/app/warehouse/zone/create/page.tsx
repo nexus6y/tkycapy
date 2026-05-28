@@ -1,9 +1,10 @@
-'use client';import { useState, useEffect } from 'react';import { useRouter } from 'next/navigation';import api from '@/lib/api';import { Input } from '@/components/ui/input';import { Select,SelectContent,SelectItem,SelectTrigger,SelectValue } from '@/components/ui/select';import { RadioGroup,RadioGroupItem } from '@/components/ui/radio-group';import { FormLayout,FormSection,FormGrid,FormField } from '@/components/form/form-layout';const FI='h-9 rounded-md border border-border bg-background px-3 text-[13px] w-full';
+'use client';import { useState, useEffect } from 'react';import { useRouter } from 'next/navigation';import api from '@/lib/api';import { Input } from '@/components/ui/input';import { Select,SelectContent,SelectItem,SelectTrigger,SelectValue } from '@/components/ui/select';import { RadioGroup,RadioGroupItem } from '@/components/ui/radio-group';import { toast } from '@/components/ui/toast';
+import { FormLayout,FormSection,FormGrid,FormField } from '@/components/form/form-layout';const FI='h-9 rounded-md border border-border bg-background px-3 text-[13px] w-full';
 export default function ZoneCreate(){const router=useRouter();const [whs,setWhs]=useState<any[]>([]);const [f,setF]=useState({code:'',name:'',type:'',warehouseId:'',warehouseName:'',sortOrder:0,status:'ACTIVE'});
-useEffect(()=>{api.get('/warehouses',{params:{pageSize:999}}).then(r=>setWhs(r.data.items));},[]);
-const save=async()=>{try{await api.post('/zones',f);router.push('/warehouse/zone');}catch(e:any){alert(e.response?.data?.message||'保存失败');}};
+useEffect(()=>{api.get('/common/next-code',{params:{entity:'zone'}}).then(r=>setF((prev:any)=>({...prev,code:r.data.code})));api.get('/warehouses',{params:{pageSize:999}}).then(r=>setWhs(r.data.items));},[]);
+const save=async()=>{try{await api.post('/zones',f);router.push('/warehouse/zone');}catch(e:any){toast(e.response?.data?.message||'保存失败','error');}};
 return(<FormLayout title="新增储区" onSave={save} sections={[{id:'b',title:'基本信息'}]} activeSection="b"><FormSection id="b" title="基本信息"><FormGrid>
-<FormField label="储区编码" required><Input className={FI} value={f.code} onChange={e=>setF({...f,code:e.target.value})}/></FormField>
+<FormField label="储区编码" required><Input className={FI} value={f.code} readOnly disabled/></FormField>
 <FormField label="储区名称" required><Input className={FI} value={f.name} onChange={e=>setF({...f,name:e.target.value})}/></FormField>
 <FormField label="储区类型"><Input className={FI} value={f.type} onChange={e=>setF({...f,type:e.target.value})}/></FormField>
 <FormField label="所属仓库"><Select value={f.warehouseId} onValueChange={v=>{const w=whs.find(x=>x.id===v);setF({...f,warehouseId:v,warehouseName:w?.name||''});}}><SelectTrigger className={FI}><SelectValue placeholder="请选择"/></SelectTrigger><SelectContent>{whs.map(w=><SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent></Select></FormField>

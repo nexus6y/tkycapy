@@ -11,8 +11,23 @@ export class SalesOrderController {
     const [items, total] = await Promise.all([this.prisma.salesOrder.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (+page - 1) * +pageSize, take: +pageSize }), this.prisma.salesOrder.count({ where })]);
     return { items, total, page: +page, pageSize: +pageSize };
   }
-  @Post() async create(@Body() dto: any) { const tenantId = await this.tid(); return this.prisma.salesOrder.create({ data: { ...dto, tenantId } as any }); }
-  @Put(':id') async update(@Param('id') id: string, @Body() dto: any) { return this.prisma.salesOrder.update({ where: { id }, data: dto as any }); }
+  @Post() async create(@Body() dto: any) {
+    const tenantId = await this.tid();
+    const data: any = { ...dto, tenantId };
+    if (data.deliveryDate) data.deliveryDate = new Date(data.deliveryDate);
+    if (data.orderDate) data.orderDate = new Date(data.orderDate);
+    if (data.totalAmount != null && data.totalAmount !== '') data.totalAmount = String(data.totalAmount);
+    else delete data.totalAmount;
+    return this.prisma.salesOrder.create({ data });
+  }
+  @Put(':id') async update(@Param('id') id: string, @Body() dto: any) {
+    const data: any = { ...dto };
+    if (data.deliveryDate) data.deliveryDate = new Date(data.deliveryDate);
+    if (data.orderDate) data.orderDate = new Date(data.orderDate);
+    if (data.totalAmount != null && data.totalAmount !== '') data.totalAmount = String(data.totalAmount);
+    else delete data.totalAmount;
+    return this.prisma.salesOrder.update({ where: { id }, data });
+  }
   @Put(':id/withdraw') async withdraw(@Param('id') id: string) {
     await guardWithdraw(this.prisma, 'salesOrder', id);
     return this.prisma.salesOrder.update({ where: { id }, data: { approvalStatus: 'DRAFT' } as any });

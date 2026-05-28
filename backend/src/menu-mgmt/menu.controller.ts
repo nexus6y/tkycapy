@@ -12,6 +12,8 @@ export class MenuMgmtController {
 export class PermissionMgmtController {
   constructor(private prisma: PrismaService) {}
   @Get() async findAll() { return this.prisma.permission.findMany({ include: { role: { select: { name: true } } } }); }
+  @Get(':id') async findOne(@Param('id') id: string) { return this.prisma.permission.findUnique({ where: { id }, include: { role: { select: { name: true } } } }); }
   @Post() async create(@Body() dto: any) { return this.prisma.permission.create({ data: dto as any }); }
+  @Put(':id') async update(@Param('id') id: string, @Body() dto: any) { return this.prisma.permission.update({ where: { id }, data: dto as any }); }
   @Delete(':id') async remove(@Param('id') id: string) { await this.prisma.permission.delete({ where: { id } }); return { message: '删除成功' }; }
 }

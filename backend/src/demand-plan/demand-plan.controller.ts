@@ -17,8 +17,8 @@ export class DemandPlanController {
     return this.prisma.demandPlan.findUniqueOrThrow({ where: { id } });
 
   }
-  @Post() async create(@Body() dto: any) { const tenantId = await this.tid(); return this.prisma.demandPlan.create({ data: { ...dto, tenantId } as any }); }
-  @Put(':id') async update(@Param('id') id: string, @Body() dto: any) { return this.prisma.demandPlan.update({ where: { id }, data: dto as any }); }
+  @Post() async create(@Body() dto: any) { const tenantId = await this.tid(); const data: any = { ...dto, tenantId }; if (data.requiredDate) data.requiredDate = new Date(data.requiredDate); return this.prisma.demandPlan.create({ data }); }
+  @Put(':id') async update(@Param('id') id: string, @Body() dto: any) { const data: any = { ...dto }; if (data.requiredDate) data.requiredDate = new Date(data.requiredDate); return this.prisma.demandPlan.update({ where: { id }, data }); }
   @Put(':id/withdraw') async withdraw(@Param('id') id: string) {
     await guardWithdraw(this.prisma, 'demandPlan', id);
     return this.prisma.demandPlan.update({ where: { id }, data: { approvalStatus: 'DRAFT' } as any });

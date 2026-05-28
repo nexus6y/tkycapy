@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:3001/api',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api',
   timeout: 10000,
   headers: { 'Content-Type': 'application/json' },
 });
@@ -23,6 +23,13 @@ api.interceptors.response.use(
         localStorage.removeItem('user');
         window.location.href = '/login';
       }
+    }
+    // Show toast for all errors unless suppressed via config
+    if (!err.config?.silent && typeof window !== 'undefined') {
+      import('@/components/ui/toast').then(m => {
+        const msg = err.response?.data?.message || err.message || '请求失败';
+        m.toast(Array.isArray(msg) ? msg.join('；') : String(msg), 'error');
+      });
     }
     return Promise.reject(err);
   },

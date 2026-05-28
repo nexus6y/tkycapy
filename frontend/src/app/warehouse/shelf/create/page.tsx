@@ -1,9 +1,10 @@
-'use client';import { useState, useEffect } from 'react';import { useRouter } from 'next/navigation';import api from '@/lib/api';import { Input } from '@/components/ui/input';import { Select,SelectContent,SelectItem,SelectTrigger,SelectValue } from '@/components/ui/select';import { RadioGroup,RadioGroupItem } from '@/components/ui/radio-group';import { FormLayout,FormSection,FormGrid,FormField } from '@/components/form/form-layout';const FI='h-9 rounded-md border border-border bg-background px-3 text-[13px] w-full';
+'use client';import { useState, useEffect } from 'react';import { useRouter } from 'next/navigation';import api from '@/lib/api';import { Input } from '@/components/ui/input';import { Select,SelectContent,SelectItem,SelectTrigger,SelectValue } from '@/components/ui/select';import { RadioGroup,RadioGroupItem } from '@/components/ui/radio-group';import { toast } from '@/components/ui/toast';
+import { FormLayout,FormSection,FormGrid,FormField } from '@/components/form/form-layout';const FI='h-9 rounded-md border border-border bg-background px-3 text-[13px] w-full';
 export default function ShelfCreate(){const router=useRouter();const [passages,setPassages]=useState<any[]>([]);const [f,setF]=useState({code:'',name:'',machineType:'',spec:'',passageId:'',passageName:'',zoneName:'',warehouseName:'',sortOrder:0,status:'ACTIVE'});
-useEffect(()=>{api.get('/passages',{params:{pageSize:999}}).then(r=>setPassages(r.data.items));},[]);
-const save=async()=>{try{await api.post('/shelves',f);router.push('/warehouse/shelf');}catch(e:any){alert(e.response?.data?.message||'保存失败');}};
+useEffect(()=>{api.get('/common/next-code',{params:{entity:'shelf'}}).then(r=>setF((prev:any)=>({...prev,code:r.data.code})));api.get('/passages',{params:{pageSize:999}}).then(r=>setPassages(r.data.items));},[]);
+const save=async()=>{try{await api.post('/shelves',f);router.push('/warehouse/shelf');}catch(e:any){toast(e.response?.data?.message||'保存失败','error');}};
 return(<FormLayout title="新增货架" onSave={save} sections={[{id:'b',title:'基本信息'}]} activeSection="b"><FormSection id="b" title="基本信息"><FormGrid>
-<FormField label="货架编码" required><Input className={FI} value={f.code} onChange={e=>setF({...f,code:e.target.value})}/></FormField>
+<FormField label="货架编码" required><Input className={FI} value={f.code} readOnly disabled/></FormField>
 <FormField label="货架名称" required><Input className={FI} value={f.name} onChange={e=>setF({...f,name:e.target.value})}/></FormField>
 <FormField label="机器类型"><Input className={FI} value={f.machineType} onChange={e=>setF({...f,machineType:e.target.value})}/></FormField>
 <FormField label="规格"><Input className={FI} value={f.spec} onChange={e=>setF({...f,spec:e.target.value})}/></FormField>

@@ -3,15 +3,17 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft } from 'lucide-react';
+import { toast } from '@/components/ui/toast';
 
 interface Section { id: string; title: string; }
 
 export function FormLayout({ title, onSave, sections, activeSection, children }: {
-  title: string; onSave: () => void; sections: Section[]; activeSection: string; children: React.ReactNode;
+  title: string; onSave: () => Promise<void> | void; sections: Section[]; activeSection: string; children: React.ReactNode;
 }) {
   const router = useRouter();
   const contentRef = useRef<HTMLDivElement>(null);
   const [current, setCurrent] = useState(activeSection);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const container = contentRef.current;
@@ -32,6 +34,16 @@ export function FormLayout({ title, onSave, sections, activeSection, children }:
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
+  const handleSave = async () => {
+    if (saving) return;
+    setSaving(true);
+    try { await onSave(); }
+    catch (e: any) {
+      if (!e?.response) toast(e?.message || '保存失败', 'error');
+    }
+    finally { setSaving(false); }
+  };
+
   return (
     <div className="h-full flex flex-col bg-canvas">
       {/* Action Bar */}
@@ -44,7 +56,7 @@ export function FormLayout({ title, onSave, sections, activeSection, children }:
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => router.back()}>取消</Button>
-          <Button variant="default" size="sm" onClick={onSave}>保存</Button>
+          <Button variant="default" size="sm" onClick={handleSave} disabled={saving}>{saving ? '保存中...' : '保存'}</Button>
         </div>
       </div>
 

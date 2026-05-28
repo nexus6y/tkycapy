@@ -25,6 +25,7 @@ export class CodeGeneratorService {
   /** Prefix map for common entities */
   static PREFIXES: Record<string, string> = {
     material: "MAT", customer: "CUS", supplier: "SUP",
+    contract: "CON", project: "PRJ", warehouse: "WH",
     quotation: "QTE", preOrder: "PRE", salesOrder: "SO",
     salesShipment: "SHIP", salesReturn: "SRT",
     demandPlan: "DP", purchasePlan: "PPLAN", purchaseOrder: "PO",

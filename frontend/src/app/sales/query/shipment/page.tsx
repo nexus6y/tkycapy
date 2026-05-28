@@ -1,5 +1,5 @@
 'use client';import { useEffect, useState, useCallback } from 'react';import api from '@/lib/api';import { Button } from '@/components/ui/button';import { Input } from '@/components/ui/input';import { Select,SelectContent,SelectItem,SelectTrigger,SelectValue } from '@/components/ui/select';import { exportCSV } from '@/lib/export';
-import { TooltipProvider } from '@/components/ui/tooltip';
+import { TooltipProvider } from '@/components/ui/tooltip';import { Download, Search } from 'lucide-react';import { ErpTable,ErpThead,ErpTh,ErpTbody,ErpTr,ErpTd,ErpEmpty,ErpLink,ErpApproval,ErpTools,ErpPagination } from '@/components/ui/erp-table';
 interface Item { id:string;shipmentNo:string;orderName:string;customerName:string|null;totalAmount:string|null;approvalStatus:string;createdAt:string; }
 export default function ShipmentQueryPage(){const [items,setItems]=useState<Item[]>([]);const [total,setTotal]=useState(0);const [pg,setPg]=useState(1);const [ps,setPs]=useState(30);const [s,setS]=useState({code:'',name:'',status:''});
 const fetch=useCallback(async()=>{const p:any={page:pg,pageSize:ps};if(s.code)p.code=s.code;if(s.name)p.name=s.name;if(s.status)p.status=s.status;const {data}=await api.get('/sales-shipments',{params:p});setItems(data.items);setTotal(data.total);},[pg,ps,s]);useEffect(()=>{fetch();},[fetch]);

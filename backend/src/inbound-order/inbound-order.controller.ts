@@ -26,7 +26,7 @@ export class InboundOrderController {
     // Update or create inventory record
     const tenantId = await this.tid();
     const existing = await this.prisma.inventory.findFirst({ where: { materialName: order.materialName || '', warehouseName: order.warehouseName || '' } });
-    const addQty = String(Number(order.qualifiedQty) || Number(order.quantity) || 0);
+    const addQty = String(Number(order.quantity || order.qualifiedQty) || 0);
     if (existing) {
       const newQty = String((Number(existing.quantity) || 0) + Number(addQty));
       const newAvail = String((Number(existing.availableQty) || 0) + Number(addQty));
@@ -35,7 +35,24 @@ export class InboundOrderController {
       await this.prisma.inventory.create({ data: { tenantId, materialName: order.materialName || '', warehouseName: order.warehouseName || '', quantity: addQty, availableQty: addQty, lockedQty: '0' } as any });
     }
     // Write cost ledger entry
-    await this.prisma.costLedger.create({ data: { tenantId, transactionNo: order.orderNo, transactionType: '入库', materialName: order.materialName, quantity: String(order.qualifiedQty || order.quantity || 0), unitPrice: String(order.unitPrice || 0), totalAmount: String(order.totalAmount || 0), transactionDate: new Date() } as any });
+    const inQty = Number(order.quantity || order.qualifiedQty) || 0;
+    const inPrice = Number(order.unitPrice || 0);
+    const inAmount = Number(order.totalAmount || 0) || inQty * inPrice;
+    // If no unit price provided, calculate weighted average from existing inventory
+    let finalPrice = inPrice;
+    if (!inPrice && inQty > 0) {
+      const recentInbound = await this.prisma.costLedger.findMany({
+        where: { materialName: order.materialName, transactionType: '入库' },
+        orderBy: { createdAt: 'desc' }, take: 5,
+      });
+      if (recentInbound.length > 0) {
+        const totalQty = recentInbound.reduce((s, e) => s + Number(e.quantity || 0), 0);
+        const totalAmt = recentInbound.reduce((s, e) => s + Number(e.totalAmount || 0), 0);
+        finalPrice = totalQty > 0 ? totalAmt / totalQty : 0;
+      }
+    }
+    const finalAmount = inQty * finalPrice;
+    await this.prisma.costLedger.create({ data: { tenantId, transactionNo: order.orderNo, transactionType: '入库', materialName: order.materialName, quantity: String(inQty), unitPrice: String(finalPrice), totalAmount: String(finalAmount), transactionDate: new Date() } as any });
     return order;
   }
   @Delete(':id') async remove(@Param('id') id: string) { await this.prisma.inboundOrder.delete({ where: { id } }); return { message: '删除成功' }; }
