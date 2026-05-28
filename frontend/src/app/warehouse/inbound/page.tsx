@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Download, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { toast } from '@/components/ui/toast';
 import { exportCSV } from '@/lib/export';
 import { ErpTable,ErpThead,ErpTh,ErpTbody,ErpTr,ErpTd,ErpEmpty,ErpLink,ErpAction,ErpActionBtn,ErpTools,ErpApproval,ErpPagination } from '@/components/ui/erp-table';
 
@@ -27,15 +28,15 @@ export default function InboundPage() {
     const {data}=await api.get('/inbound-orders',{params:p}); setItems(data.items); setTotal(data.total);
   },[pg,ps,s]); useEffect(()=>{fetch();},[fetch]);
 
-  const doDel=async()=>{if(!del)return;await api.delete(`/inbound-orders/${del}`);setDel(null);fetch();};
+  const doDel=async()=>{if(!del)return;try{await api.delete(`/inbound-orders/${del}`);setDel(null);fetch();}catch(e:any){toast(e.response?.data?.message||'删除失败','error');}};
   const toggleAll=(v:boolean)=>setSel(v?new Set(items.map(i=>i.id)):new Set());
 
   return (<TooltipProvider><div className="bg-background rounded-lg border shadow-sm">
     <div className="flex items-center justify-between px-4 h-14 border-b border-border">
       <div className="flex items-center gap-1">
         <Button variant="secondary" size="sm" onClick={()=>router.push('/warehouse/inbound/create')}><Plus className="h-3.5 w-3.5"/>新增</Button>
-        <Button variant="outline" size="sm" disabled={sel.size===0}>修改</Button>
-        <Button variant="outline" size="sm" disabled={sel.size===0}>删除</Button>
+        <Button variant="outline" size="sm" disabled={sel.size===0} onClick={()=>toast('请先勾选数据','info')}>修改</Button>
+        <Button variant="outline" size="sm" disabled={sel.size===0} onClick={()=>toast('请先勾选数据','info')}>删除</Button>
         <Button variant="outline" size="sm" onClick={()=>exportCSV(items,'入库单')}><Download className="h-3.5 w-3.5 mr-1"/>导出</Button>
       </div>
       <div className="flex items-center gap-1">
@@ -44,13 +45,13 @@ export default function InboundPage() {
       </div>
     </div>
     <div className="flex items-center gap-4 px-4 py-2.5 border-b border-border bg-muted/30 flex-wrap">
-      <F label="审批状态"><Select value={s.status} onValueChange={v=>setS({...s,status:v==='ALL'?'':v})}><SelectTrigger className="w-[100px] h-9 rounded-md border border-border bg-background px-3 text-[13px]"><SelectValue placeholder="全部"/></SelectTrigger><SelectContent><SelectItem value="ALL">全部</SelectItem><SelectItem value="DRAFT">草稿</SelectItem><SelectItem value="SUBMITTED">已提交</SelectItem><SelectItem value="APPROVED">已通过</SelectItem></SelectContent></Select></F>
+      <F label="审批状态"><Select value={s.status} onValueChange={(v:any)=>setS({...s,status:v==='ALL'?'':v})}><SelectTrigger className="w-[100px] h-9 rounded-md border border-border bg-background px-3 text-[13px]"><SelectValue placeholder="全部"/></SelectTrigger><SelectContent><SelectItem value="ALL">全部</SelectItem><SelectItem value="DRAFT">草稿</SelectItem><SelectItem value="SUBMITTED">已提交</SelectItem><SelectItem value="APPROVED">已通过</SelectItem></SelectContent></Select></F>
       <F label="单号"><Input className="w-[140px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.code} onChange={e=>setS({...s,code:e.target.value})}/></F>
       <F label="物料"><Input className="w-[140px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.name} onChange={e=>setS({...s,name:e.target.value})}/></F>
     </div>
     <ErpTools onRefresh={fetch}/>
     <div className="overflow-auto"><ErpTable><ErpThead><ErpTh className="w-10"><Checkbox checked={items.length>0&&sel.size===items.length} onCheckedChange={(v:boolean)=>toggleAll(v)}/></ErpTh><ErpTh>审批状态</ErpTh><ErpTh>业务状态</ErpTh><ErpTh>入库单号</ErpTh><ErpTh>来源</ErpTh><ErpTh>来源单号</ErpTh><ErpTh>物料</ErpTh><ErpTh>规格</ErpTh><ErpTh>数量</ErpTh><ErpTh>仓库</ErpTh><ErpTh>金额</ErpTh><ErpTh>收货日期</ErpTh><ErpTh>操作</ErpTh></ErpThead><ErpTbody>
-    {items.map(i=>(<ErpTr key={i.id}><ErpTd><Checkbox checked={sel.has(i.id)} onCheckedChange={(v:boolean)=>{const n=new Set(sel);v?n.add(i.id):n.delete(i.id);setSel(n);}}/></ErpTd><ErpTd><ErpApproval status={i.approvalStatus}/></ErpTd><ErpTd><span className="text-[13px]">{BS[i.businessStatus]||i.businessStatus||'-'}</span></ErpTd><ErpTd><ErpLink onClick={()=>router.push('/warehouse/inbound/'+i.id+'/edit')}>{i.orderNo}</ErpLink></ErpTd><ErpTd className="text-muted-foreground text-[12px]">{(i as any).sourceType||'-'}</ErpTd><ErpTd className="text-muted-foreground text-[12px]">{(i as any).sourceNo||'-'}</ErpTd><ErpTd>{i.materialName||'-'}</ErpTd><ErpTd className="text-muted-foreground">{i.specification||'-'}</ErpTd><ErpTd>{i.quantity?Number(i.quantity).toLocaleString():'-'}</ErpTd><ErpTd className="text-muted-foreground">{i.warehouseName||'-'}</ErpTd><ErpTd>{i.totalAmount?Number(i.totalAmount).toLocaleString():'-'}</ErpTd><ErpTd className="text-muted-foreground">{i.receiptDate?new Date(i.receiptDate).toLocaleDateString('zh-CN'):'-'}</ErpTd><ErpTd><ErpAction><ErpActionBtn onClick={()=>router.push('/warehouse/inbound/'+i.id+'/edit')}><Pencil className="h-3.5 w-3.5"/>修改</ErpActionBtn><ErpActionBtn danger onClick={()=>setDel(i.id)}><Trash2 className="h-3.5 w-3.5"/>删除</ErpActionBtn></ErpAction></ErpTd></ErpTr>))}
+    {items.map(i=>(<ErpTr key={i.id}><ErpTd><Checkbox checked={sel.has(i.id)} onCheckedChange={(v:boolean)=>{const n=new Set(sel);v?n.add(i.id):n.delete(i.id);setSel(n);}}/></ErpTd><ErpTd><ErpApproval status={i.approvalStatus}/></ErpTd><ErpTd><span className="text-[13px]">{BS[i.businessStatus]||i.businessStatus||'-'}</span></ErpTd><ErpTd><ErpLink onClick={()=>router.push('/warehouse/inbound/'+i.id+'/edit')}>{i.orderNo}</ErpLink></ErpTd><ErpTd className="text-muted-foreground text-[12px]">{(i as any).sourceType||'-'}</ErpTd><ErpTd className="text-muted-foreground text-[12px]">{(i as any).sourceNo||'-'}</ErpTd><ErpTd>{i.materialName||'-'}</ErpTd><ErpTd className="text-muted-foreground">{i.specification||'-'}</ErpTd><ErpTd>{i.quantity?Number(i.quantity).toLocaleString():'-'}</ErpTd><ErpTd className="text-muted-foreground">{i.warehouseName||'-'}</ErpTd><ErpTd>{i.totalAmount?Number(i.totalAmount).toLocaleString():'-'}</ErpTd><ErpTd className="text-muted-foreground">{i.receiptDate?new Date(i.receiptDate).toLocaleDateString('zh-CN'):'-'}</ErpTd><ErpTd><ErpAction><ErpActionBtn onClick={()=>router.push('/warehouse/inbound/'+i.id+'/edit')}><Pencil className="h-3.5 w-3.5"/>修改</ErpActionBtn>{i.approvalStatus==='DRAFT'&&<button onClick={()=>{api.put(`/inbound-orders/${i.id}/submit`).then(fetch);}} className="text-primary text-[13px]">提交</button>}{i.approvalStatus==='SUBMITTED'&&<button onClick={()=>{api.put(`/inbound-orders/${i.id}/approve`).then(fetch);}} className="text-green-600 text-[13px]">通过</button>}<ErpActionBtn danger onClick={()=>setDel(i.id)}><Trash2 className="h-3.5 w-3.5"/>删除</ErpActionBtn></ErpAction></ErpTd></ErpTr>))}
     {items.length===0&&<ErpEmpty colSpan={13}/>}
     </ErpTbody></ErpTable></div>
     <ErpPagination page={pg} pageSize={ps} total={total} onPage={setPg} onPageSize={v=>setPs(+v)}/>

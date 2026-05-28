@@ -37,7 +37,7 @@ export default function ProjectQueryPage() {
           <div className="w-36"><label className="text-xs text-gray-500">项目编码</label><Input value={search.code} onChange={e => setSearch({ ...search, code: e.target.value })} /></div>
           <div className="w-36"><label className="text-xs text-gray-500">项目名称</label><Input value={search.name} onChange={e => setSearch({ ...search, name: e.target.value })} /></div>
           <div className="w-32"><label className="text-xs text-gray-500">审批状态</label>
-            <Select value={search.status} onValueChange={v => setSearch({ ...search, status: v === 'ALL' ? '' : v })}>
+            <Select value={search.status} onValueChange={(v:any) => setSearch({ ...search, status: v === 'ALL' ? '' : v })}>
               <SelectTrigger><SelectValue placeholder="全部" /></SelectTrigger>
               <SelectContent><SelectItem value="ALL">全部</SelectItem><SelectItem value="DRAFT">草稿</SelectItem><SelectItem value="SUBMITTED">已提交</SelectItem><SelectItem value="APPROVED">已通过</SelectItem></SelectContent>
             </Select>

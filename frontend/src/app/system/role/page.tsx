@@ -7,13 +7,15 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Download, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { toast } from '@/components/ui/toast';
 import { ErpTable,ErpThead,ErpTh,ErpTbody,ErpTr,ErpTd,ErpEmpty,ErpLink,ErpAction,ErpActionBtn,ErpTools,ErpStatus,ErpPagination } from '@/components/ui/erp-table';
 interface Item { id:string;code:string;name:string;description:string|null;status:string;createdAt:string; }
 export default function RolePage() {
+  const router = useRouter();
   const [items,setItems]=useState<Item[]>([]);const [total,setTotal]=useState(0);const [pg,setPg]=useState(1);const [ps,setPs]=useState(30);
   const [del,setDel]=useState<string|null>(null);
   const fetch=useCallback(async()=>{const {data}=await api.get('/roles-mgmt',{params:{page:pg,pageSize:ps}});setItems(data.items);setTotal(data.total);},[pg,ps]);useEffect(()=>{fetch();},[fetch]);
-  const doDel=async()=>{if(!del)return;await api.delete(`/roles-mgmt/${del}`);setDel(null);fetch();};
+  const doDel=async()=>{if(!del)return;try{await api.delete(`/roles-mgmt/${del}`);setDel(null);fetch();}catch(e:any){toast(e.response?.data?.message||'删除失败','error');}};
   return (<TooltipProvider><div className="bg-background rounded-lg border shadow-sm">
     <div className="flex items-center justify-between px-4 h-14 border-b border-border"><div className="flex items-center gap-1"><Button variant="secondary" size="sm" onClick={()=>router.push('/system/role/create')}><Plus className="h-3.5 w-3.5"/>新增</Button><Button variant="outline" size="sm">修改</Button><Button variant="outline" size="sm">删除</Button><Button variant="outline" size="sm"><Download className="h-3.5 w-3.5 mr-1"/>导出</Button></div><Button variant="default" size="sm" onClick={fetch}><Search className="h-3.5 w-3.5 mr-1"/>搜索</Button></div>
     <ErpTools onRefresh={fetch}/>

@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
+import { toast } from '@/components/ui/toast';
 import { FormLayout, FormSection, FormGrid, FormField } from '@/components/form/form-layout';
 
 interface Category { id:string;code:string;name:string; }
@@ -44,7 +45,7 @@ export default function MaterialCreatePage() {
 
   const save = async () => {
     try { await api.post('/materials', f); router.push('/material'); }
-    catch(e:any) { alert(e.response?.data?.message||'保存失败'); }
+    catch(e:any) { toast(e.response?.data?.message||'保存失败','error'); }
   };
 
   return (
@@ -54,7 +55,7 @@ export default function MaterialCreatePage() {
       <FormSection id="basic" title="基本信息">
         <FormGrid>
           <FormField label="1级分类" required>
-            <Select value={f.categoryId} onValueChange={v=>setF({...f,categoryId:v})}><SelectTrigger className={FI}><SelectValue placeholder="选择分类"/></SelectTrigger><SelectContent>{categories.map(c=><SelectItem key={c.id} value={c.id}>{c.code} {c.name}</SelectItem>)}</SelectContent></Select>
+            <Select value={f.categoryId} onValueChange={(v:any)=>setF({...f,categoryId:v})}><SelectTrigger className={FI}><SelectValue placeholder="选择分类"/></SelectTrigger><SelectContent>{categories.map(c=><SelectItem key={c.id} value={c.id}>{c.code} {c.name}</SelectItem>)}</SelectContent></Select>
           </FormField>
           <FormField label="物料编号"><Input className={FI} value={f.code} onChange={e=>setF({...f,code:e.target.value})}/></FormField>
           <FormField label="物料名称" required><Input className={FI} value={f.name} onChange={e=>setF({...f,name:e.target.value})}/></FormField>
@@ -62,7 +63,7 @@ export default function MaterialCreatePage() {
           <FormField label="外部编码"><Input className={FI} value={f.externalCode} onChange={e=>setF({...f,externalCode:e.target.value})}/></FormField>
           <FormField label="排序"><Input type="number" className={FI} value={f.sortOrder} onChange={e=>setF({...f,sortOrder:+e.target.value})}/></FormField>
           <FormField label="状态">
-            <RadioGroup value={f.status} onValueChange={v=>setF({...f,status:v})} className="flex items-center gap-4 pt-1.5">
+            <RadioGroup value={f.status} onValueChange={(v:any)=>setF({...f,status:v})} className="flex items-center gap-4 pt-1.5">
               <div className="flex items-center gap-1.5"><RadioGroupItem value="ACTIVE" id="s-active"/><label htmlFor="s-active" className="text-[13px]">启用</label></div>
               <div className="flex items-center gap-1.5"><RadioGroupItem value="INACTIVE" id="s-inactive"/><label htmlFor="s-inactive" className="text-[13px]">停用</label></div>
             </RadioGroup>
@@ -75,7 +76,7 @@ export default function MaterialCreatePage() {
       <FormSection id="nature" title="物料性质">
         <FormGrid>
           <FormField label="物料性质" required>
-            <RadioGroup value={f.materialType} onValueChange={v=>setF({...f,materialType:v})} className="flex items-center gap-4 pt-1.5">
+            <RadioGroup value={f.materialType} onValueChange={(v:any)=>setF({...f,materialType:v})} className="flex items-center gap-4 pt-1.5">
               <div className="flex items-center gap-1.5"><RadioGroupItem value="PHYSICAL" id="mt-phys"/><label htmlFor="mt-phys" className="text-[13px]">实物</label></div>
               <div className="flex items-center gap-1.5"><RadioGroupItem value="VIRTUAL" id="mt-virt"/><label htmlFor="mt-virt" className="text-[13px]">虚拟</label></div>
             </RadioGroup>
@@ -89,13 +90,13 @@ export default function MaterialCreatePage() {
       <FormSection id="unit" title="计量单位">
         <FormGrid>
           <FormField label="统一计量单位">
-            <RadioGroup value={f.unifiedUnit?'true':'false'} onValueChange={v=>setF({...f,unifiedUnit:v==='true'})} className="flex items-center gap-4 pt-1.5">
+            <RadioGroup value={f.unifiedUnit?'true':'false'} onValueChange={(v:any)=>setF({...f,unifiedUnit:v==='true'})} className="flex items-center gap-4 pt-1.5">
               <div className="flex items-center gap-1.5"><RadioGroupItem value="true" id="uu-yes"/><label htmlFor="uu-yes" className="text-[13px]">是</label></div>
               <div className="flex items-center gap-1.5"><RadioGroupItem value="false" id="uu-no"/><label htmlFor="uu-no" className="text-[13px]">否</label></div>
             </RadioGroup>
           </FormField>
           <FormField label="计量单位" required>
-            <Select value={f.unitId} onValueChange={v=>setF({...f,unitId:v})}><SelectTrigger className={FI}><SelectValue placeholder="选择单位"/></SelectTrigger><SelectContent>{units.map(u=><SelectItem key={u.id} value={u.id}>{u.name}{u.symbol?`(${u.symbol})`:''}</SelectItem>)}</SelectContent></Select>
+            <Select value={f.unitId} onValueChange={(v:any)=>setF({...f,unitId:v})}><SelectTrigger className={FI}><SelectValue placeholder="选择单位"/></SelectTrigger><SelectContent>{units.map(u=><SelectItem key={u.id} value={u.id}>{u.name}{u.symbol?`(${u.symbol})`:''}</SelectItem>)}</SelectContent></Select>
           </FormField>
         </FormGrid>
       </FormSection>

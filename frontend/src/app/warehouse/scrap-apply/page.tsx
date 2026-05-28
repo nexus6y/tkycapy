@@ -25,7 +25,7 @@ export default function ScrapApplyPage() {
     const {data}=await api.get('/scrap-orders',{params:p}); setItems(data.items); setTotal(data.total);
   },[pg,ps,s]); useEffect(()=>{fetch();},[fetch]);
 
-  const doDel=async()=>{if(!del)return;await api.delete(`/scrap-orders/${del}`);setDel(null);fetch();};
+  const doDel=async()=>{if(!del)return;try{await api.delete(`/scrap-orders/${del}`);setDel(null);fetch();}catch(e:any){toast(e.response?.data?.message||'删除失败','error');}};
 const genDisposal=async(i:Item)=>{await api.post('/scrap-orders',{orderNo:'HANDLE-'+Date.now(),materialName:i.materialName,quantity:i.quantity,scrapReason:i.scrapReason,disposalMethod:i.disposalMethod||'退供',approvalStatus:'DRAFT'});toast('已生成处置单', 'info');fetch();};
   const toggleAll=(v:boolean)=>setSel(v?new Set(items.map(i=>i.id)):new Set());
 
@@ -33,8 +33,8 @@ const genDisposal=async(i:Item)=>{await api.post('/scrap-orders',{orderNo:'HANDL
     <div className="flex items-center justify-between px-4 h-14 border-b border-border">
       <div className="flex items-center gap-1">
         <Button variant="secondary" size="sm" onClick={()=>router.push('/warehouse/scrap-apply/create')}><Plus className="h-3.5 w-3.5"/>新增</Button>
-        <Button variant="outline" size="sm" disabled={sel.size===0}>修改</Button>
-        <Button variant="outline" size="sm" disabled={sel.size===0}>删除</Button>
+        <Button variant="outline" size="sm" disabled={sel.size===0} onClick={()=>toast('请先勾选数据','info')}>修改</Button>
+        <Button variant="outline" size="sm" disabled={sel.size===0} onClick={()=>toast('请先勾选数据','info')}>删除</Button>
         <Button variant="outline" size="sm"><Download className="h-3.5 w-3.5 mr-1"/>导出</Button>
       </div>
       <div className="flex items-center gap-1">
@@ -43,7 +43,7 @@ const genDisposal=async(i:Item)=>{await api.post('/scrap-orders',{orderNo:'HANDL
       </div>
     </div>
     <div className="flex items-center gap-4 px-4 py-2.5 border-b border-border bg-muted/30 flex-wrap">
-      <F label="审批状态"><Select value={s.status} onValueChange={v=>setS({...s,status:v==='ALL'?'':v})}><SelectTrigger className="w-[100px] h-9 rounded-md border border-border bg-background px-3 text-[13px]"><SelectValue placeholder="全部"/></SelectTrigger><SelectContent><SelectItem value="ALL">全部</SelectItem><SelectItem value="DRAFT">草稿</SelectItem><SelectItem value="SUBMITTED">已提交</SelectItem><SelectItem value="APPROVED">已通过</SelectItem></SelectContent></Select></F>
+      <F label="审批状态"><Select value={s.status} onValueChange={(v:any)=>setS({...s,status:v==='ALL'?'':v})}><SelectTrigger className="w-[100px] h-9 rounded-md border border-border bg-background px-3 text-[13px]"><SelectValue placeholder="全部"/></SelectTrigger><SelectContent><SelectItem value="ALL">全部</SelectItem><SelectItem value="DRAFT">草稿</SelectItem><SelectItem value="SUBMITTED">已提交</SelectItem><SelectItem value="APPROVED">已通过</SelectItem></SelectContent></Select></F>
       <F label="单号"><Input className="w-[140px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.code} onChange={e=>setS({...s,code:e.target.value})}/></F>
       <F label="物料"><Input className="w-[140px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.name} onChange={e=>setS({...s,name:e.target.value})}/></F>
     </div>

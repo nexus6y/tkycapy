@@ -27,7 +27,7 @@ export default function ContractPage() {
     const {data}=await api.get('/contracts',{params:p}); setItems(data.items); setTotal(data.total);
   },[pg,ps,s]); useEffect(()=>{fetch();},[fetch]);
 
-  const doDel=async()=>{if(!del)return;await api.delete(`/contracts/${del}`);setDel(null);fetch();};
+  const doDel=async()=>{if(!del)return;try{await api.delete(`/contracts/${del}`);setDel(null);fetch();}catch(e:any){toast(e.response?.data?.message||'删除失败','error');}};
   const tp=Math.ceil(total/ps);const pgs=Array.from({length:tp},(_,i)=>i+1).filter(p=>p===1||p===tp||Math.abs(p-pg)<=2);
 
   return (<TooltipProvider><div className="bg-background rounded-lg border shadow-sm">

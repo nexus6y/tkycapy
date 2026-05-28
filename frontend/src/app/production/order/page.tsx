@@ -10,6 +10,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { exportCSV } from '@/lib/export';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Download, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { toast } from '@/components/ui/toast';
 import { ErpTable, ErpThead, ErpTh, ErpTbody, ErpTr, ErpTd, ErpEmpty, ErpLink, ErpAction, ErpActionBtn, ErpTools, ErpApproval, ErpPagination } from '@/components/ui/erp-table';
 
 interface Item { id:string;orderNo:string;orderName:string;materialName:string|null;departmentName:string|null;quantity:string|null;startDate:string|null;endDate:string|null;approvalStatus:string;businessStatus:string;createdAt:string; }
@@ -22,7 +23,7 @@ export default function ProductionOrderPage() {
     const p:any={page:pg,pageSize:ps}; if(s.code)p.code=s.code; if(s.status)p.status=s.status; if(s.biz)p.biz=s.biz;
     const {data}=await api.get('/production-orders',{params:p}); setItems(data.items); setTotal(data.total);
   },[pg,ps,s]); useEffect(()=>{fetch();},[fetch]);
-  const doDel=async()=>{if(!del)return;await api.delete(`/production-orders/${del}`);setDel(null);fetch();};
+  const doDel=async()=>{if(!del)return;try{await api.delete(`/production-orders/${del}`);setDel(null);fetch();}catch(e:any){toast(e.response?.data?.message||'删除失败','error');}};
 
   return (<TooltipProvider><div className="bg-background rounded-lg border shadow-sm">
     <div className="flex items-center justify-between px-4 h-14 border-b border-border">
@@ -37,8 +38,8 @@ export default function ProductionOrderPage() {
       </div>
     </div>
     <div className="flex items-center gap-4 px-4 py-2.5 border-b border-border bg-muted/30">
-      <div className="flex items-center gap-1.5"><span className="text-[13px] text-muted-foreground w-[80px] text-right shrink-0">审批</span><Select value={s.status} onValueChange={v=>setS({...s,status:v==='ALL'?'':v})}><SelectTrigger className="w-[100px] h-9 rounded-md border border-border bg-background px-3 text-[13px]"><SelectValue placeholder="全部"/></SelectTrigger><SelectContent><SelectItem value="ALL">全部</SelectItem><SelectItem value="DRAFT">草稿</SelectItem><SelectItem value="APPROVED">已通过</SelectItem></SelectContent></Select></div>
-      <div className="flex items-center gap-1.5"><span className="text-[13px] text-muted-foreground w-[80px] text-right shrink-0">业务</span><Select value={s.biz} onValueChange={v=>setS({...s,biz:v==='ALL'?'':v})}><SelectTrigger className="w-[110px] h-9 rounded-md border border-border bg-background px-3 text-[13px]"><SelectValue placeholder="全部"/></SelectTrigger><SelectContent><SelectItem value="ALL">全部</SelectItem><SelectItem value="PENDING_ISSUE">待领料</SelectItem><SelectItem value="IN_PRODUCTION">生产中</SelectItem><SelectItem value="COMPLETED">已完成</SelectItem></SelectContent></Select></div>
+      <div className="flex items-center gap-1.5"><span className="text-[13px] text-muted-foreground w-[80px] text-right shrink-0">审批</span><Select value={s.status} onValueChange={(v:any)=>setS({...s,status:v==='ALL'?'':v})}><SelectTrigger className="w-[100px] h-9 rounded-md border border-border bg-background px-3 text-[13px]"><SelectValue placeholder="全部"/></SelectTrigger><SelectContent><SelectItem value="ALL">全部</SelectItem><SelectItem value="DRAFT">草稿</SelectItem><SelectItem value="APPROVED">已通过</SelectItem></SelectContent></Select></div>
+      <div className="flex items-center gap-1.5"><span className="text-[13px] text-muted-foreground w-[80px] text-right shrink-0">业务</span><Select value={s.biz} onValueChange={(v:any)=>setS({...s,biz:v==='ALL'?'':v})}><SelectTrigger className="w-[110px] h-9 rounded-md border border-border bg-background px-3 text-[13px]"><SelectValue placeholder="全部"/></SelectTrigger><SelectContent><SelectItem value="ALL">全部</SelectItem><SelectItem value="PENDING_ISSUE">待领料</SelectItem><SelectItem value="IN_PRODUCTION">生产中</SelectItem><SelectItem value="COMPLETED">已完成</SelectItem></SelectContent></Select></div>
       <div className="flex items-center gap-1.5"><span className="text-[13px] text-muted-foreground w-[80px] text-right shrink-0">生产编号</span><Input className="w-[140px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.code} onChange={e=>setS({...s,code:e.target.value})}/></div>
     </div>
     <ErpTools onRefresh={fetch}/>

@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ChevronDown, Pencil, RefreshCw, Search, Settings, Trash2 } from 'lucide-react';
+import { toast } from '@/components/ui/toast';
 
 interface Category { id:string;code:string;name:string;parentId:string|null;parentCode:string;parentName:string;sortOrder:number;status:string;createdAt:string; }
 
@@ -38,8 +39,8 @@ export default function MaterialCategoryPage() {
       <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100">
         <div className="flex items-center gap-1">
           <Button size="sm" onClick={()=>router.push('/material-category/create')}><span className="mr-1">+</span>新增</Button>
-          <Button size="sm" variant="outline" disabled={selected.size===0}>修改</Button>
-          <Button size="sm" variant="outline" disabled={selected.size===0}>删除</Button>
+          <Button size="sm" variant="outline" disabled={selected.size===0} onClick={()=>toast('请先勾选数据','info')}>修改</Button>
+          <Button size="sm" variant="outline" disabled={selected.size===0} onClick={()=>toast('请先勾选数据','info')}>删除</Button>
         </div>
         <div className="flex items-center gap-1">
           <Button size="sm" variant="ghost" onClick={()=>setS({code:'',name:'',status:''})}>重置</Button>
@@ -49,7 +50,7 @@ export default function MaterialCategoryPage() {
       </div>
       <div className="flex items-center gap-3 px-4 py-2.5 bg-gray-50/50 border-b border-gray-100 flex-wrap">
         <div className="flex items-center gap-1.5"><span className="text-[12px] text-gray-500">状态</span>
-          <Select value={s.status} onValueChange={v=>setS({...s,status:v==='ALL'?'':v})}>
+          <Select value={s.status} onValueChange={(v:any)=>setS({...s,status:v==='ALL'?'':v})}>
             <SelectTrigger className="w-[100px] h-8 text-[12px]"><SelectValue placeholder="全部"/></SelectTrigger>
             <SelectContent><SelectItem value="ALL">全部</SelectItem><SelectItem value="ACTIVE">启用</SelectItem><SelectItem value="INACTIVE">停用</SelectItem></SelectContent></Select>
         </div>
@@ -101,7 +102,7 @@ export default function MaterialCategoryPage() {
       <div className="flex items-center justify-between px-4 py-2.5 border-t border-gray-200 bg-white shrink-0">
         <span className="text-[12px] text-gray-500">共 {total} 条</span>
         <div className="flex items-center gap-3">
-          <Select value={String(pageSize)} onValueChange={v=>{setPageSize(+v);setPage(1);}}>
+          <Select value={String(pageSize)} onValueChange={(v:any)=>{setPageSize(+v);setPage(1);}}>
             <SelectTrigger className="w-[100px] h-8 text-[12px]"><SelectValue/></SelectTrigger>
             <SelectContent>{[20,30,50,100].map(n=><SelectItem key={n} value={String(n)}>{n}条/页</SelectItem>)}</SelectContent>
           </Select>

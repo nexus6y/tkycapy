@@ -1,8 +1,9 @@
-'use client';import { useEffect, useState } from 'react';import { useRouter, useParams } from 'next/navigation';import api from '@/lib/api';import { Input } from '@/components/ui/input';import { FormLayout,FormSection,FormGrid,FormField } from '@/components/form/form-layout';
+'use client';import { useEffect, useState } from 'react';import { useRouter, useParams } from 'next/navigation';import api from '@/lib/api';import { Input } from '@/components/ui/input';import { toast } from '@/components/ui/toast';
+import { FormLayout,FormSection,FormGrid,FormField } from '@/components/form/form-layout';
 const FI='h-9 rounded-md border border-border bg-background px-3 text-[13px] w-full';
 export default function ShEdit(){const router=useRouter();const {id}=useParams<{id:string}>();const [loading,setLoading]=useState(true);const [f,setF]=useState<any>({});
 useEffect(()=>{api.get('/sales-shipments/'+id).then(r=>{setF(r.data);setLoading(false);});},[id]);
-const save=async()=>{try{await api.put('/sales-shipments/'+id,f);router.push('/sales/shipment');}catch(e:any){alert(e.response?.data?.message||'保存失败');}};
+const save=async()=>{try{await api.put('/sales-shipments/'+id,f);router.push('/sales/shipment');}catch(e:any){toast(e.response?.data?.message||'保存失败','error');}};
 if(loading)return<div className="h-full flex items-center justify-center text-muted-foreground">加载中...</div>;
 return(<FormLayout title={'编辑出货单：'+f.shipmentNo} onSave={save} sections={[{id:'b',title:'出货信息'}]} activeSection="b"><FormSection id="b" title="出货信息"><FormGrid>
 <FormField label="出货单号"><Input className={FI} value={f.shipmentNo} disabled/></FormField>

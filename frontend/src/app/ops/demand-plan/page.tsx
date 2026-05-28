@@ -10,6 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { ChevronDown, Download, Pencil, Plus, Search, Trash2, Upload } from 'lucide-react';
+import { toast } from '@/components/ui/toast';
 import { ErpTable, ErpThead, ErpTh, ErpTbody, ErpTr, ErpTd, ErpEmpty, ErpLink, ErpAction, ErpActionBtn, ErpTools, ErpApproval, ErpPagination } from '@/components/ui/erp-table';
 
 interface Item { id:string;planNo:string;planName:string;demandSource:string|null;demandUse:string|null;projectName:string|null;requiredDate:string|null;totalQuantity:string|null;approvalStatus:string;businessStatus:string;createdAt:string; }
@@ -25,14 +26,14 @@ export default function DemandPlanPage() {
     const {data}=await api.get('/demand-plans',{params:p}); setItems(data.items); setTotal(data.total);
   },[pg,ps,s]); useEffect(()=>{fetch();},[fetch]);
 
-  const doDel=async()=>{if(!del)return;await api.delete(`/demand-plans/${del}`);setDel(null);fetch();};
+  const doDel=async()=>{if(!del)return;try{await api.delete(`/demand-plans/${del}`);setDel(null);fetch();}catch(e:any){toast(e.response?.data?.message||'删除失败','error');}};
 
   return (<TooltipProvider><div className="bg-background rounded-lg border shadow-sm">
     <div className="flex items-center justify-between px-4 h-14 border-b border-border">
       <div className="flex items-center gap-1">
         <Button variant="secondary" size="sm" onClick={()=>router.push('/ops/demand-plan/create')}><Plus className="h-3.5 w-3.5"/>新增</Button>
-        <Button variant="outline" size="sm" disabled={sel.size===0}>修改</Button>
-        <Button variant="outline" size="sm" disabled={sel.size===0}>删除</Button>
+        <Button variant="outline" size="sm" disabled={sel.size===0} onClick={()=>toast('请先勾选数据','info')}>修改</Button>
+        <Button variant="outline" size="sm" disabled={sel.size===0} onClick={()=>toast('请先勾选数据','info')}>删除</Button>
         <DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" size="sm">导入 <ChevronDown className="h-3 w-3 ml-0.5"/></Button></DropdownMenuTrigger><DropdownMenuContent><DropdownMenuItem><Upload className="h-3.5 w-3.5 mr-2"/>导入数据</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
         <Button variant="outline" size="sm"><Download className="h-3.5 w-3.5 mr-1"/>导出</Button>
       </div>
@@ -42,7 +43,7 @@ export default function DemandPlanPage() {
       </div>
     </div>
     <div className="flex items-center gap-4 px-4 py-2.5 border-b border-border bg-muted/30 flex-wrap">
-      <div className="flex items-center gap-1.5"><span className="text-[13px] text-muted-foreground w-[80px] text-right shrink-0">状态</span><Select value={s.status} onValueChange={v=>setS({...s,status:v==='ALL'?'':v})}><SelectTrigger className="w-[100px] h-9 rounded-md border border-border bg-background px-3 text-[13px]"><SelectValue placeholder="全部"/></SelectTrigger><SelectContent><SelectItem value="ALL">全部</SelectItem><SelectItem value="DRAFT">草稿</SelectItem><SelectItem value="SUBMITTED">已提交</SelectItem><SelectItem value="APPROVED">已通过</SelectItem></SelectContent></Select></div>
+      <div className="flex items-center gap-1.5"><span className="text-[13px] text-muted-foreground w-[80px] text-right shrink-0">状态</span><Select value={s.status} onValueChange={(v:any)=>setS({...s,status:v==='ALL'?'':v})}><SelectTrigger className="w-[100px] h-9 rounded-md border border-border bg-background px-3 text-[13px]"><SelectValue placeholder="全部"/></SelectTrigger><SelectContent><SelectItem value="ALL">全部</SelectItem><SelectItem value="DRAFT">草稿</SelectItem><SelectItem value="SUBMITTED">已提交</SelectItem><SelectItem value="APPROVED">已通过</SelectItem></SelectContent></Select></div>
       <div className="flex items-center gap-1.5"><span className="text-[13px] text-muted-foreground w-[80px] text-right shrink-0">计划单号</span><Input className="w-[140px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.code} onChange={e=>setS({...s,code:e.target.value})}/></div>
       <div className="flex items-center gap-1.5"><span className="text-[13px] text-muted-foreground w-[80px] text-right shrink-0">计划名称</span><Input className="w-[140px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.name} onChange={e=>setS({...s,name:e.target.value})}/></div>
     </div>

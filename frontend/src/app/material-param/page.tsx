@@ -38,21 +38,21 @@ export default function MaterialParamPage() {
         </div>
         <div>
           <label className="text-sm font-medium">允许物料重名</label>
-          <Select value={form.allowDuplicateName ? 'true' : 'false'} onValueChange={v => setForm({ ...form, allowDuplicateName: v === 'true' })}>
+          <Select value={form.allowDuplicateName ? 'true' : 'false'} onValueChange={(v:any) => setForm({ ...form, allowDuplicateName: v === 'true' })}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent><SelectItem value="false">不允许</SelectItem><SelectItem value="true">允许</SelectItem></SelectContent>
           </Select>
         </div>
         <div>
           <label className="text-sm font-medium">物料自动审批</label>
-          <Select value={form.autoApproval ? 'true' : 'false'} onValueChange={v => setForm({ ...form, autoApproval: v === 'true' })}>
+          <Select value={form.autoApproval ? 'true' : 'false'} onValueChange={(v:any) => setForm({ ...form, autoApproval: v === 'true' })}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent><SelectItem value="false">关闭</SelectItem><SelectItem value="true">开启</SelectItem></SelectContent>
           </Select>
         </div>
         <div>
           <label className="text-sm font-medium">默认状态</label>
-          <Select value={form.defaultStatus} onValueChange={v => setForm({ ...form, defaultStatus: v })}>
+          <Select value={form.defaultStatus} onValueChange={(v:any) => setForm({ ...form, defaultStatus: v })}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent><SelectItem value="ACTIVE">启用</SelectItem><SelectItem value="INACTIVE">停用</SelectItem></SelectContent>
           </Select>

@@ -14,12 +14,12 @@ export default function ContractParamsPage() {
       <h1 className="text-xl font-bold">合同参数</h1>
       <Card className="p-6 space-y-4">
         <div><label className="text-sm font-medium">默认合同类型</label>
-          <Select value={form.defaultType} onValueChange={v => setForm({ ...form, defaultType: v })}>
+          <Select value={form.defaultType} onValueChange={(v:any) => setForm({ ...form, defaultType: v })}>
             <SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="销售合同">销售合同</SelectItem><SelectItem value="采购合同">采购合同</SelectItem></SelectContent>
           </Select>
         </div>
         <div><label className="text-sm font-medium">自动审批</label>
-          <Select value={form.autoApproval ? 'true' : 'false'} onValueChange={v => setForm({ ...form, autoApproval: v === 'true' })}>
+          <Select value={form.autoApproval ? 'true' : 'false'} onValueChange={(v:any) => setForm({ ...form, autoApproval: v === 'true' })}>
             <SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="false">关闭</SelectItem><SelectItem value="true">开启</SelectItem></SelectContent>
           </Select>
         </div>

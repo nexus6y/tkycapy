@@ -1,6 +1,7 @@
-'use client';import { useState } from 'react';import { useRouter } from 'next/navigation';import api from '@/lib/api';import { Input } from '@/components/ui/input';import { RadioGroup,RadioGroupItem } from '@/components/ui/radio-group';import { FormLayout,FormSection,FormGrid,FormField } from '@/components/form/form-layout';const FI='h-9 rounded-md border border-border bg-background px-3 text-[13px] w-full';
+'use client';import { useState } from 'react';import { useRouter } from 'next/navigation';import api from '@/lib/api';import { Input } from '@/components/ui/input';import { RadioGroup,RadioGroupItem } from '@/components/ui/radio-group';import { toast } from '@/components/ui/toast';
+import { FormLayout,FormSection,FormGrid,FormField } from '@/components/form/form-layout';const FI='h-9 rounded-md border border-border bg-background px-3 text-[13px] w-full';
 export default function CheckCreate(){const router=useRouter();const [f,setF]=useState({orderNo:'',checkMethod:'',materialName:'',spec:'',batchNo:'',stockQty:'0',checkQty:'0',diffQty:'0',warehouseName:'',zoneName:'',areaName:'',inspector:'',checkDate:new Date().toISOString().split('T')[0],status:'ACTIVE'});
-const save=async()=>{try{await api.post('/check-orders',f);router.push('/warehouse/check');}catch(e:any){alert(e.response?.data?.message||'保存失败');}};
+const save=async()=>{try{await api.post('/check-orders',f);router.push('/warehouse/check');}catch(e:any){toast(e.response?.data?.message||'保存失败','error');}};
 return(<FormLayout title="新增盘点单" onSave={save} sections={[{id:'b',title:'基本信息'}]} activeSection="b"><FormSection id="b" title="基本信息"><FormGrid>
 <FormField label="盘点单号" required><Input className={FI} value={f.orderNo} onChange={e=>setF({...f,orderNo:e.target.value})}/></FormField>
 <FormField label="盘点方式"><Input className={FI} value={f.checkMethod} onChange={e=>setF({...f,checkMethod:e.target.value})}/></FormField>

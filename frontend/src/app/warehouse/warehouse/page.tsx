@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Download, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { toast } from '@/components/ui/toast';
 import { ErpTable, ErpThead, ErpTh, ErpTbody, ErpTr, ErpTd, ErpEmpty, ErpLink, ErpAction, ErpActionBtn, ErpTools, ErpStatus, ErpPagination } from '@/components/ui/erp-table';
 
 interface Item { id:string;code:string;name:string;address:string|null;sortOrder:number;status:string;createdAt:string; }
@@ -18,7 +19,7 @@ export default function WarehousePage() {
   const fetch=useCallback(async()=>{
     const {data}=await api.get('/warehouses',{params:{page:pg,pageSize:ps}}); setItems(data.items); setTotal(data.total);
   },[pg,ps]); useEffect(()=>{fetch();},[fetch]);
-  const doDel=async()=>{if(!del)return;await api.delete(`/warehouses/${del}`);setDel(null);fetch();};
+  const doDel=async()=>{if(!del)return;try{await api.delete(`/warehouses/${del}`);setDel(null);fetch();}catch(e:any){toast(e.response?.data?.message||'删除失败','error');}};
 
   return (<TooltipProvider><div className="bg-background rounded-lg border shadow-sm">
     <div className="flex items-center justify-between px-4 h-14 border-b border-border">

@@ -1,8 +1,9 @@
-'use client';import { useEffect, useState } from 'react';import { useRouter, useParams } from 'next/navigation';import api from '@/lib/api';import { Input } from '@/components/ui/input';import { FormLayout,FormSection,FormGrid,FormField } from '@/components/form/form-layout';
+'use client';import { useEffect, useState } from 'react';import { useRouter, useParams } from 'next/navigation';import api from '@/lib/api';import { Input } from '@/components/ui/input';import { toast } from '@/components/ui/toast';
+import { FormLayout,FormSection,FormGrid,FormField } from '@/components/form/form-layout';
 const FI='h-9 rounded-md border border-border bg-background px-3 text-[13px] w-full';
 export default function IEdit(){const router=useRouter();const {id}=useParams<{id:string}>();const [l,setL]=useState(true);const [f,setF]=useState<any>({});
 useEffect(()=>{api.get('/inbound-orders/'+id).then(r=>{setF(r.data);setL(false);});},[id]);
-const save=async()=>{try{await api.put('/inbound-orders/'+id,f);router.push('/warehouse/inbound');}catch(e:any){alert(e.response?.data?.message||'保存失败');}};
+const save=async()=>{try{await api.put('/inbound-orders/'+id,f);router.push('/warehouse/inbound');}catch(e:any){toast(e.response?.data?.message||'保存失败','error');}};
 if(l)return<div className="h-full flex items-center justify-center text-muted-foreground">加载中...</div>;
 return(<FormLayout title={'编辑入库单：'+f.orderNo} onSave={save} sections={[{id:'b',title:'入库信息'}]} activeSection="b"><FormSection id="b" title="入库信息"><FormGrid>
 <FormField label="入库单号"><Input className={FI} value={f.orderNo} disabled/></FormField>

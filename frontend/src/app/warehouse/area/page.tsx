@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { toast } from '@/components/ui/toast';
 import { ErpTable,ErpThead,ErpTh,ErpTbody,ErpTr,ErpTd,ErpEmpty,ErpLink,ErpAction,ErpActionBtn,ErpTools,ErpStatus,ErpPagination } from '@/components/ui/erp-table';
 
 interface Item { id:string;code:string;name:string;address:string|null;sortOrder:number;status:string; }
@@ -24,15 +25,15 @@ export default function AreaPage() {
     const {data}=await api.get('/warehouses',{params:p}); setItems(data.items); setTotal(data.total);
   },[pg,ps,s]); useEffect(()=>{fetch();},[fetch]);
 
-  const doDel=async()=>{if(!del)return;await api.delete(`/warehouses/${del}`);setDel(null);fetch();};
+  const doDel=async()=>{if(!del)return;try{await api.delete(`/warehouses/${del}`);setDel(null);fetch();}catch(e:any){toast(e.response?.data?.message||'删除失败','error');}};
   const toggleAll=(v:boolean)=>setSel(v?new Set(items.map(i=>i.id)):new Set());
 
   return (<TooltipProvider><div className="bg-background rounded-lg border shadow-sm">
     <div className="flex items-center justify-between px-4 h-14 border-b border-border">
       <div className="flex items-center gap-1">
         <Button variant="secondary" size="sm" onClick={()=>router.push('/warehouse/area/create')}><Plus className="h-3.5 w-3.5"/>新增</Button>
-        <Button variant="outline" size="sm" disabled={sel.size===0}>修改</Button>
-        <Button variant="outline" size="sm" disabled={sel.size===0}>删除</Button>
+        <Button variant="outline" size="sm" disabled={sel.size===0} onClick={()=>toast('请先勾选数据','info')}>修改</Button>
+        <Button variant="outline" size="sm" disabled={sel.size===0} onClick={()=>toast('请先勾选数据','info')}>删除</Button>
       </div>
       <div className="flex items-center gap-1">
         <Button variant="ghost" size="sm" onClick={()=>setS({code:'',name:'',status:''})}>重置</Button>
@@ -42,7 +43,7 @@ export default function AreaPage() {
     <div className="flex items-center gap-4 px-4 py-2.5 border-b border-border bg-muted/30 flex-wrap">
       <F label="编码"><Input className="w-[140px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.code} placeholder="请输入地区编码" onChange={e=>setS({...s,code:e.target.value})}/></F>
       <F label="名称"><Input className="w-[140px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.name} placeholder="请输入地区名称" onChange={e=>setS({...s,name:e.target.value})}/></F>
-      <F label="状态"><Select value={s.status} onValueChange={v=>setS({...s,status:v==='ALL'?'':v})}><SelectTrigger className="w-[100px] h-9 rounded-md border border-border bg-background px-3 text-[13px]"><SelectValue placeholder="全部"/></SelectTrigger><SelectContent><SelectItem value="ALL">全部</SelectItem><SelectItem value="ACTIVE">启用</SelectItem><SelectItem value="INACTIVE">停用</SelectItem></SelectContent></Select></F>
+      <F label="状态"><Select value={s.status} onValueChange={(v:any)=>setS({...s,status:v==='ALL'?'':v})}><SelectTrigger className="w-[100px] h-9 rounded-md border border-border bg-background px-3 text-[13px]"><SelectValue placeholder="全部"/></SelectTrigger><SelectContent><SelectItem value="ALL">全部</SelectItem><SelectItem value="ACTIVE">启用</SelectItem><SelectItem value="INACTIVE">停用</SelectItem></SelectContent></Select></F>
     </div>
     <ErpTools onRefresh={fetch}/>
     <div className="overflow-auto"><ErpTable><ErpThead><ErpTh className="w-10"><Checkbox checked={items.length>0&&sel.size===items.length} onCheckedChange={(v:boolean)=>toggleAll(v)}/></ErpTh><ErpTh>地区编码</ErpTh><ErpTh>地区名称</ErpTh><ErpTh>地址</ErpTh><ErpTh>排序</ErpTh><ErpTh>状态</ErpTh><ErpTh>操作</ErpTh></ErpThead><ErpTbody>

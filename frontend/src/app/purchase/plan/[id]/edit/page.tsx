@@ -5,7 +5,7 @@ const save=async()=>{await api.put('/purchase-plans/'+id,f);router.push('/purcha
 return(<FormLayout title="修改采购计划" onSave={save} sections={[{id:'b',title:'计划信息'}]} activeSection="b"><FormSection id="b" title="计划信息"><FormGrid>
 <FormField label="计划编号" required><Input className={FI} value={f.orderNo} onChange={e=>setF({...f,orderNo:e.target.value})}/></FormField>
 <FormField label="计划名称" required><Input className={FI} value={f.orderName} onChange={e=>setF({...f,orderName:e.target.value})}/></FormField>
-<FormField label="供应商"><Select value={f.supplierId||''} onValueChange={v=>{const s=suppliers.find(x=>x.id===v);setF({...f,supplierId:v,supplierName:s?.name||''});}}><SelectTrigger className={FI}><SelectValue placeholder="选择供应商"/></SelectTrigger><SelectContent>{suppliers.map(s=><SelectItem key={s.id} value={s.id}>{s.code} {s.name}</SelectItem>)}</SelectContent></Select></FormField>
+<FormField label="供应商"><Select value={f.supplierId||''} onValueChange={(v:any)=>{const s=suppliers.find(x=>x.id===v);setF({...f,supplierId:v,supplierName:s?.name||''});}}><SelectTrigger className={FI}><SelectValue placeholder="选择供应商"/></SelectTrigger><SelectContent>{suppliers.map(s=><SelectItem key={s.id} value={s.id}>{s.code} {s.name}</SelectItem>)}</SelectContent></Select></FormField>
 <FormField label="物料名称"><Input className={FI} value={f.materialName||''} onChange={e=>setF({...f,materialName:e.target.value})}/></FormField>
 <FormField label="数量"><Input type="number" className={FI} value={f.quantity||''} onChange={e=>setF({...f,quantity:e.target.value})}/></FormField>
 <FormField label="需求日期"><Input type="date" className={FI} value={f.requiredDate||''} onChange={e=>setF({...f,requiredDate:e.target.value})}/></FormField>

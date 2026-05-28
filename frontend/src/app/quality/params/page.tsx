@@ -10,7 +10,7 @@ export default function QualityParamsPage() {
   return (<div className="p-6 max-w-2xl"><div className="bg-background rounded-lg border p-6 space-y-4">
     <h1 className="text-lg font-bold">质检参数</h1>
     <div className="space-y-4">
-      <div><label className="text-[13px] font-medium">自动审批</label><Select value={f.autoApproval?'true':'false'} onValueChange={v=>setF({...f,autoApproval:v==='true'})}><SelectTrigger className="h-9 rounded-md border border-border bg-background px-3 text-[13px] w-full"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="false">关闭</SelectItem><SelectItem value="true">开启</SelectItem></SelectContent></Select></div>
+      <div><label className="text-[13px] font-medium">自动审批</label><Select value={f.autoApproval?'true':'false'} onValueChange={(v:any)=>setF({...f,autoApproval:v==='true'})}><SelectTrigger className="h-9 rounded-md border border-border bg-background px-3 text-[13px] w-full"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="false">关闭</SelectItem><SelectItem value="true">开启</SelectItem></SelectContent></Select></div>
       <div><label className="text-[13px] font-medium">不合格品率阈值(%)</label><Input className="h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={f.defectRateThreshold} onChange={e=>setF({...f,defectRateThreshold:e.target.value})}/></div>
       <div><label className="text-[13px] font-medium">质检模板</label><Input className="h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={f.inspectionTemplate} onChange={e=>setF({...f,inspectionTemplate:e.target.value})}/></div>
     </div>

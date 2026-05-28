@@ -11,6 +11,7 @@ import { exportCSV } from '@/lib/export';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
 import { ChevronDown, Download, Pencil, Plus, Search, Trash2, Upload } from 'lucide-react';
+import { toast } from '@/components/ui/toast';
 import { ErpTable,ErpThead,ErpTh,ErpTbody,ErpTr,ErpTd,ErpEmpty,ErpLink,ErpAction,ErpActionBtn,ErpTools,ErpApproval,ErpPagination } from '@/components/ui/erp-table';
 
 interface Item { id:string;quotationNo:string;quotationName:string;customerName:string|null;departmentName:string|null;responsibleName:string|null;validUntil:string|null;totalAmount:string|null;approvalStatus:string;createdAt:string; }
@@ -35,8 +36,8 @@ export default function QuotationPage() {
     <div className="flex items-center justify-between px-4 h-14 border-b border-border">
       <div className="flex items-center gap-1">
         <Button variant="secondary" size="sm" onClick={()=>router.push('/sales/quotation/create')}><Plus className="h-3.5 w-3.5"/>新增</Button>
-        <Button variant="outline" size="sm" disabled={selected.size===0}>修改</Button>
-        <Button variant="outline" size="sm" disabled={selected.size===0}>删除</Button>
+        <Button variant="outline" size="sm" disabled={selected.size===0} onClick={()=>toast('请先勾选数据','info')}>修改</Button>
+        <Button variant="outline" size="sm" disabled={selected.size===0} onClick={()=>toast('请先勾选数据','info')}>删除</Button>
         
         <Button variant="outline" size="sm" onClick={()=>exportCSV(items,'export')}><Download className="h-3.5 w-3.5 mr-1"/>导出</Button>
       </div>
@@ -46,7 +47,7 @@ export default function QuotationPage() {
       </div>
     </div>
     <div className="flex items-center gap-4 px-4 py-2.5 border-b border-border bg-muted/30 flex-wrap">
-      <F label="状态"><Select value={s.status} onValueChange={v=>setS({...s,status:v==='ALL'?'':v})}><SelectTrigger className="w-[100px] h-9 rounded-md border border-border bg-background px-3 text-[13px]"><SelectValue placeholder="全部"/></SelectTrigger><SelectContent><SelectItem value="ALL">全部</SelectItem><SelectItem value="DRAFT">草稿</SelectItem><SelectItem value="SUBMITTED">已提交</SelectItem><SelectItem value="APPROVED">已通过</SelectItem></SelectContent></Select></F>
+      <F label="状态"><Select value={s.status} onValueChange={(v:any)=>setS({...s,status:v==='ALL'?'':v})}><SelectTrigger className="w-[100px] h-9 rounded-md border border-border bg-background px-3 text-[13px]"><SelectValue placeholder="全部"/></SelectTrigger><SelectContent><SelectItem value="ALL">全部</SelectItem><SelectItem value="DRAFT">草稿</SelectItem><SelectItem value="SUBMITTED">已提交</SelectItem><SelectItem value="APPROVED">已通过</SelectItem></SelectContent></Select></F>
       <F label="报价单号"><Input className="w-[140px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.code} onChange={e=>setS({...s,code:e.target.value})}/></F>
       <F label="报价名称"><Input className="w-[140px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.name} onChange={e=>setS({...s,name:e.target.value})}/></F>
     </div>

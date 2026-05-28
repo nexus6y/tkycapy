@@ -47,7 +47,7 @@ export default function MaterialApprovalPage() {
         <div className="flex gap-3 flex-wrap items-end">
           <div className="w-36"><label className="text-xs text-gray-500">物料编码</label><Input value={code} onChange={e => setCode(e.target.value)} /></div>
           <div className="w-32"><label className="text-xs text-gray-500">审批状态</label>
-            <Select value={status} onValueChange={v => setStatus(v === 'ALL' ? '' : v)}>
+            <Select value={status} onValueChange={(v:any) => setStatus(v === 'ALL' ? '' : v)}>
               <SelectTrigger><SelectValue placeholder="全部" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="ALL">全部</SelectItem><SelectItem value="DRAFT">草稿</SelectItem>
