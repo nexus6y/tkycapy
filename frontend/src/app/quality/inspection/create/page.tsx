@@ -13,11 +13,11 @@ const SECS=[{id:'basic',title:'质检单信息'}];
 
 export default function InspectionCreatePage() {
   const router=useRouter();
-  const [f,setF]=useState({inspectionNo:'',sourceType:'采购单',sourceNo:'',materialName:'',quantity:'',inspector:'',result:''});
+  useEffect(()=>{api.get('/common/next-code',{params:{entity:'inspection'}}).then(r=>setF((prev:any)=>({...prev,inspectionNo:r.data.code})));},[]);const [f,setF]=useState({inspectionNo:'',sourceType:'采购单',sourceNo:'',materialName:'',quantity:'',inspector:'',result:''});
   const save=async()=>{try{await api.post('/inspections',{...f,quantity:+f.quantity});router.push('/quality/inspection');}catch(e:any){toast(e.response?.data?.message||'保存失败','error');}};
   return (<FormLayout title="新增质检单" onSave={save} sections={SECS} activeSection="basic">
     <FormSection id="basic" title="质检单信息"><FormGrid>
-      <FormField label="质检单号" required><Input className={FI} value={f.inspectionNo} onChange={e=>setF({...f,inspectionNo:e.target.value})}/></FormField>
+      <FormField label="质检单号" required><Input className={FI} value={f.inspectionNo} readOnly disabled/></FormField>
       <FormField label="来源类型" required>
         <RadioGroup value={f.sourceType} onValueChange={(v:any)=>setF({...f,sourceType:v})} className="flex gap-4 pt-1.5">
           <div className="flex items-center gap-1.5"><RadioGroupItem value="采购单" id="st-po"/><label htmlFor="st-po" className="text-[13px]">采购单</label></div>

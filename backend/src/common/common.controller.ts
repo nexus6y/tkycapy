@@ -16,7 +16,8 @@ export class CommonController {
   private getCodeField(entity: string): string {
     const map: Record<string, string> = {
       quotation: 'quotationNo', preOrder: 'orderNo', salesOrder: 'orderNo',
-      salesShipment: 'shipmentNo', salesReturn: 'returnNo',
+      salesShipment: 'shipmentNo', salesReturn: 'returnNo', purchaseReturn: 'returnNo',
+      materialCategory: 'code',
       productionOrder: 'orderNo', purchaseOrder: 'orderNo',
       issueOrder: 'orderNo', returnOrder: 'orderNo',
       completeReport: 'reportNo', scrapOrder: 'orderNo',
