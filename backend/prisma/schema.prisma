@@ -134,6 +134,7 @@ model Tenant {
   salesShipmentLines SalesShipmentLine[]
   issueOrderLines    IssueOrderLine[]
   completeReportLines CompleteReportLine[]
+  demandPlanLines    DemandPlanLine[]
   adjustOrders       AdjustOrder[]
   completeReports    CompleteReport[]
   boms               Bom[]
@@ -455,10 +456,35 @@ model DemandPlan {
   deletedAt       DateTime?
 
   tenant          Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lines           DemandPlanLine[]
 
   @@unique([tenantId, planNo])
   @@index([tenantId])
   @@map("demand_plan")
+}
+
+model DemandPlanLine {
+  id              String    @id @default(cuid())
+  tenantId        String
+  demandPlanId    String
+  lineNo          Int
+  materialCode    String?
+  materialName    String?
+  spec            String?
+  unit            String?
+  quantity        Decimal?  @db.Decimal(18, 6)
+  requiredDate    DateTime?
+  warehouseCode   String?
+  remark          String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  demandPlan      DemandPlan @relation(fields: [demandPlanId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([demandPlanId])
+  @@map("demand_plan_line")
 }
 
 model PreOrder {

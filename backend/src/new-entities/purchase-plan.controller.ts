@@ -91,19 +91,66 @@ export class PurchasePlanController {
 
   @Put(":id/approve")
   async approve(@Param("id") id: string) {
-    const plan = await guardApprove(this.prisma, 'purchasePlan', id);
-    await this.prisma.purchasePlan.update({ where: { id }, data: { approvalStatus: "APPROVED" } as any });
+    await guardApprove(this.prisma, 'purchasePlan', id);
     const tenantId = await this.tid();
-    // Auto-create purchase order draft
-    const poNo = await this.codeGen.generate('PO', 'purchaseOrder', 'orderNo');
-    await this.prisma.purchaseOrder.create({ data: {
-      tenantId, orderNo: poNo, orderName: plan.orderName,
-      supplierId: plan.supplierId, supplierName: plan.supplierName,
-      purchasePlanId: plan.id, purchasePlanNo: plan.orderNo,
-      creationType: 'PUSH_FROM_PLAN',
-      approvalStatus: 'DRAFT', businessStatus: 'PENDING_RECEIPT',
-    } as any });
-    return plan;
+
+    return await this.prisma.$transaction(async (tx) => {
+      const plan = await tx.purchasePlan.findUniqueOrThrow({
+        where: { id },
+        include: { lines: { orderBy: { lineNo: 'asc' } } },
+      });
+      if (plan.approvalStatus !== 'SUBMITTED') throw new Error('只能审批已提交的采购计划');
+
+      // Idempotency: check if purchase order already generated
+      const existing = await tx.purchaseOrder.findFirst({
+        where: {
+          purchasePlanId: id,
+          approvalStatus: { in: ['DRAFT', 'SUBMITTED', 'APPROVED'] },
+        },
+      });
+      if (existing) throw new Error(`该采购计划已生成采购订单 ${existing.orderNo}，不能重复审批`);
+
+      await tx.purchasePlan.update({ where: { id }, data: { approvalStatus: "APPROVED" } as any });
+
+      const poNo = await this.codeGen.generate('PO', 'purchaseOrder', 'orderNo');
+      const totalQty = plan.lines && plan.lines.length > 0
+        ? String(plan.lines.reduce((s, l) => s + Number(l.quantity || 0), 0))
+        : plan.quantity || '0';
+
+      const poData: any = {
+        tenantId, orderNo: poNo, orderName: plan.orderName,
+        supplierId: plan.supplierId, supplierName: plan.supplierName,
+        purchasePlanId: plan.id, purchasePlanNo: plan.orderNo,
+        demandPlanId: plan.demandPlanId, demandPlanNo: plan.demandPlanNo,
+        creationType: 'PUSH_FROM_PLAN',
+        totalAmount: plan.lines && plan.lines.length > 0
+          ? String(plan.lines.reduce((s, l) => s + Number(l.amount || 0), 0))
+          : null,
+        approvalStatus: 'DRAFT', businessStatus: 'PENDING_RECEIPT',
+      };
+
+      if (plan.lines && plan.lines.length > 0) {
+        poData.lines = {
+          create: plan.lines.map((l, i) => ({
+            tenantId,
+            lineNo: l.lineNo ?? i + 1,
+            materialCode: l.materialCode || '',
+            materialName: l.materialName || '',
+            spec: l.spec || '',
+            unit: l.unit || '',
+            quantity: l.quantity != null ? String(l.quantity) : '0',
+            unitPrice: l.unitPrice != null ? String(l.unitPrice) : null,
+            amount: l.amount != null ? String(l.amount) : null,
+            requiredDate: l.requiredDate,
+            warehouseCode: l.warehouseCode || '',
+          })),
+        };
+      }
+
+      await tx.purchaseOrder.create({ data: poData });
+
+      return { message: '采购订单已生成', purchaseOrderNo: poNo };
+    });
   }
 
   @Put(':id/withdraw')
