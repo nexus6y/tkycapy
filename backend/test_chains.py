@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""DemandPlan → PurchasePlan → PurchaseOrder → Inspection → Inbound → Stock E2E test"""
+"""Quotation → PreOrder → SalesOrder → Shipment → Outbound → Stock E2E test"""
 import urllib.request, json, time, sys
 
 API = 'http://localhost:3001/api'
@@ -15,17 +15,12 @@ def api(m, p, b=None):
     except urllib.error.HTTPError as e:
         return {'error': str(e), 'body': e.read().decode()}
 
-# Auth
 resp = json.loads(urllib.request.urlopen(urllib.request.Request(
-    f'{API}/auth/login',
-    data=b'{"username":"admin","password":"admin123"}',
-    headers={'Content-Type': 'application/json'}
-)).read())
+    f'{API}/auth/login', data=b'{"username":"admin","password":"admin123"}',
+    headers={'Content-Type': 'application/json'})).read())
 TOKEN = resp['token']
 
-def num(v):
-    try: return float(v)
-    except: return 0
+def num(v): return float(v) if v else 0
 
 P = 0; F = 0
 def check(label, cond):
@@ -34,126 +29,112 @@ def check(label, cond):
     else: print(f"  ❌ {label}"); F += 1
 
 ts = int(time.time()); WH = 'WH-001'
-
 CAT = api('GET', '/material-categories?pageSize=1')['items'][0]['id']
 UNIT = api('GET', '/measurement-units?pageSize=1')['items'][0]['id']
 SUP = api('GET', '/suppliers?pageSize=1')['items'][0]['id']
+CUS = api('GET', '/customers?pageSize=1')['items'][0]['id']
 
-print("========== DEMAND PLAN → PURCHASE PLAN → PURCHASE ORDER → STOCK ==========")
+print("========== QUOTATION → PRE-ORDER → SALES ORDER → STOCK ==========")
 
-print("\n1. Create material for chain...")
-mat = api('POST', '/materials', {'code': f'M-{ts}', 'name': f'物料-{ts}', 'specification': 'M8x30', 'categoryId': CAT, 'unitId': UNIT, 'approvalStatus': 'APPROVED'})
+# --- Create material + stock 100 ---
+print("\n1. Create material + inbound stock 100...")
+mat = api('POST', '/materials', {'code': f'QTE-M-{ts}', 'name': f'报价物料-{ts}', 'specification': 'ZN-01', 'categoryId': CAT, 'unitId': UNIT, 'approvalStatus': 'APPROVED'})
 MAT_CODE = mat.get('code', '')
 check("material created", bool(MAT_CODE))
 
-print("\n2. Create demand plan with lines (qty=50)...")
-dp = api('POST', '/demand-plans', {
-    'planName': f'需求-{ts}', 'demandSource': '销售订单', 'demandUse': '生产用料',
-    'lines': [{'lineNo': 1, 'materialCode': MAT_CODE, 'materialName': f'物料-{ts}', 'spec': 'M8x30', 'unit': '个', 'quantity': '50', 'warehouseCode': WH}]
+po = api('POST', '/purchase-orders', {'orderName': f'PO-Stock-{ts}', 'supplierId': SUP, 'supplierName': '供应商', 'lines': [{'lineNo':1,'materialCode':MAT_CODE,'materialName':f'报价物料-{ts}','spec':'ZN-01','unit':'pcs','quantity':'100','unitPrice':'3','amount':'300','warehouseCode':WH}]})
+pid = po.get('id',''); pno = po.get('orderNo','')
+api('PUT', f'/purchase-orders/{pid}/submit'); api('PUT', f'/purchase-orders/{pid}/approve'); time.sleep(0.5)
+ins = api('GET', '/inspections?pageSize=500'); im = next((i for i in ins.get('items',[]) if i.get('sourceNo')==pno),{})
+ino = im.get('inspectionNo','')
+api('PUT', f'/inspections/{im["id"]}/submit'); api('PUT', f'/inspections/{im["id"]}/approve'); time.sleep(0.5)
+inb = next((i for i in api('GET','/inbound-orders?pageSize=500').get('items',[]) if i.get('sourceType')=='INSPECTION' and i.get('sourceNo')==ino),{})
+api('PUT', f'/inbound-orders/{inb["id"]}/submit'); api('PUT', f'/inbound-orders/{inb["id"]}/approve'); time.sleep(0.3)
+stock = num(api('GET',f'/inventory?materialCode={MAT_CODE}')['items'][0]['quantity']) if api('GET',f'/inventory?materialCode={MAT_CODE}').get('items') else 0
+check(f"stock = 100 (got {stock})", abs(stock-100)<0.01)
+
+# --- Quotation with lines ---
+print("\n2. Create quotation with lines (qty=20)...")
+qt = api('POST', '/quotations', {
+    'quotationName': f'报价-{ts}', 'customerName': '测试客户',
+    'departmentName': '销售部', 'responsibleName': '张三',
+    'lines': [{'lineNo':1,'materialCode':MAT_CODE,'materialName':f'报价物料-{ts}','spec':'ZN-01','unit':'pcs','quantity':'20','unitPrice':'8','amount':'160','warehouseCode':WH}]
 })
-DP_ID = dp.get('id', ''); DP_NO = dp.get('planNo', '')
-check("demand plan created with lines", bool(DP_ID))
+QT_ID = qt.get('id',''); QT_NO = qt.get('quotationNo','')
+check("quotation created with lines", bool(QT_ID))
 
-print("\n3. Submit + approve demand plan...")
-api('PUT', f'/demand-plans/{DP_ID}/submit')
-api('PUT', f'/demand-plans/{DP_ID}/approve')
-dp_d = api('GET', f'/demand-plans/{DP_ID}')
-check("demand plan APPROVED", dp_d.get('approvalStatus') == 'APPROVED')
-check("demand plan businessStatus = PENDING", dp_d.get('businessStatus') == 'PENDING')
+# --- Submit + approve ---
+print("\n3. Submit + approve quotation...")
+api('PUT', f'/quotations/{QT_ID}/submit')
+api('PUT', f'/quotations/{QT_ID}/approve')
+qt_d = api('GET', f'/quotations/{QT_ID}')
+check("quotation APPROVED", qt_d.get('approvalStatus')=='APPROVED')
 
-print("\n4. Push-down: generate purchase plan...")
-pp_res = api('POST', f'/demand-plans/{DP_ID}/generate-purchase-plan')
-check("purchase plan generated", bool(pp_res.get('purchasePlanNo')))
+# --- Push-down: generate pre-order ---
+print("\n4. Generate pre-order...")
+pre_res = api('POST', f'/quotations/{QT_ID}/generate-pre-order')
+check("pre-order generated", bool(pre_res.get('preOrderNo')))
+pre_no = pre_res.get('preOrderNo','')
+pre = next((i for i in api('GET','/pre-orders?pageSize=500').get('items',[]) if i.get('orderNo')==pre_no),None)
+check("pre-order found", pre is not None)
+PRE_ID = pre['id'] if pre else ''
 
-pp_no = pp_res.get('purchasePlanNo', '')
-pps = api('GET', '/purchase-plans?pageSize=500')
-pp = next((i for i in pps.get('items', []) if i.get('orderNo') == pp_no), None)
-check("purchase plan found", pp is not None)
-PP_ID = pp['id'] if pp else ''
+# Check pre-order lines
+pre_d = api('GET', f'/pre-orders/{PRE_ID}')
+pre_qty = sum(num(l.get('quantity',0)) for l in pre_d.get('lines',[]))
+check(f"pre-order qty=20 (got {pre_qty})", abs(pre_qty-20)<0.01)
 
-# Check purchase plan lines
-pp_d = api('GET', f'/purchase-plans/{PP_ID}')
-pp_lines = pp_d.get('lines', [])
-pp_qty = sum(num(l.get('quantity', 0)) for l in pp_lines) if pp_lines else 0
-check(f"purchase plan has lines, qty={pp_qty}", pp_qty > 0)
-check("purchase plan qty = 50", abs(pp_qty - 50) < 0.01)
+# --- Duplicate generate-pre-order ---
+print("\n5. Duplicate generate-pre-order must fail...")
+dup = api('POST', f'/quotations/{QT_ID}/generate-pre-order')
+dup_msg = str(dup.get('message','') or dup.get('body','') or dup.get('error',''))
+check("duplicate pre-order REJECTED", '已存在' in dup_msg or ('error' in dup and not dup.get('preOrderNo')))
 
-# Check demand plan status updated
-dp_d2 = api('GET', f'/demand-plans/{DP_ID}')
-check("demand plan businessStatus = GENERATED", dp_d2.get('businessStatus') == 'GENERATED')
+# --- Submit + approve pre-order; then push-down SO ---
+print("\n6. Submit + approve pre-order → generate sales order...")
+api('PUT', f'/pre-orders/{PRE_ID}/submit')
+api('PUT', f'/pre-orders/{PRE_ID}/approve')
+so_res = api('POST', f'/pre-orders/{PRE_ID}/generate-sales-order')
+check("sales order generated", bool(so_res.get('salesOrderNo')))
+so_no = so_res.get('salesOrderNo','')
+so = next((i for i in api('GET','/sales-orders?pageSize=500').get('items',[]) if i.get('orderNo')==so_no),None)
+check("sales order found", so is not None)
+SO_ID = so['id'] if so else ''
 
-print("\n5. Duplicate generate-purchase-plan must fail...")
-dup_pp = api('POST', f'/demand-plans/{DP_ID}/generate-purchase-plan')
-dup_pp_msg = str(dup_pp.get('message','') or dup_pp.get('body','') or dup_pp.get('error',''))
-check("duplicate generate-purchase-plan REJECTED", '已存在采购计划' in dup_pp_msg or ('error' in dup_pp and not dup_pp.get('purchasePlanNo')))
+# Check SO lines + warehouseCode
+so_d = api('GET', f'/sales-orders/{SO_ID}')
+so_qty = sum(num(l.get('quantity',0)) for l in so_d.get('lines',[]))
+so_wh = (so_d.get('lines',[]) or [{}])[0].get('warehouseCode','')
+check(f"SO qty=20 (got {so_qty})", abs(so_qty-20)<0.01)
+check(f"SO has warehouseCode (got {so_wh!r})", so_wh == WH)
 
-print("\n6. Submit + approve purchase plan → auto PurchaseOrder...")
-api('PUT', f'/purchase-plans/{PP_ID}/submit')
-po_result = api('PUT', f'/purchase-plans/{PP_ID}/approve')
-check("purchase plan approved → PO generated", bool(po_result.get('purchaseOrderNo')))
+# --- Duplicate generate-sales-order ---
+print("\n7. Duplicate generate-sales-order must fail...")
+dup_so = api('POST', f'/pre-orders/{PRE_ID}/generate-sales-order')
+dup_so_msg = str(dup_so.get('message','') or dup_so.get('body','') or dup_so.get('error',''))
+check("duplicate SO REJECTED", '已存在' in dup_so_msg or ('error' in dup_so and not dup_so.get('salesOrderNo')))
 
-po_no = po_result.get('purchaseOrderNo', '')
-pos = api('GET', '/purchase-orders?pageSize=500')
-po = next((i for i in pos.get('items', []) if i.get('orderNo') == po_no), None)
-check("purchase order found", po is not None)
-PO_ID = po['id'] if po else ''
+# --- Chain: SO → Shipment → Outbound → Stock ↓ ---
+print("\n8. SO → Shipment(partial 20) → Outbound → Stock 100→80...")
+api('PUT', f'/sales-orders/{SO_ID}/submit'); api('PUT', f'/sales-orders/{SO_ID}/approve')
+SO_LINE_ID = so_d['lines'][0]['id'] if so_d.get('lines') else ''
 
-# Check PO lines
-po_d = api('GET', f'/purchase-orders/{PO_ID}')
-po_lines = po_d.get('lines', [])
-po_qty = sum(num(l.get('quantity', 0)) for l in po_lines) if po_lines else 0
-check(f"purchase order has lines, qty={po_qty}", po_qty > 0)
-check("purchase order qty = 50", abs(po_qty - 50) < 0.01)
+ship = api('POST', '/sales-shipments', {'orderId':SO_ID,'orderNo':so_no,'customerName':'测试客户','totalQuantity':'20','totalAmount':'160','lines':[{'lineNo':1,'salesOrderLineId':SO_LINE_ID,'materialCode':MAT_CODE,'materialName':f'报价物料-{ts}','spec':'ZN-01','unit':'pcs','orderQty':'20','shippedQty':'20','warehouseCode':WH}]})
+SHP_ID = ship.get('id',''); SHP_NO = ship.get('shipmentNo','')
+check("shipment created", bool(SHP_ID))
 
-print("\n7. Duplicate purchase plan approve must fail...")
-dup_po = api('PUT', f'/purchase-plans/{PP_ID}/approve')
-dup_po_msg = str(dup_po.get('message','') or dup_po.get('body','') or dup_po.get('error',''))
-check("duplicate purchase plan approve REJECTED", '已生成采购订单' in dup_po_msg or ('error' in dup_po and not dup_po.get('purchaseOrderNo')))
+api('PUT', f'/sales-shipments/{SHP_ID}/submit'); api('PUT', f'/sales-shipments/{SHP_ID}/approve'); time.sleep(0.5)
 
-print("\n8. Continue chain: PO → Inspection → Inbound → Stock...")
-api('PUT', f'/purchase-orders/{PO_ID}/submit')
-api('PUT', f'/purchase-orders/{PO_ID}/approve')
-time.sleep(0.5)
+out = next((i for i in api('GET','/outbound-orders?pageSize=500').get('items',[]) if i.get('sourceNo')==SHP_NO),None)
+check("outbound auto-created", out is not None)
+OUT_ID = out['id'] if out else ''
 
-ins_list = api('GET', '/inspections?pageSize=500').get('items', [])
-ins_match = next((i for i in ins_list if i.get('sourceNo') == po_no), None)
-ins_id = ins_match['id'] if ins_match else None
-ins_no = ins_match.get('inspectionNo', '') if ins_match else ''
+api('PUT', f'/outbound-orders/{OUT_ID}/submit'); api('PUT', f'/outbound-orders/{OUT_ID}/approve'); time.sleep(0.3)
 
-check("inspection auto-created from PO", ins_id is not None)
-
-if ins_id:
-
-    api('PUT', f'/inspections/{ins_id}/submit')
-    api('PUT', f'/inspections/{ins_id}/approve')
-    time.sleep(0.5)
-
-    inb_list = api('GET', '/inbound-orders?pageSize=500').get('items', [])
-    inb = next((i for i in inb_list if i.get('sourceType') == 'INSPECTION' and i.get('sourceNo') == ins_no), None)
-
-    check("inbound auto-created from inspection", inb is not None)
-
-    if inb:
-        api('PUT', f'/inbound-orders/{inb["id"]}/submit')
-        api('PUT', f'/inbound-orders/{inb["id"]}/approve')
-        time.sleep(0.3)
-
-        inv = api('GET', f'/inventory?materialCode={MAT_CODE}')
-        qty = float(inv['items'][0]['quantity']) if inv.get('items') else 0
-        check(f"stock = 50 (got {qty})", abs(qty - 50) < 0.01)
-    else:
-        check("stock = 50", False)
-else:
-    check("inspection auto-created from PO", False)
-    check("inbound auto-created from inspection", False)
-    check("stock = 50", False)
+stock2 = num(api('GET',f'/inventory?materialCode={MAT_CODE}')['items'][0]['quantity']) if api('GET',f'/inventory?materialCode={MAT_CODE}').get('items') else 0
+check(f"stock 100→80 (got {stock2})", abs(stock2-80)<0.01)
 
 print(f"\n========== RESULTS ==========")
 print(f"✅ {P} passed  ❌ {F} failed")
-if F == 0:
-    print("\U0001f389 ALL CHECKS PASSED!")
-    sys.exit(0)
-else:
-    print("\U0001f4a5 SOME CHECKS FAILED")
-    sys.exit(1)
-
+if F==0: print("\U0001f389 ALL CHECKS PASSED!"); sys.exit(0)
+else: print("\U0001f4a5 SOME CHECKS FAILED"); sys.exit(1)

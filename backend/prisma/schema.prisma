@@ -134,6 +134,8 @@ model Tenant {
   salesShipmentLines SalesShipmentLine[]
   issueOrderLines    IssueOrderLine[]
   completeReportLines CompleteReportLine[]
+  quotationLines    QuotationLine[]
+  preOrderLines     PreOrderLine[]
   demandPlanLines    DemandPlanLine[]
   adjustOrders       AdjustOrder[]
   completeReports    CompleteReport[]
@@ -504,10 +506,37 @@ model PreOrder {
   deletedAt       DateTime?
 
   tenant          Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lines           PreOrderLine[]
 
   @@unique([tenantId, orderNo])
   @@index([tenantId])
   @@map("pre_order")
+}
+
+model PreOrderLine {
+  id              String    @id @default(cuid())
+  tenantId        String
+  preOrderId      String
+  lineNo          Int
+  materialCode    String?
+  materialName    String?
+  spec            String?
+  unit            String?
+  quantity        Decimal?  @db.Decimal(18, 6)
+  unitPrice       Decimal?  @db.Decimal(18, 6)
+  amount          Decimal?  @db.Decimal(18, 6)
+  deliveryDate    DateTime?
+  warehouseCode   String?
+  remark          String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  preOrder        PreOrder  @relation(fields: [preOrderId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([preOrderId])
+  @@map("pre_order_line")
 }
 
 model Quotation {
@@ -530,10 +559,37 @@ model Quotation {
   deletedAt       DateTime?
 
   tenant          Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lines           QuotationLine[]
 
   @@unique([tenantId, quotationNo])
   @@index([tenantId])
   @@map("quotation")
+}
+
+model QuotationLine {
+  id              String    @id @default(cuid())
+  tenantId        String
+  quotationId     String
+  lineNo          Int
+  materialCode    String?
+  materialName    String?
+  spec            String?
+  unit            String?
+  quantity        Decimal?  @db.Decimal(18, 6)
+  unitPrice       Decimal?  @db.Decimal(18, 6)
+  amount          Decimal?  @db.Decimal(18, 6)
+  deliveryDate    DateTime?
+  warehouseCode   String?
+  remark          String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  quotation       Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([quotationId])
+  @@map("quotation_line")
 }
 
 model SalesOrder {
