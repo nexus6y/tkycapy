@@ -124,105 +124,138 @@ export class ProductionOrderController {
     return this.prisma.productionOrder.update({ where: { id }, data: { approvalStatus: 'APPROVED', businessStatus: 'PENDING_ISSUE' } as any });
   }
 
-  // Push-down: generate issue order from production material lines
+  // Push-down: generate issue order from production material lines (idempotent)
   @Post(':id/generate-issue')
   async generateIssue(@Param('id') id: string) {
-    const order = await this.prisma.productionOrder.findUniqueOrThrow({
-      where: { id },
-      include: { materials: { orderBy: { lineNo: 'asc' } } },
-    });
-
-    if (order.approvalStatus !== 'APPROVED') throw new BadRequestException('只能从已审批的生产订单生成领料单');
-    if (!order.materials || order.materials.length === 0) throw new BadRequestException('生产订单没有材料明细');
-
     const tenantId = await this.tid();
-    const issNo = await this.codeGen.generate('ISS', 'issueOrder', 'orderNo');
 
-    await this.prisma.issueOrder.create({
-      data: {
-        tenantId,
-        orderNo: issNo,
-        productionOrderId: id,
-        productionOrderNo: order.orderNo,
-        materialName: order.materials[0].materialName || order.orderName,
-        departmentId: order.departmentId,
-        departmentName: order.departmentName,
-        quantity: String(order.materials.reduce((s, m) => s + Number(m.quantity || 0), 0)),
-        approvalStatus: 'DRAFT',
-        businessStatus: 'PENDING',
-        lines: {
-          create: order.materials.map((m, i) => ({
-            tenantId,
-            lineNo: m.lineNo ?? i + 1,
-            materialCode: m.materialCode || '',
-            materialName: m.materialName || '',
-            spec: m.spec || '',
-            unit: m.unit || '',
-            quantity: m.quantity != null ? String(m.quantity) : '0',
-            warehouseCode: m.warehouseCode || '',
-          })),
+    return await this.prisma.$transaction(async (tx) => {
+      // Re-read inside transaction for concurrency safety
+      const order = await tx.productionOrder.findUniqueOrThrow({
+        where: { id },
+        include: { materials: { orderBy: { lineNo: 'asc' } } },
+      });
+
+      if (order.approvalStatus !== 'APPROVED') throw new BadRequestException('只能从已审批的生产订单生成领料单');
+      if (order.businessStatus !== 'PENDING_ISSUE' && order.businessStatus !== 'ISSUING') {
+        throw new BadRequestException(`当前生产订单状态为 ${order.businessStatus}，不允许下推领料单`);
+      }
+      if (!order.materials || order.materials.length === 0) throw new BadRequestException('生产订单没有材料明细');
+
+      // Idempotency: check for existing issue order linked to this production order
+      const existing = await tx.issueOrder.findFirst({
+        where: {
+          productionOrderId: id,
+          approvalStatus: { in: ['DRAFT', 'SUBMITTED', 'APPROVED'] },
         },
-      } as any,
-    });
+      });
+      if (existing) {
+        throw new BadRequestException(`该生产订单已存在领料单 ${existing.orderNo}，不能重复下推`);
+      }
 
-    // Transition to ISSUING
-    await this.prisma.productionOrder.update({
-      where: { id },
-      data: { businessStatus: 'ISSUING' } as any,
-    });
+      const issNo = await this.codeGen.generate('ISS', 'issueOrder', 'orderNo');
 
-    return { message: '领料单已生成', issueNo: issNo };
+      await tx.issueOrder.create({
+        data: {
+          tenantId,
+          orderNo: issNo,
+          productionOrderId: id,
+          productionOrderNo: order.orderNo,
+          materialName: order.materials[0].materialName || order.orderName,
+          departmentId: order.departmentId,
+          departmentName: order.departmentName,
+          quantity: String(order.materials.reduce((s, m) => s + Number(m.quantity || 0), 0)),
+          approvalStatus: 'DRAFT',
+          businessStatus: 'PENDING',
+          lines: {
+            create: order.materials.map((m, i) => ({
+              tenantId,
+              lineNo: m.lineNo ?? i + 1,
+              materialCode: m.materialCode || '',
+              materialName: m.materialName || '',
+              spec: m.spec || '',
+              unit: m.unit || '',
+              quantity: m.quantity != null ? String(m.quantity) : '0',
+              warehouseCode: m.warehouseCode || '',
+            })),
+          },
+        } as any,
+      });
+
+      await tx.productionOrder.update({
+        where: { id },
+        data: { businessStatus: 'ISSUING' } as any,
+      });
+
+      return { message: '领料单已生成', issueNo: issNo };
+    });
   }
 
-  // Push-down: generate complete report from production product lines
+  // Push-down: generate complete report from production product lines (idempotent)
   @Post(':id/generate-complete-report')
   async generateCompleteReport(@Param('id') id: string) {
-    const order = await this.prisma.productionOrder.findUniqueOrThrow({
-      where: { id },
-      include: { lines: { orderBy: { lineNo: 'asc' } } },
-    });
-
-    if (order.approvalStatus !== 'APPROVED') throw new BadRequestException('只能从已审批的生产订单生成完工报告');
-    if (!order.lines || order.lines.length === 0) throw new BadRequestException('生产订单没有产品明细');
-
     const tenantId = await this.tid();
-    const rptNo = await this.codeGen.generate('RPT', 'completeReport', 'reportNo');
 
-    // Calculate total from lines
-    const totalQty = order.lines.reduce((s, l) => s + Number(l.plannedQty || 0), 0);
+    return await this.prisma.$transaction(async (tx) => {
+      // Re-read inside transaction for concurrency safety
+      const order = await tx.productionOrder.findUniqueOrThrow({
+        where: { id },
+        include: { lines: { orderBy: { lineNo: 'asc' } } },
+      });
 
-    await this.prisma.completeReport.create({
-      data: {
-        tenantId,
-        reportNo: rptNo,
-        sourceType: 'PRODUCTION_ORDER',
-        productionOrderId: id,
-        productionOrderNo: order.orderNo,
-        materialCode: order.lines[0]?.materialCode || '',
-        materialName: order.lines[0]?.materialName || order.orderName,
-        spec: order.lines[0]?.spec || '',
-        unit: order.lines[0]?.unit || '',
-        plannedQty: String(totalQty),
-        actualQty: String(totalQty),
-        deptName: order.departmentName,
-        approvalStatus: 'DRAFT',
-        businessStatus: 'PENDING',
-        lines: {
-          create: order.lines.map((l, i) => ({
-            tenantId,
-            lineNo: l.lineNo ?? i + 1,
-            materialCode: l.materialCode || '',
-            materialName: l.materialName || '',
-            spec: l.spec || '',
-            unit: l.unit || '',
-            plannedQty: l.plannedQty != null ? String(l.plannedQty) : '0',
-            actualQty: l.plannedQty != null ? String(l.plannedQty) : '0',
-            warehouseCode: l.warehouseCode || '',
-          })),
+      if (order.approvalStatus !== 'APPROVED') throw new BadRequestException('只能从已审批的生产订单生成完工报告');
+      if (order.businessStatus !== 'IN_PRODUCTION') {
+        throw new BadRequestException(`当前生产订单状态为 ${order.businessStatus}，只有生产中状态才能下推完工报告`);
+      }
+      if (!order.lines || order.lines.length === 0) throw new BadRequestException('生产订单没有产品明细');
+
+      // Idempotency: check for existing complete report linked to this production order
+      const existing = await tx.completeReport.findFirst({
+        where: {
+          productionOrderId: id,
+          approvalStatus: { in: ['DRAFT', 'SUBMITTED', 'APPROVED'] },
         },
-      } as any,
-    });
+      });
+      if (existing) {
+        throw new BadRequestException(`该生产订单已存在完工报告 ${existing.reportNo}，不能重复下推`);
+      }
 
-    return { message: '完工报告已生成', reportNo: rptNo };
+      const rptNo = await this.codeGen.generate('RPT', 'completeReport', 'reportNo');
+      const totalQty = order.lines.reduce((s, l) => s + Number(l.plannedQty || 0), 0);
+
+      await tx.completeReport.create({
+        data: {
+          tenantId,
+          reportNo: rptNo,
+          sourceType: 'PRODUCTION_ORDER',
+          productionOrderId: id,
+          productionOrderNo: order.orderNo,
+          materialCode: order.lines[0]?.materialCode || '',
+          materialName: order.lines[0]?.materialName || order.orderName,
+          spec: order.lines[0]?.spec || '',
+          unit: order.lines[0]?.unit || '',
+          plannedQty: String(totalQty),
+          actualQty: String(totalQty),
+          deptName: order.departmentName,
+          approvalStatus: 'DRAFT',
+          businessStatus: 'PENDING',
+          lines: {
+            create: order.lines.map((l, i) => ({
+              tenantId,
+              lineNo: l.lineNo ?? i + 1,
+              materialCode: l.materialCode || '',
+              materialName: l.materialName || '',
+              spec: l.spec || '',
+              unit: l.unit || '',
+              plannedQty: l.plannedQty != null ? String(l.plannedQty) : '0',
+              actualQty: l.plannedQty != null ? String(l.plannedQty) : '0',
+              warehouseCode: l.warehouseCode || '',
+            })),
+          },
+        } as any,
+      });
+
+      return { message: '完工报告已生成', reportNo: rptNo };
+    });
   }
 }

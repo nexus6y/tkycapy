@@ -97,6 +97,11 @@ ISS_ID = iss['id'] if iss else ''
 po_d2 = api('GET', f'/production-orders/{PROD_ID}')
 check("ProdOrder -> ISSUING", po_d2.get('businessStatus') == 'ISSUING')
 
+print("\n5b. Duplicate generate-issue must fail (idempotency)...")
+dup_iss = api('POST', f'/production-orders/{PROD_ID}/generate-issue')
+dup_iss_msg = str(dup_iss.get('message', '') or dup_iss.get('body', '') or dup_iss.get('error', ''))
+check("duplicate issue REJECTED", '已存在领料单' in dup_iss_msg or 'already exists' in dup_iss_msg.lower() or ('error' in dup_iss and not dup_iss.get('issueNo')))
+
 print("\n6. Approve issue (登卡) -> deduct raw stock...")
 api('PUT', f'/issue-orders/{ISS_ID}/submit')
 api('PUT', f'/issue-orders/{ISS_ID}/approve'); time.sleep(0.3)
@@ -133,6 +138,11 @@ rpt = next((i for i in rpts.get('items', []) if i.get('reportNo') == rpt_no), No
 check("complete report found", rpt is not None)
 RPT_ID = rpt['id'] if rpt else ''
 
+print("\n9b. Duplicate generate-complete-report must fail (idempotency)...")
+dup_rpt = api('POST', f'/production-orders/{PROD_ID}/generate-complete-report')
+dup_rpt_msg = str(dup_rpt.get('message', '') or dup_rpt.get('body', '') or dup_rpt.get('error', ''))
+check("duplicate complete report REJECTED", '已存在完工报告' in dup_rpt_msg or 'already exists' in dup_rpt_msg.lower() or ('error' in dup_rpt and not dup_rpt.get('reportNo')))
+
 print("\n10. Approve complete report (完工登卡) -> product stock +10...")
 api('PUT', f'/complete-reports/{RPT_ID}/approve'); time.sleep(0.3)
 inv_p = api('GET', f'/inventory?materialCode={PROD_CODE}')
@@ -156,6 +166,11 @@ PROD3 = float(inv_p3['items'][0]['quantity']) if inv_p3.get('items') else 0
 check(f"product stock 0->10 (got {PROD3})", abs(PROD3 - 10) < 0.01)
 po_df = api('GET', f'/production-orders/{PROD_ID}')
 check("ProdOrder -> COMPLETED (final)", po_df.get('businessStatus') == 'COMPLETED')
+
+print("\n13. COMPLETED state blocks generate-complete-report...")
+rpt3 = api('POST', f'/production-orders/{PROD_ID}/generate-complete-report')
+rpt3_msg = str(rpt3.get('message', '') or rpt3.get('body', '') or rpt3.get('error', ''))
+check("COMPLETED blocks new complete report", '只有生产中状态' in rpt3_msg or ('error' in rpt3 and not rpt3.get('reportNo')))
 
 print(f"\n========== RESULTS ==========")
 print(f"✅ {P} passed  ❌ {F} failed")
