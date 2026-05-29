@@ -5,14 +5,46 @@ import api from '@/lib/api';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/components/ui/toast';
 import { FormLayout, FormSection, FormGrid, FormField } from '@/components/form/form-layout';
+import { LinesEditor, LineItem } from '@/components/ui/lines-editor';
 
 const FI='h-9 rounded-md border border-border bg-background px-3 text-[13px] w-full';
-const SECS=[{id:'basic',title:'生产订单信息'}];
+const SECS=[{id:'basic',title:'生产订单信息'},{id:'products',title:'产品信息'},{id:'materials',title:'材料信息'}];
+
+const PROD_COLS = [
+  { key: 'lineNo', label: '行号', width: '60px', type: 'number' as const },
+  { key: 'materialCode', label: '物料编码', width: '120px' },
+  { key: 'materialName', label: '产品名称', width: '120px' },
+  { key: 'spec', label: '规格型号', width: '100px' },
+  { key: 'unit', label: '单位', width: '60px' },
+  { key: 'plannedQty', label: '计划数量', width: '80px', type: 'number' as const },
+  { key: 'warehouseCode', label: '仓库', width: '100px' },
+  { key: 'remark', label: '备注', width: '100px' },
+];
+
+const MAT_COLS = [
+  { key: 'lineNo', label: '行号', width: '60px', type: 'number' as const },
+  { key: 'materialCode', label: '物料编码', width: '120px' },
+  { key: 'materialName', label: '材料名称', width: '120px' },
+  { key: 'spec', label: '规格型号', width: '100px' },
+  { key: 'unit', label: '单位', width: '60px' },
+  { key: 'quantity', label: '数量', width: '80px', type: 'number' as const },
+  { key: 'warehouseCode', label: '仓库', width: '100px' },
+  { key: 'remark', label: '备注', width: '100px' },
+];
 
 export default function ProductionOrderCreatePage() {
   const router=useRouter();
   const [f,setF]=useState({orderNo:'',orderName:'',materialName:'',departmentName:'',quantity:'1',startDate:'',endDate:'',remark:''});
-  const save=async()=>{try{await api.post('/production-orders',{...f,quantity:+f.quantity});router.push('/production/order');}catch(e:any){toast(e.response?.data?.message||'保存失败','error');}};
+  const [lines,setLines]=useState<LineItem[]>([]);
+  const [materials,setMaterials]=useState<LineItem[]>([]);
+
+  const save=async()=>{
+    try{
+      await api.post('/production-orders',{...f,quantity:+f.quantity,lines,materials});
+      router.push('/production/order');
+    }catch(e:any){toast(e.response?.data?.message||'保存失败','error');}
+  };
+
   return (<FormLayout title="新增生产订单" onSave={save} sections={SECS} activeSection="basic">
     <FormSection id="basic" title="生产订单信息"><FormGrid>
       <FormField label="生产编号" required><Input className={FI} value={f.orderNo} onChange={e=>setF({...f,orderNo:e.target.value})}/></FormField>
@@ -24,5 +56,7 @@ export default function ProductionOrderCreatePage() {
       <FormField label="结束日期"><Input type="date" className={FI} value={f.endDate} onChange={e=>setF({...f,endDate:e.target.value})}/></FormField>
       <div className="col-span-2"><FormField label="备注"><Input className={FI} value={f.remark} onChange={e=>setF({...f,remark:e.target.value})}/></FormField></div>
     </FormGrid></FormSection>
+    <FormSection id="products" title="产品信息"><LinesEditor lines={lines} onChange={setLines} columns={PROD_COLS}/></FormSection>
+    <FormSection id="materials" title="材料信息"><LinesEditor lines={materials} onChange={setMaterials} columns={MAT_COLS}/></FormSection>
   </FormLayout>);
 }

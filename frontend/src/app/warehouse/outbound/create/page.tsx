@@ -1,9 +1,25 @@
-'use client';import { useEffect, useState } from 'react';import { useRouter } from 'next/navigation';import api from '@/lib/api';import { Input } from '@/components/ui/input';import { Select,SelectContent,SelectItem,SelectTrigger,SelectValue } from '@/components/ui/select';import { Textarea } from '@/components/ui/textarea';import { FormLayout,FormSection,FormGrid,FormField } from '@/components/form/form-layout';import { toast } from '@/components/ui/toast';
+'use client';import { useEffect, useState } from 'react';import { useRouter } from 'next/navigation';import api from '@/lib/api';import { Input } from '@/components/ui/input';import { Select,SelectContent,SelectItem,SelectTrigger,SelectValue } from '@/components/ui/select';import { Textarea } from '@/components/ui/textarea';import { FormLayout,FormSection,FormGrid,FormField } from '@/components/form/form-layout';import { LinesEditor, LineItem } from '@/components/ui/lines-editor';import { toast } from '@/components/ui/toast';
 const FI='h-9 rounded-md border border-border bg-background px-3 text-[13px] w-full';
+
+const OUT_COLS = [
+  { key: 'lineNo', label: '行号', width: '60px', type: 'number' as const },
+  { key: 'materialCode', label: '物料编码', width: '120px' },
+  { key: 'materialName', label: '物料名称', width: '120px' },
+  { key: 'spec', label: '规格型号', width: '100px' },
+  { key: 'unit', label: '单位', width: '60px' },
+  { key: 'quantity', label: '数量', width: '80px', type: 'number' as const },
+  { key: 'unitPrice', label: '单价', width: '80px', type: 'number' as const },
+  { key: 'amount', label: '金额', width: '100px', type: 'number' as const },
+  { key: 'warehouseCode', label: '仓库', width: '100px' },
+  { key: 'locationCode', label: '仓位', width: '80px' },
+  { key: 'batchNo', label: '批次', width: '100px' },
+];
+
 export default function OCreate(){const router=useRouter();
 const [materials,setMaterials]=useState<any[]>([]);const [zones,setZones]=useState<any[]>([]);
 const [shipments,setShipments]=useState<any[]>([]);
 const [f,setF]=useState({orderNo:'',sourceType:'SALES_SHIPMENT',sourceId:'',sourceNo:'',materialName:'',materialId:'',specification:'',quantity:'',warehouseName:'',zoneId:'',unitPrice:'',totalAmount:'',remark:''});
+const [lines,setLines]=useState<LineItem[]>([]);
 useEffect(()=>{
 api.get('/common/next-code',{params:{entity:'outboundOrder'}}).then(r=>setF((prev:any)=>({...prev,orderNo:r.data.code})));
 api.get('/materials',{params:{pageSize:999}}).then(r=>setMaterials(r.data.items));
@@ -12,21 +28,22 @@ api.get('/sales-shipments',{params:{pageSize:999,status:'APPROVED'}}).then(r=>se
 },[]);
 const label=(arr:any[],id:any,f='name')=>arr.find(x=>x.id===id)?.[f]||id;
 const save=async()=>{
-if(!f.materialName)return toast('请选择物料','error');
-if(!f.quantity)return toast('请填写数量','error');
+if(!f.materialName&&lines.length===0)return toast('请填写物料或添加明细','error');
+if(!f.quantity&&lines.length===0)return toast('请填写数量','error');
 const p:any={...f};['materialId','zoneId','sourceId'].forEach(k=>delete p[k]);
 if(p.totalAmount==='')p.totalAmount=undefined;
+if(lines.length>0)p.lines=lines;
 await api.post('/outbound-orders',p);router.push('/warehouse/outbound');
 };
-return(<FormLayout title="新增出库单" onSave={save} sections={[{id:'b',title:'出库信息'},{id:'s',title:'来源信息'}]} activeSection="b">
+return(<FormLayout title="新增出库单" onSave={save} sections={[{id:'b',title:'出库信息'},{id:'s',title:'来源信息'},{id:'l',title:'明细信息'}]} activeSection="b">
 <FormSection id="b" title="出库信息"><FormGrid>
 <FormField label="出库单号"><Input className={FI} value={f.orderNo} readOnly disabled/></FormField>
-<FormField label="物料" required>
+<FormField label="物料">
 <Select value={f.materialId} onValueChange={(v:any)=>{const m=materials.find(x=>x.id===v);setF({...f,materialId:v,materialName:m?.name||'',specification:m?.specification||''});}}>
-<SelectTrigger className={FI}><SelectValue placeholder="选择物料">{label(materials,f.materialId)}</SelectValue></SelectTrigger>
+<SelectTrigger className={FI}><SelectValue placeholder="选择物料 (或填写明细)">{label(materials,f.materialId)}</SelectValue></SelectTrigger>
 <SelectContent>{materials.map(m=><SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}</SelectContent></Select></FormField>
 <FormField label="规格型号"><Input className={FI} value={f.specification} readOnly disabled/></FormField>
-<FormField label="数量" required><Input type="number" className={FI} value={f.quantity} onChange={e=>setF({...f,quantity:e.target.value})} placeholder="0"/></FormField>
+<FormField label="数量"><Input type="number" className={FI} value={f.quantity} onChange={e=>setF({...f,quantity:e.target.value})} placeholder="总数量"/></FormField>
 <FormField label="仓库">
 <Select value={f.zoneId} onValueChange={(v:any)=>{const z=zones.find(x=>x.id===v);setF({...f,zoneId:v,warehouseName:z?.name||''});}}>
 <SelectTrigger className={FI}><SelectValue placeholder="选择仓库">{label(zones,f.zoneId)}</SelectValue></SelectTrigger>
@@ -49,4 +66,5 @@ return(<FormLayout title="新增出库单" onSave={save} sections={[{id:'b',titl
 <FormField label="来源单号"><Input className={FI} value={f.sourceNo} onChange={e=>setF({...f,sourceNo:e.target.value})} placeholder="手动输入"/></FormField>
 )}
 </FormGrid></FormSection>
+<FormSection id="l" title="明细信息"><LinesEditor lines={lines} onChange={setLines} columns={OUT_COLS}/></FormSection>
 </FormLayout>);}

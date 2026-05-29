@@ -13,7 +13,8 @@ import { toast } from '@/components/ui/toast';
 import { exportCSV } from '@/lib/export';
 import { ErpTable,ErpThead,ErpTh,ErpTbody,ErpTr,ErpTd,ErpEmpty,ErpLink,ErpAction,ErpActionBtn,ErpTools,ErpApproval,ErpPagination } from '@/components/ui/erp-table';
 
-interface Item { id:string;orderNo:string;materialName:string|null;specification:string|null;quantity:string;qualifiedQty:string;unqualifiedQty:string;warehouseName:string|null;totalAmount:string|null;approvalStatus:string;businessStatus:string;receiptDate:string;createdAt:string; }
+interface LineItem { id:string;lineNo:number;materialCode:string|null;materialName:string|null;spec:string|null;unit:string|null;quantity:string|null;warehouseCode:string|null;locationCode:string|null;batchNo:string|null; }
+interface Item { id:string;orderNo:string;materialName:string|null;specification:string|null;quantity:string;qualifiedQty:string;unqualifiedQty:string;warehouseName:string|null;totalAmount:string|null;approvalStatus:string;businessStatus:string;receiptDate:string;createdAt:string;sourceType?:string;sourceNo?:string;lines?:LineItem[] }
 const AP:Record<string,string>={DRAFT:'草稿',SUBMITTED:'已提交',APPROVED:'已通过',REJECTED:'已拒绝'};
 const BS:Record<string,string>={PENDING:'待收货',RECEIVED:'已收货',CLOSED:'已关闭'};
 
@@ -22,11 +23,13 @@ export default function InboundPage() {
   const [items,setItems]=useState<Item[]>([]);const [total,setTotal]=useState(0);const [pg,setPg]=useState(1);const [ps,setPs]=useState(30);
   const [sel,setSel]=useState<Set<string>>(new Set());const [s,setS]=useState({code:'',name:'',status:'',biz:''});
   const [del,setDel]=useState<string|null>(null);
+  const [detailMode,setDetailMode]=useState(false);
 
   const fetch=useCallback(async()=>{
     const p:any={page:pg,pageSize:ps}; if(s.code)p.code=s.code; if(s.name)p.name=s.name; if(s.status)p.status=s.status; if(s.biz)p.biz=s.biz;
+    if(detailMode)p.mode='detail';
     const {data}=await api.get('/inbound-orders',{params:p}); setItems(data.items); setTotal(data.total);
-  },[pg,ps,s]); useEffect(()=>{fetch();},[fetch]);
+  },[pg,ps,s,detailMode]); useEffect(()=>{fetch();},[fetch]);
 
   const doDel=async()=>{if(!del)return;try{await api.delete(`/inbound-orders/${del}`);setDel(null);fetch();}catch(e:any){toast(e.response?.data?.message||'删除失败','error');}};
   const toggleAll=(v:boolean)=>setSel(v?new Set(items.map(i=>i.id)):new Set());
@@ -41,6 +44,7 @@ export default function InboundPage() {
       </div>
       <div className="flex items-center gap-1">
         <Button variant="ghost" size="sm" onClick={()=>setS({code:'',name:'',status:'',biz:''})}>重置</Button>
+        <Button variant={detailMode?"secondary":"outline"} size="sm" onClick={()=>setDetailMode(!detailMode)}>主单+明细</Button>
         <Button variant="default" size="sm" onClick={fetch}><Search className="h-3.5 w-3.5 mr-1"/>搜索</Button>
       </div>
     </div>
@@ -51,7 +55,9 @@ export default function InboundPage() {
     </div>
     <ErpTools onRefresh={fetch}/>
     <div className="overflow-auto"><ErpTable><ErpThead><ErpTh className="w-10"><Checkbox checked={items.length>0&&sel.size===items.length} onCheckedChange={(v:boolean)=>toggleAll(v)}/></ErpTh><ErpTh>审批状态</ErpTh><ErpTh>业务状态</ErpTh><ErpTh>入库单号</ErpTh><ErpTh>来源</ErpTh><ErpTh>来源单号</ErpTh><ErpTh>物料</ErpTh><ErpTh>规格</ErpTh><ErpTh>数量</ErpTh><ErpTh>仓库</ErpTh><ErpTh>金额</ErpTh><ErpTh>收货日期</ErpTh><ErpTh>操作</ErpTh></ErpThead><ErpTbody>
-    {items.map(i=>(<ErpTr key={i.id}><ErpTd><Checkbox checked={sel.has(i.id)} onCheckedChange={(v:boolean)=>{const n=new Set(sel);v?n.add(i.id):n.delete(i.id);setSel(n);}}/></ErpTd><ErpTd><ErpApproval status={i.approvalStatus}/></ErpTd><ErpTd><span className="text-[13px]">{BS[i.businessStatus]||i.businessStatus||'-'}</span></ErpTd><ErpTd><ErpLink onClick={()=>router.push('/warehouse/inbound/'+i.id+'/edit')}>{i.orderNo}</ErpLink></ErpTd><ErpTd className="text-muted-foreground text-[12px]">{(i as any).sourceType||'-'}</ErpTd><ErpTd className="text-muted-foreground text-[12px]">{(i as any).sourceNo||'-'}</ErpTd><ErpTd>{i.materialName||'-'}</ErpTd><ErpTd className="text-muted-foreground">{i.specification||'-'}</ErpTd><ErpTd>{i.quantity?Number(i.quantity).toLocaleString():'-'}</ErpTd><ErpTd className="text-muted-foreground">{i.warehouseName||'-'}</ErpTd><ErpTd>{i.totalAmount?Number(i.totalAmount).toLocaleString():'-'}</ErpTd><ErpTd className="text-muted-foreground">{i.receiptDate?new Date(i.receiptDate).toLocaleDateString('zh-CN'):'-'}</ErpTd><ErpTd><ErpAction><ErpActionBtn onClick={()=>router.push('/warehouse/inbound/'+i.id+'/edit')}><Pencil className="h-3.5 w-3.5"/>修改</ErpActionBtn>{i.approvalStatus==='DRAFT'&&<button onClick={()=>{api.put(`/inbound-orders/${i.id}/submit`).then(fetch);}} className="text-primary text-[13px]">提交</button>}{i.approvalStatus==='SUBMITTED'&&<button onClick={()=>{api.put(`/inbound-orders/${i.id}/approve`).then(fetch);}} className="text-green-600 text-[13px]">通过</button>}<ErpActionBtn danger onClick={()=>setDel(i.id)}><Trash2 className="h-3.5 w-3.5"/>删除</ErpActionBtn></ErpAction></ErpTd></ErpTr>))}
+    {items.map(i=>(<><ErpTr key={i.id} className={detailMode&&i.lines&&i.lines.length>0?'border-b-0':''}><ErpTd><Checkbox checked={sel.has(i.id)} onCheckedChange={(v:boolean)=>{const n=new Set(sel);v?n.add(i.id):n.delete(i.id);setSel(n);}}/></ErpTd><ErpTd><ErpApproval status={i.approvalStatus}/></ErpTd><ErpTd><span className="text-[13px]">{BS[i.businessStatus]||i.businessStatus||'-'}{i.lines?` (${i.lines.length}行)`:''}</span></ErpTd><ErpTd><ErpLink onClick={()=>router.push('/warehouse/inbound/'+i.id+'/edit')}>{i.orderNo}</ErpLink></ErpTd><ErpTd className="text-muted-foreground text-[12px]">{i.sourceType||'-'}</ErpTd><ErpTd className="text-muted-foreground text-[12px]">{i.sourceNo||'-'}</ErpTd><ErpTd>{i.materialName||'-'}</ErpTd><ErpTd className="text-muted-foreground">{i.specification||'-'}</ErpTd><ErpTd>{i.quantity?Number(i.quantity).toLocaleString():'-'}</ErpTd><ErpTd className="text-muted-foreground">{i.warehouseName||'-'}</ErpTd><ErpTd>{i.totalAmount?Number(i.totalAmount).toLocaleString():'-'}</ErpTd><ErpTd className="text-muted-foreground">{i.receiptDate?new Date(i.receiptDate).toLocaleDateString('zh-CN'):'-'}</ErpTd><ErpTd><ErpAction><ErpActionBtn onClick={()=>router.push('/warehouse/inbound/'+i.id+'/edit')}><Pencil className="h-3.5 w-3.5"/>修改</ErpActionBtn>{i.approvalStatus==='DRAFT'&&<button onClick={()=>{api.put(`/inbound-orders/${i.id}/submit`).then(fetch);}} className="text-primary text-[13px] hover:underline">提交</button>}{i.approvalStatus==='SUBMITTED'&&<button onClick={()=>{api.put(`/inbound-orders/${i.id}/approve`).then(fetch);}} className="text-green-600 text-[13px] hover:underline">登卡</button>}{i.approvalStatus==='APPROVED'&&<button onClick={()=>{if(window.confirm('确认撤销登卡？库存将回退。')){api.put(`/inbound-orders/${i.id}/cancel-approve`).then(fetch).catch((e:any)=>toast(e.response?.data?.message||'撤销失败','error'));}}} className="text-orange-500 text-[13px] hover:underline">撤销登卡</button>}<ErpActionBtn danger onClick={()=>setDel(i.id)}><Trash2 className="h-3.5 w-3.5"/>删除</ErpActionBtn></ErpAction></ErpTd></ErpTr>
+    {detailMode&&i.lines&&i.lines.map(l=>(<ErpTr key={l.id||l.lineNo} className="bg-[#f0f7ff]"><ErpTd/><ErpTd/><ErpTd className="text-[12px] text-muted-foreground">└ 行{l.lineNo}</ErpTd><ErpTd className="text-[12px]">{l.materialCode||'-'}</ErpTd><ErpTd className="text-[12px]"/><ErpTd className="text-[12px]"/><ErpTd className="text-[12px]">{l.materialName||'-'}</ErpTd><ErpTd className="text-[12px] text-muted-foreground">{l.spec||'-'}</ErpTd><ErpTd className="text-[12px]">{l.quantity?Number(l.quantity).toLocaleString():'-'}{l.unit?` ${l.unit}`:''}</ErpTd><ErpTd className="text-[12px]">{l.warehouseCode||'-'}{l.locationCode?`/${l.locationCode}`:''}</ErpTd><ErpTd className="text-[12px]"/><ErpTd className="text-[12px]"/><ErpTd/></ErpTr>))}
+    </>))}
     {items.length===0&&<ErpEmpty colSpan={13}/>}
     </ErpTbody></ErpTable></div>
     <ErpPagination page={pg} pageSize={ps} total={total} onPage={setPg} onPageSize={v=>setPs(+v)}/>

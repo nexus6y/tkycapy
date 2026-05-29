@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { FormLayout, FormSection, FormGrid, FormField } from '@/components/form/form-layout';
+import { LinesEditor, LineItem } from '@/components/ui/lines-editor';
 import { toast } from '@/components/ui/toast';
 
 const FI = 'h-9 rounded-md border border-border bg-background px-3 text-[13px] w-full';
@@ -15,6 +16,7 @@ const SECTIONS = [
   { id: 'source', title: '来源关联' },
   { id: 'org', title: '组织与人员' },
   { id: 'detail', title: '金额与交货' },
+  { id: 'lines', title: '明细信息' },
 ];
 
 export default function SalesOrderCreate() {
@@ -25,6 +27,7 @@ export default function SalesOrderCreate() {
   const [quotations, setQuotations] = useState<any[]>([]);
   const [preOrders, setPreOrders] = useState<any[]>([]);
   const [depts, setDepts] = useState<any[]>([]);
+  const [lines, setLines] = useState<LineItem[]>([]);
 
   const [f, setF] = useState<any>({
     orderNo: '', orderName: '', orderType: '',
@@ -57,6 +60,7 @@ export default function SalesOrderCreate() {
     const payload: any = {};
     validFields.forEach(k => { if (f[k] !== '' && f[k] !== undefined) payload[k] = f[k]; });
     if (payload.totalAmount === '') payload.totalAmount = undefined;
+    if (lines.length > 0) payload.lines = lines;
     await api.post('/sales-orders', payload);
     router.push('/sales/order');
   };
@@ -163,6 +167,10 @@ export default function SalesOrderCreate() {
             <Input type="date" className={FI} value={f.deliveryDate} onChange={e => setF({ ...f, deliveryDate: e.target.value })} />
           </FormField>
         </FormGrid>
+      </FormSection>
+
+      <FormSection id="lines" title="明细信息">
+        <LinesEditor lines={lines} onChange={setLines} />
       </FormSection>
 
     </FormLayout>

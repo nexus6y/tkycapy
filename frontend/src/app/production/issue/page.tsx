@@ -12,7 +12,7 @@ import { Download, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { toast } from '@/components/ui/toast';
 import { ErpTable,ErpThead,ErpTh,ErpTbody,ErpTr,ErpTd,ErpEmpty,ErpLink,ErpAction,ErpActionBtn,ErpTools,ErpApproval,ErpPagination } from '@/components/ui/erp-table';
 
-interface Item { id:string;orderNo:string;orderName:string;materialName:string|null;quantity:string;departmentName:string|null;startDate:string|null;approvalStatus:string;businessStatus:string;createdAt:string; }
+interface Item { id:string;orderNo:string;materialName:string|null;quantity:string;departmentName:string|null;approvalStatus:string;businessStatus:string;createdAt:string; }
 
 export default function IssuePage() {
   const router=useRouter();
@@ -25,7 +25,7 @@ export default function IssuePage() {
     const {data}=await api.get('/issue-orders',{params:p}); setItems(data.items); setTotal(data.total);
   },[pg,ps,s]); useEffect(()=>{fetch();},[fetch]);
 
-  const doDel=async()=>{if(!del)return;try{await api.delete(`/production-orders/${del}`);setDel(null);fetch();}catch(e:any){toast(e.response?.data?.message||'删除失败','error');}};
+  const doDel=async()=>{if(!del)return;try{await api.delete(`/issue-orders/${del}`);setDel(null);fetch();}catch(e:any){toast(e.response?.data?.message||'删除失败','error');}};
   const toggleAll=(v:boolean)=>setSel(v?new Set(items.map(i=>i.id)):new Set());
 
   return (<TooltipProvider><div className="bg-background rounded-lg border shadow-sm">
@@ -43,13 +43,17 @@ export default function IssuePage() {
     </div>
     <div className="flex items-center gap-4 px-4 py-2.5 border-b border-border bg-muted/30 flex-wrap">
       <F label="审批状态"><Select value={s.status} onValueChange={(v:any)=>setS({...s,status:v==='ALL'?'':v})}><SelectTrigger className="w-[100px] h-9 rounded-md border border-border bg-background px-3 text-[13px]"><SelectValue placeholder="全部"/></SelectTrigger><SelectContent><SelectItem value="ALL">全部</SelectItem><SelectItem value="DRAFT">草稿</SelectItem><SelectItem value="SUBMITTED">已提交</SelectItem><SelectItem value="APPROVED">已通过</SelectItem></SelectContent></Select></F>
-      <F label="订单编号"><Input className="w-[140px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.code} onChange={e=>setS({...s,code:e.target.value})}/></F>
+      <F label="单号"><Input className="w-[140px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.code} onChange={e=>setS({...s,code:e.target.value})}/></F>
       <F label="物料"><Input className="w-[140px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.name} onChange={e=>setS({...s,name:e.target.value})}/></F>
     </div>
     <ErpTools onRefresh={fetch}/>
-    <div className="overflow-auto"><ErpTable><ErpThead><ErpTh className="w-10"><Checkbox checked={items.length>0&&sel.size===items.length} onCheckedChange={(v:boolean)=>toggleAll(v)}/></ErpTh><ErpTh>领料单号</ErpTh><ErpTh>订单名称</ErpTh><ErpTh>物料</ErpTh><ErpTh>数量</ErpTh><ErpTh>部门</ErpTh><ErpTh>开始日</ErpTh><ErpTh>审批状态</ErpTh><ErpTh>操作</ErpTh></ErpThead><ErpTbody>
-    {items.map(i=>(<ErpTr key={i.id}><ErpTd><Checkbox checked={sel.has(i.id)} onCheckedChange={(v:boolean)=>{const n=new Set(sel);v?n.add(i.id):n.delete(i.id);setSel(n);}}/></ErpTd><ErpTd><ErpLink>{i.orderNo}</ErpLink></ErpTd><ErpTd>{i.orderName||'-'}</ErpTd><ErpTd className="text-muted-foreground">{i.materialName||'-'}</ErpTd><ErpTd>{i.quantity?Number(i.quantity).toLocaleString():'-'}</ErpTd><ErpTd className="text-muted-foreground">{i.departmentName||'-'}</ErpTd><ErpTd className="text-muted-foreground">{i.startDate?new Date(i.startDate).toLocaleDateString('zh-CN'):'-'}</ErpTd><ErpTd><ErpApproval status={i.approvalStatus}/></ErpTd><ErpTd><ErpAction>{i.approvalStatus==='DRAFT'&&<ErpActionBtn onClick={async()=>{await api.put('/issue-orders/'+i.id+'/submit');fetch();}}>提交</ErpActionBtn>}{i.approvalStatus==='SUBMITTED'&&<ErpActionBtn onClick={async()=>{await api.put('/purchase-plans/'+i.id+'/withdraw');fetch();}}>撤回</ErpActionBtn>}{i.approvalStatus==='SUBMITTED'&&<ErpActionBtn onClick={async()=>{await api.put('/issue-orders/'+i.id+'/approve');fetch();}}>通过</ErpActionBtn>}<ErpActionBtn><Pencil className="h-3.5 w-3.5"/>修改</ErpActionBtn><ErpActionBtn danger onClick={()=>setDel(i.id)}><Trash2 className="h-3.5 w-3.5"/>删除</ErpActionBtn></ErpAction></ErpTd></ErpTr>))}
-    {items.length===0&&<ErpEmpty colSpan={9}/>}
+    <div className="overflow-auto"><ErpTable><ErpThead><ErpTh className="w-10"><Checkbox checked={items.length>0&&sel.size===items.length} onCheckedChange={(v:boolean)=>toggleAll(v)}/></ErpTh><ErpTh>领料单号</ErpTh><ErpTh>物料</ErpTh><ErpTh>数量</ErpTh><ErpTh>部门</ErpTh><ErpTh>审批状态</ErpTh><ErpTh>操作</ErpTh></ErpThead><ErpTbody>
+    {items.map(i=>(<ErpTr key={i.id}><ErpTd><Checkbox checked={sel.has(i.id)} onCheckedChange={(v:boolean)=>{const n=new Set(sel);v?n.add(i.id):n.delete(i.id);setSel(n);}}/></ErpTd><ErpTd><ErpLink>{i.orderNo}</ErpLink></ErpTd><ErpTd className="text-muted-foreground">{i.materialName||'-'}</ErpTd><ErpTd>{i.quantity?Number(i.quantity).toLocaleString():'-'}</ErpTd><ErpTd className="text-muted-foreground">{i.departmentName||'-'}</ErpTd><ErpTd><ErpApproval status={i.approvalStatus}/></ErpTd><ErpTd><ErpAction>
+    {i.approvalStatus==='DRAFT'&&<button onClick={()=>{api.put(`/issue-orders/${i.id}/submit`).then(fetch).catch((e:any)=>toast(e.response?.data?.message||'提交失败','error'));}} className="text-primary text-[13px] hover:underline">提交</button>}
+    {i.approvalStatus==='SUBMITTED'&&<button onClick={()=>{api.put(`/issue-orders/${i.id}/approve`).then(fetch).catch((e:any)=>toast(e.response?.data?.message||'登卡失败','error'));}} className="text-green-600 text-[13px] hover:underline">登卡</button>}
+    {i.approvalStatus==='APPROVED'&&<button onClick={()=>{if(window.confirm('确认撤销领料登卡？原材料库存将回退。')){api.put(`/issue-orders/${i.id}/cancel-approve`).then(fetch).catch((e:any)=>toast(e.response?.data?.message||'撤销失败','error'));}}} className="text-orange-500 text-[13px] hover:underline">撤销登卡</button>}
+    <ErpActionBtn danger onClick={()=>setDel(i.id)}><Trash2 className="h-3.5 w-3.5"/>删除</ErpActionBtn></ErpAction></ErpTd></ErpTr>))}
+    {items.length===0&&<ErpEmpty colSpan={7}/>}
     </ErpTbody></ErpTable></div>
     <ErpPagination page={pg} pageSize={ps} total={total} onPage={setPg} onPageSize={v=>setPs(+v)}/>
     <AlertDialog open={!!del} onOpenChange={()=>setDel(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>确认删除？</AlertDialogTitle></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>取消</AlertDialogCancel><AlertDialogAction onClick={doDel} className="bg-[#f56c6c] text-white hover:bg-[#f56c6c]/90">删除</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>

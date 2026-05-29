@@ -34,6 +34,7 @@ import { CustomerModule } from './customer/customer.module';
 import { QuotationModule } from './quotation/quotation.module';
 import { PreOrderModule } from './pre-order/pre-order.module';
 import { SalesOrderModule } from './sales-order/sales-order.module';
+import { PurchaseOrderModule } from './purchase-order/purchase-order.module';
 import { SalesShipmentModule } from './sales-shipment/sales-shipment.module';
 import { SalesReturnModule } from './sales-return/sales-return.module';
 
@@ -45,6 +46,7 @@ import { SalesReturnModule } from './sales-return/sales-return.module';
     ProjectModule, ContractModule,
     TransferOrderModule, MenuMgmtModule, LogModule, DeptModule, DictMgmtModule, LendOrderModule, ScrapOrderModule, UserMgmtModule, InboundOrderModule, OutboundOrderModule, CostLedgerModule, WarehouseModule, WarehouseEntityModule, NewEntitiesModule, InventoryModule, BomModule, ProductionOrderModule, InspectionModule, DemandPlanModule, SupplierModule, CustomerModule, QuotationModule, PreOrderModule,
     SalesOrderModule, SalesShipmentModule, SalesReturnModule,
+    PurchaseOrderModule,
   ],
 })
 export class AppModule {}

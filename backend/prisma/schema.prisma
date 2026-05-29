@@ -121,6 +121,19 @@ model Tenant {
   issueOrders        IssueOrder[]
   returnOrders       ReturnOrder[]
   purchasePlans      PurchasePlan[]
+  purchaseOrders     PurchaseOrder[]
+  purchaseOrderLines PurchaseOrderLine[]
+  salesOrderLines    SalesOrderLine[]
+  purchasePlanLines  PurchasePlanLine[]
+  productionOrderLines ProductionOrderLine[]
+  productionMaterialLines ProductionMaterialLine[]
+  inspectionLines    InspectionLine[]
+  inboundOrderLines  InboundOrderLine[]
+  outboundOrderLines OutboundOrderLine[]
+  inventoryTransactions InventoryTransaction[]
+  salesShipmentLines SalesShipmentLine[]
+  issueOrderLines    IssueOrderLine[]
+  completeReportLines CompleteReportLine[]
   adjustOrders       AdjustOrder[]
   completeReports    CompleteReport[]
   boms               Bom[]
@@ -524,6 +537,7 @@ model SalesOrder {
   deletedAt       DateTime?
 
   tenant          Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lines           SalesOrderLine[]
 
   @@unique([tenantId, orderNo])
   @@index([tenantId])
@@ -548,10 +562,36 @@ model SalesShipment {
   deletedAt       DateTime?
 
   tenant          Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lines           SalesShipmentLine[]
 
   @@unique([tenantId, shipmentNo])
   @@index([tenantId])
   @@map("sales_shipment")
+}
+
+model SalesShipmentLine {
+  id              String    @id @default(cuid())
+  tenantId        String
+  shipmentId      String
+  lineNo          Int
+  salesOrderLineId String?
+  materialCode    String?
+  materialName    String?
+  spec            String?
+  unit            String?
+  orderQty        Decimal?  @db.Decimal(18, 6)
+  shippedQty      Decimal?  @db.Decimal(18, 6)
+  warehouseCode   String?
+  remark          String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  shipment        SalesShipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([shipmentId])
+  @@map("sales_shipment_line")
 }
 
 model SalesReturn {
@@ -769,6 +809,7 @@ model InboundOrder {
   deletedAt       DateTime?
 
   tenant          Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lines           InboundOrderLine[]
 
   @@unique([tenantId, orderNo])
   @@index([tenantId])
@@ -797,6 +838,7 @@ model OutboundOrder {
   deletedAt       DateTime?
 
   tenant          Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lines           OutboundOrderLine[]
 
   @@unique([tenantId, orderNo])
   @@index([tenantId])
@@ -844,12 +886,16 @@ model CostLedger {
 model Inventory {
   id            String   @id @default(cuid())
   tenantId      String
-  materialId    String?
+  materialCode  String?
   materialName  String?
-  warehouseId   String?
+  spec          String?
+  unit          String?
+  warehouseCode String?
   warehouseName String?
   locationCode  String?
   batchNo       String?
+  qualityStatus String?  // QUALIFIED / UNQUALIFIED / PENDING
+  projectCode   String?
   quantity      Decimal  @db.Decimal(18,6)
   availableQty  Decimal  @db.Decimal(18,6)
   lockedQty     Decimal  @default(0) @db.Decimal(18,6)
@@ -858,8 +904,9 @@ model Inventory {
 
   tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-  @@unique([tenantId, materialId, warehouseId, batchNo])
+  @@unique([tenantId, materialCode, warehouseCode, locationCode, batchNo, qualityStatus, projectCode])
   @@index([tenantId])
+  @@index([materialCode])
   @@map("inventory")
 }
 
@@ -884,6 +931,8 @@ model ProductionOrder {
   deletedAt       DateTime?
 
   tenant          Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lines           ProductionOrderLine[]
+  materials       ProductionMaterialLine[]
 
   @@unique([tenantId, orderNo])
   @@index([tenantId])
@@ -912,6 +961,7 @@ model Inspection {
   deletedAt       DateTime?
 
   tenant          Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lines           InspectionLine[]
 
   @@unique([tenantId, inspectionNo])
   @@index([tenantId])
@@ -1117,9 +1167,34 @@ model IssueOrder {
   updatedAt       DateTime       @updatedAt
   deletedAt       DateTime?
   tenant          Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lines           IssueOrderLine[]
+
   @@unique([tenantId, orderNo])
   @@index([tenantId])
   @@map("issue_order")
+}
+
+model IssueOrderLine {
+  id              String    @id @default(cuid())
+  tenantId        String
+  issueOrderId    String
+  lineNo          Int
+  materialCode    String?
+  materialName    String?
+  spec            String?
+  unit            String?
+  quantity        Decimal?  @db.Decimal(18, 6)
+  warehouseCode   String?
+  remark          String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  issueOrder      IssueOrder @relation(fields: [issueOrderId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([issueOrderId])
+  @@map("issue_order_line")
 }
 
 model ReturnOrder {
@@ -1167,9 +1242,297 @@ model PurchasePlan {
   updatedAt       DateTime       @updatedAt
   deletedAt       DateTime?
   tenant          Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lines           PurchasePlanLine[]
+
   @@unique([tenantId, orderNo])
   @@index([tenantId])
   @@map("purchase_plan")
+}
+
+model PurchaseOrder {
+  id                  String         @id @default(cuid())
+  tenantId            String
+  orderNo             String
+  orderName           String
+  creationType        String         @default("MANUAL") // MANUAL / PUSH_FROM_PLAN / PUSH_FROM_DEMAND
+  purchaseType        String?        // 采购方式
+  departmentId        String?
+  departmentName      String?        // 采购部门
+  purchaser           String?        // 采购负责人
+  supplierId          String?
+  supplierName        String?
+  projectId           String?
+  projectName         String?
+  contractId          String?
+  contractName        String?
+  organizationName    String?        // 所属组织
+  purchasePlanId      String?
+  purchasePlanNo      String?
+  demandPlanId        String?
+  demandPlanNo        String?
+  expectedDeliveryDate DateTime?
+  totalAmount         Decimal?       @db.Decimal(18, 6)
+  approvalStatus      ApprovalStatus @default(DRAFT)
+  businessStatus      String         @default("PENDING_RECEIPT") // PENDING_RECEIPT / PARTIAL_RECEIPT / FULLY_RECEIVED / CLOSED
+  remark              String?
+  createdBy           String?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  deletedAt           DateTime?
+
+  tenant              Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lines               PurchaseOrderLine[]
+
+  @@unique([tenantId, orderNo])
+  @@index([tenantId])
+  @@index([supplierId])
+  @@map("purchase_order")
+}
+
+model PurchaseOrderLine {
+  id              String    @id @default(cuid())
+  tenantId        String
+  purchaseOrderId String
+  lineNo          Int
+  materialCode    String?
+  materialName    String?
+  spec            String?
+  unit            String?
+  quantity        Decimal?  @db.Decimal(18, 6)
+  unitPrice       Decimal?  @db.Decimal(18, 6)
+  amount          Decimal?  @db.Decimal(18, 6)
+  requiredDate    DateTime?
+  warehouseCode   String?
+  receivedQty     Decimal?  @db.Decimal(18, 6) @default(0)
+  remark          String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([purchaseOrderId])
+  @@map("purchase_order_line")
+}
+
+// ==================== Line models (主单+明细) ====================
+
+model SalesOrderLine {
+  id            String    @id @default(cuid())
+  tenantId      String
+  salesOrderId  String
+  lineNo         Int
+  materialCode   String?
+  materialName   String?
+  spec           String?
+  unit           String?
+  quantity       Decimal?  @db.Decimal(18, 6)
+  unitPrice      Decimal?  @db.Decimal(18, 6)
+  amount         Decimal?  @db.Decimal(18, 6)
+  deliveryDate   DateTime?
+  shippedQty     Decimal?  @db.Decimal(18, 6) @default(0)
+  warehouseCode  String?
+  remark         String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  salesOrder     SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([salesOrderId])
+  @@map("sales_order_line")
+}
+
+model PurchasePlanLine {
+  id              String    @id @default(cuid())
+  tenantId        String
+  purchasePlanId  String
+  lineNo          Int
+  materialCode    String?
+  materialName    String?
+  spec            String?
+  unit            String?
+  quantity        Decimal?  @db.Decimal(18, 6)
+  unitPrice       Decimal?  @db.Decimal(18, 6)
+  amount          Decimal?  @db.Decimal(18, 6)
+  requiredDate    DateTime?
+  warehouseCode   String?
+  remark          String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  purchasePlan    PurchasePlan @relation(fields: [purchasePlanId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([purchasePlanId])
+  @@map("purchase_plan_line")
+}
+
+model ProductionOrderLine {
+  id                String    @id @default(cuid())
+  tenantId          String
+  productionOrderId String
+  lineNo            Int
+  materialCode      String?
+  materialName      String?
+  spec              String?
+  unit              String?
+  plannedQty        Decimal?  @db.Decimal(18, 6)
+  actualQty         Decimal?  @db.Decimal(18, 6) @default(0)
+  warehouseCode     String?
+  remark            String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  tenant            Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  productionOrder   ProductionOrder @relation(fields: [productionOrderId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([productionOrderId])
+  @@map("production_order_line")
+}
+
+model ProductionMaterialLine {
+  id                String    @id @default(cuid())
+  tenantId          String
+  productionOrderId String
+  lineNo            Int
+  materialCode      String?
+  materialName      String?
+  spec              String?
+  unit              String?
+  quantity          Decimal?  @db.Decimal(18, 6)
+  issuedQty         Decimal?  @db.Decimal(18, 6) @default(0)
+  warehouseCode     String?
+  remark            String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  tenant            Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  productionOrder   ProductionOrder @relation(fields: [productionOrderId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([productionOrderId])
+  @@map("production_material_line")
+}
+
+model InspectionLine {
+  id              String    @id @default(cuid())
+  tenantId        String
+  inspectionId    String
+  lineNo          Int
+  materialCode    String?
+  materialName    String?
+  spec            String?
+  unit            String?
+  inspectQty      Decimal?  @db.Decimal(18, 6)
+  qualifiedQty    Decimal?  @db.Decimal(18, 6) @default(0)
+  unqualifiedQty  Decimal?  @db.Decimal(18, 6) @default(0)
+  result          String?   // QUALIFIED / UNQUALIFIED
+  warehouseCode   String?
+  remark          String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  inspection      Inspection @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([inspectionId])
+  @@map("inspection_line")
+}
+
+model InboundOrderLine {
+  id              String    @id @default(cuid())
+  tenantId        String
+  inboundOrderId  String
+  lineNo          Int
+  materialCode    String?
+  materialName    String?
+  spec            String?
+  unit            String?
+  quantity        Decimal?  @db.Decimal(18, 6)
+  unitPrice       Decimal?  @db.Decimal(18, 6)
+  amount          Decimal?  @db.Decimal(18, 6)
+  warehouseCode   String?
+  locationCode    String?
+  batchNo         String?
+  qualifiedQty    Decimal?  @db.Decimal(18, 6) @default(0)
+  remark          String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  inboundOrder    InboundOrder @relation(fields: [inboundOrderId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([inboundOrderId])
+  @@map("inbound_order_line")
+}
+
+model OutboundOrderLine {
+  id              String    @id @default(cuid())
+  tenantId        String
+  outboundOrderId String
+  lineNo          Int
+  salesOrderLineId String?
+  materialCode    String?
+  materialName    String?
+  spec            String?
+  unit            String?
+  quantity        Decimal?  @db.Decimal(18, 6)
+  unitPrice       Decimal?  @db.Decimal(18, 6)
+  amount          Decimal?  @db.Decimal(18, 6)
+  warehouseCode   String?
+  locationCode    String?
+  batchNo         String?
+  remark          String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  outboundOrder   OutboundOrder @relation(fields: [outboundOrderId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([outboundOrderId])
+  @@map("outbound_order_line")
+}
+
+model InventoryTransaction {
+  id              String    @id @default(cuid())
+  tenantId        String
+  transactionNo   String
+  transactionType String   // IN / OUT / TRANSFER / ADJUST
+  sourceType      String?  // purchase_order / inbound_order / outbound_order / etc
+  sourceNo        String?
+  sourceLineNo    Int?
+  materialCode    String?
+  materialName    String?
+  spec            String?
+  unit            String?
+  warehouseCode   String?
+  locationCode    String?
+  batchNo         String?
+  qualityStatus   String?  // QUALIFIED / UNQUALIFIED / PENDING
+  projectCode     String?
+  quantity        Decimal? @db.Decimal(18, 6)
+  unitPrice       Decimal? @db.Decimal(18, 6)
+  totalAmount     Decimal? @db.Decimal(18, 6)
+  balanceQty      Decimal? @db.Decimal(18, 6)
+  transactionDate DateTime @default(now())
+  remark          String?
+  createdAt       DateTime @default(now())
+
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([materialCode])
+  @@index([warehouseCode])
+  @@index([transactionDate])
+  @@map("inventory_transaction")
 }
 
 model AdjustOrder {
@@ -1213,7 +1576,33 @@ model CompleteReport {
   updatedAt       DateTime       @updatedAt
   deletedAt       DateTime?
   tenant          Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lines           CompleteReportLine[]
+
   @@unique([tenantId, reportNo])
   @@index([tenantId])
   @@map("complete_report")
+}
+
+model CompleteReportLine {
+  id              String    @id @default(cuid())
+  tenantId        String
+  reportId        String
+  lineNo          Int
+  materialCode    String?
+  materialName    String?
+  spec            String?
+  unit            String?
+  plannedQty      Decimal?  @db.Decimal(18, 6)
+  actualQty       Decimal?  @db.Decimal(18, 6)
+  warehouseCode   String?
+  remark          String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  report          CompleteReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([reportId])
+  @@map("complete_report_line")
 }

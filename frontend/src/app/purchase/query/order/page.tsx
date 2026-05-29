@@ -8,7 +8,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { Download, Search } from 'lucide-react';
 import { ErpTable,ErpThead,ErpTh,ErpTbody,ErpTr,ErpTd,ErpEmpty,ErpLink,ErpTools,ErpApproval,ErpPagination } from '@/components/ui/erp-table';
 
-interface Item { id:string;orderNo:string;orderName:string;customerName:string|null;totalAmount:string|null;approvalStatus:string;createdAt:string; }
+interface Item { id:string;orderNo:string;orderName:string;supplierName:string|null;totalAmount:string|null;approvalStatus:string;createdAt:string; }
 
 export default function PurchaseOrderQueryPage() {
   const [items,setItems]=useState<Item[]>([]);const [total,setTotal]=useState(0);const [pg,setPg]=useState(1);const [ps,setPs]=useState(30);
@@ -16,7 +16,7 @@ export default function PurchaseOrderQueryPage() {
 
   const fetch=useCallback(async()=>{
     const p:any={page:pg,pageSize:ps}; if(s.code)p.code=s.code; if(s.name)p.name=s.name; if(s.status)p.status=s.status;
-    const {data}=await api.get('/sales-orders',{params:p}); setItems(data.items); setTotal(data.total);
+    const {data}=await api.get('/purchase-orders',{params:p}); setItems(data.items); setTotal(data.total);
   },[pg,ps,s]); useEffect(()=>{fetch();},[fetch]);
 
   return (<TooltipProvider><div className="bg-background rounded-lg border shadow-sm">
@@ -27,11 +27,11 @@ export default function PurchaseOrderQueryPage() {
     <div className="flex items-center gap-4 px-4 py-2.5 border-b border-border bg-muted/30 flex-wrap">
       <F label="审批状态"><Select value={s.status} onValueChange={(v:any)=>setS({...s,status:v==='ALL'?'':v})}><SelectTrigger className="w-[100px] h-9 rounded-md border border-border bg-background px-3 text-[13px]"><SelectValue placeholder="全部"/></SelectTrigger><SelectContent><SelectItem value="ALL">全部</SelectItem><SelectItem value="DRAFT">草稿</SelectItem><SelectItem value="SUBMITTED">已提交</SelectItem><SelectItem value="APPROVED">已通过</SelectItem></SelectContent></Select></F>
       <F label="订单编号"><Input className="w-[140px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.code} onChange={e=>setS({...s,code:e.target.value})}/></F>
-      <F label="客户"><Input className="w-[140px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.name} onChange={e=>setS({...s,name:e.target.value})}/></F>
+      <F label="供应商"><Input className="w-[140px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.name} onChange={e=>setS({...s,name:e.target.value})}/></F>
     </div>
     <ErpTools onRefresh={fetch}/>
-    <div className="overflow-auto"><ErpTable><ErpThead><ErpTh>订单编号</ErpTh><ErpTh>订单名称</ErpTh><ErpTh>客户</ErpTh><ErpTh>金额</ErpTh><ErpTh>审批状态</ErpTh><ErpTh>创建时间</ErpTh></ErpThead><ErpTbody>
-    {items.map(i=>(<ErpTr key={i.id}><ErpTd><ErpLink>{i.orderNo}</ErpLink></ErpTd><ErpTd>{i.orderName||'-'}</ErpTd><ErpTd className="text-muted-foreground">{i.customerName||'-'}</ErpTd><ErpTd>{i.totalAmount?Number(i.totalAmount).toLocaleString():'-'}</ErpTd><ErpTd><ErpApproval status={i.approvalStatus}/></ErpTd><ErpTd className="text-muted-foreground">{new Date(i.createdAt).toLocaleDateString('zh-CN')}</ErpTd></ErpTr>))}
+    <div className="overflow-auto"><ErpTable><ErpThead><ErpTh>订单编号</ErpTh><ErpTh>订单名称</ErpTh><ErpTh>供应商</ErpTh><ErpTh>金额</ErpTh><ErpTh>审批状态</ErpTh><ErpTh>创建时间</ErpTh></ErpThead><ErpTbody>
+    {items.map(i=>(<ErpTr key={i.id}><ErpTd><ErpLink>{i.orderNo}</ErpLink></ErpTd><ErpTd>{i.orderName||'-'}</ErpTd><ErpTd className="text-muted-foreground">{i.supplierName||'-'}</ErpTd><ErpTd>{i.totalAmount?Number(i.totalAmount).toLocaleString():'-'}</ErpTd><ErpTd><ErpApproval status={i.approvalStatus}/></ErpTd><ErpTd className="text-muted-foreground">{new Date(i.createdAt).toLocaleDateString('zh-CN')}</ErpTd></ErpTr>))}
     {items.length===0&&<ErpEmpty colSpan={6}/>}
     </ErpTbody></ErpTable></div>
     <ErpPagination page={pg} pageSize={ps} total={total} onPage={setPg} onPageSize={v=>setPs(+v)}/>
