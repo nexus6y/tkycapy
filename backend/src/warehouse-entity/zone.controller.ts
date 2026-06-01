@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query } from "@nestjs/common";
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, BadRequestException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { CodeGeneratorService } from "../common/code-generator.service";
+import { guardSubmit, guardApprove } from "../common/business-rules.helper";
 
 @Controller("zones")
 export class ZoneController {
@@ -77,7 +78,70 @@ export class CheckOrderController {
     return { items, total, page: +page, pageSize: +pageSize };
   }
   @Get(":id") async findOne(@Param("id") id: string) { return this.prisma.checkOrder.findUniqueOrThrow({ where: { id } }); }
-  @Post() async create(@Body() dto: any) { const tenantId = await this.tid(); if (!dto.orderNo) dto.orderNo = await this.codeGen.generate('CHK', 'checkOrder', 'orderNo'); return this.prisma.checkOrder.create({ data: { ...dto, tenantId } }); }
-  @Put(":id") async update(@Param("id") id: string, @Body() dto: any) { return this.prisma.checkOrder.update({ where: { id }, data: dto }); }
+  @Post() async create(@Body() dto: any) {
+    const tenantId = await this.tid();
+    if (!dto.orderNo) dto.orderNo = await this.codeGen.generate('CHK', 'checkOrder', 'orderNo');
+    const data: any = { ...dto, tenantId };
+    if (data.checkDate) data.checkDate = new Date(data.checkDate);
+    if (data.stockQty != null) data.stockQty = String(data.stockQty);
+    if (data.checkQty != null) data.checkQty = String(data.checkQty);
+    if (data.diffQty != null) data.diffQty = String(data.diffQty);
+    return this.prisma.checkOrder.create({ data });
+  }
+  @Put(":id") async update(@Param("id") id: string, @Body() dto: any) {
+    const data: any = { ...dto };
+    if (data.checkDate) data.checkDate = new Date(data.checkDate);
+    return this.prisma.checkOrder.update({ where: { id }, data });
+  }
   @Delete(":id") async remove(@Param("id") id: string) { await this.prisma.checkOrder.delete({ where: { id } }); return { message: "删除成功" }; }
+
+  @Put(":id/submit")
+  async submit(@Param("id") id: string) {
+    await guardSubmit(this.prisma, 'checkOrder', id);
+    return this.prisma.checkOrder.update({ where: { id }, data: { approvalStatus: "SUBMITTED" } as any });
+  }
+
+  @Put(":id/approve")
+  async approve(@Param("id") id: string) {
+    await guardApprove(this.prisma, 'checkOrder', id);
+    return this.prisma.checkOrder.update({ where: { id }, data: { approvalStatus: "APPROVED" } as any });
+  }
+
+  // Push-down: generate adjust order from check order (idempotent) — only when diffQty != 0
+  @Post(":id/generate-adjust-order")
+  async generateAdjustOrder(@Param("id") id: string) {
+    const tenantId = await this.tid();
+    return await this.prisma.$transaction(async (tx) => {
+      const chk = await tx.checkOrder.findUniqueOrThrow({ where: { id } });
+
+      if (chk.approvalStatus !== 'APPROVED') throw new BadRequestException('只能从已审批的盘点单生成调整单');
+      if (!chk.diffQty || Number(chk.diffQty) === 0) throw new BadRequestException('盘点差异为0，无需生成调整单');
+
+      // Idempotency: one check order → one adjust order
+      const existing = await tx.adjustOrder.findFirst({
+        where: { checkOrderId: id },
+      });
+      if (existing) throw new BadRequestException(`该盘点单已存在调整单 ${existing.orderNo}，不能重复下推`);
+
+      const adjNo = await this.codeGen.generate('ADJ', 'adjustOrder', 'orderNo');
+      const adjQty = Number(chk.diffQty);
+      const reason = adjQty > 0 ? `盘点盈余：库存${Number(chk.stockQty)}→盘点${Number(chk.checkQty)}，差异+${adjQty}` : `盘点亏损：库存${Number(chk.stockQty)}→盘点${Number(chk.checkQty)}，差异${adjQty}`;
+
+      await tx.adjustOrder.create({
+        data: {
+          tenantId, orderNo: adjNo,
+          checkOrderId: chk.id, checkOrderNo: chk.orderNo,
+          // Copy precise inventory location fields from check order
+          materialCode: chk.materialCode, materialName: chk.materialName,
+          spec: chk.spec, unit: chk.unit,
+          warehouseCode: chk.warehouseName, warehouseName: chk.warehouseName,
+          locationCode: chk.locationCode, batchNo: chk.batchNo,
+          adjustQty: String(adjQty), adjustReason: reason,
+          approvalStatus: 'DRAFT', businessStatus: 'PENDING',
+        } as any,
+      });
+
+      return { message: '调整单已生成', adjustOrderNo: adjNo };
+    });
+  }
 }

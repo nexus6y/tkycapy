@@ -1,0 +1,1 @@
+import { Module } from '@nestjs/common'; import { PurchaseReturnController } from './purchase-return.controller'; @Module({ controllers: [PurchaseReturnController] }) export class PurchaseReturnModule {}

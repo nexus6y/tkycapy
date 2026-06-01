@@ -66,14 +66,25 @@ export class CompleteReportController {
     return this.prisma.completeReport.update({ where: { id }, data: orderData as any, include: { lines: { orderBy: { lineNo: 'asc' } } } });
   }
 
+  @Put(":id/submit")
+  async submit(@Param("id") id: string) {
+    const order = await this.prisma.completeReport.findUniqueOrThrow({ where: { id } });
+    if (order.approvalStatus !== 'DRAFT') throw new BadRequestException('只能提交草稿状态的完工报告');
+    return this.prisma.completeReport.update({ where: { id }, data: { approvalStatus: 'SUBMITTED' } as any });
+  }
+
   @Put(":id/approve")
   async approve(@Param("id") id: string) {
     const order = await this.prisma.completeReport.findUniqueOrThrow({
       where: { id },
       include: { lines: { orderBy: { lineNo: 'asc' } } },
     });
-    if (order.approvalStatus !== 'SUBMITTED' && order.approvalStatus !== 'DRAFT') {
-      throw new BadRequestException('只能审批草稿或已提交的完工报告');
+    if (order.approvalStatus !== 'SUBMITTED') {
+      throw new BadRequestException(
+        order.approvalStatus === 'APPROVED'
+          ? '该完工报告已审批登卡，不能重复审批'
+          : '只能审批已提交的完工报告'
+      );
     }
     const tenantId = await this.tid();
 

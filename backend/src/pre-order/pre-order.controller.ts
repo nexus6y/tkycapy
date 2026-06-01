@@ -125,12 +125,17 @@ export class PreOrderController {
       if (existing) throw new BadRequestException(`该分劈单已存在销售订单 ${existing.orderNo}，不能重复下推`);
 
       const soNo = await this.codeGen.generate('SO', 'salesOrder', 'orderNo');
-      const totalAmt = pre.lines.reduce((s, l) => s + Number(l.amount || 0) || (Number(l.quantity || 0) * Number(l.unitPrice || 0)), 0);
+      // totalAmount = sum of each line's amount (or quantity*unitPrice if amount is missing)
+      const totalAmt = pre.lines.reduce((s, l) => {
+        const amt = num(l.amount) > 0 ? num(l.amount) : (num(l.quantity) * num(l.unitPrice));
+        return s + amt;
+      }, 0);
 
       await tx.salesOrder.create({
         data: {
           tenantId, orderNo: soNo, orderName: pre.orderName,
           preOrderId: pre.id, preOrderNo: pre.orderNo,
+          quotationId: pre.quotationId, quotationNo: pre.quotationNo,  // carry through audit trail
           customerName: pre.customerName, contractName: pre.contractName,
           totalAmount: String(totalAmt), approvalStatus: 'DRAFT',
           businessStatus: 'PENDING_SHIP',
@@ -146,9 +151,9 @@ export class PreOrderController {
         } as any,
       });
 
-      await tx.preOrder.update({ where: { id }, data: { approvalStatus: 'APPROVED' } as any });
-
       return { message: '销售订单已生成', salesOrderNo: soNo };
     });
   }
 }
+
+function num(v: any): number { try { return Number(v) || 0 } catch { return 0 } }

@@ -34,6 +34,19 @@ export class InboundOrderController {
   async create(@Body() dto: any) {
     const tenantId = await this.tid();
     if (!dto.orderNo) dto.orderNo = await this.codeGen.generate('IN', 'inboundOrder', 'orderNo');
+
+    // Idempotency: prevent duplicate inbound from same source document
+    if (dto.sourceNo && dto.sourceType) {
+      const existing = await this.prisma.inboundOrder.findFirst({
+        where: { tenantId, sourceNo: dto.sourceNo, sourceType: dto.sourceType },
+      });
+      if (existing) {
+        throw new BadRequestException(
+          `来源单 ${dto.sourceNo} 已生成入库单 ${existing.orderNo}，不能重复生成`
+        );
+      }
+    }
+
     const { lines, ...orderData } = dto;
     if (lines && Array.isArray(lines) && lines.length > 0) {
       return this.prisma.inboundOrder.create({

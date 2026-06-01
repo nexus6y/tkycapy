@@ -18,30 +18,72 @@ export class SalesShipmentController {
 
   @Get(':id')
   async findOne(@Param('id') id: string) {
-    return this.prisma.salesShipment.findUniqueOrThrow({
+    const shipment = await this.prisma.salesShipment.findUniqueOrThrow({
       where: { id },
       include: { lines: { orderBy: { lineNo: 'asc' } } },
     });
+
+    // Enrich shipment lines with unitPrice/amount from the linked sales order
+    if (shipment.orderId && shipment.lines && shipment.lines.length > 0) {
+      const so = await this.prisma.salesOrder.findUnique({
+        where: { id: shipment.orderId },
+        include: { lines: { orderBy: { lineNo: 'asc' } } },
+      });
+      if (so && so.lines) {
+        const soLineMap = new Map(so.lines.map(l => [l.id, l]));
+        for (const sl of shipment.lines as any[]) {
+          if (sl.salesOrderLineId) {
+            const sol = soLineMap.get(sl.salesOrderLineId);
+            if (sol) {
+              const shipRatio = Number(sl.shippedQty || 0) / Math.max(1, Number(sol.quantity || 0));
+              sl.unitPrice = sol.unitPrice || '0';
+              sl.amount = String((Number(sol.amount || 0) * shipRatio).toFixed(2));
+            }
+          }
+        }
+      }
+    }
+
+    return shipment;
   }
 
   @Post()
   async create(@Body() dto: any) {
     const tenantId = await this.tid();
     if (!dto.shipmentNo) dto.shipmentNo = await this.codeGen.generate('SHIP', 'salesShipment', 'shipmentNo');
+
+    // Pre-fetch SO lines for unitPrice/amount if orderId is provided
+    let soLineMap = new Map<string, any>();
+    if (dto.orderId) {
+      const so = await this.prisma.salesOrder.findUnique({
+        where: { id: dto.orderId },
+        include: { lines: true },
+      });
+      if (so && so.lines) {
+        soLineMap = new Map(so.lines.map(l => [l.id, l]));
+      }
+    }
+
     const { lines, ...shipData } = dto;
     if (lines && Array.isArray(lines) && lines.length > 0) {
       return this.prisma.salesShipment.create({
         data: {
           ...shipData, tenantId,
-          lines: { create: lines.map((l: any, i: number) => ({
-            tenantId, lineNo: l.lineNo ?? i + 1,
-            salesOrderLineId: l.salesOrderLineId || l.id || null,
-            materialCode: l.materialCode, materialName: l.materialName,
-            spec: l.spec, unit: l.unit,
-            orderQty: l.orderQty != null ? String(l.orderQty) : null,
-            shippedQty: l.shippedQty != null ? String(l.shippedQty) : null,
-            warehouseCode: l.warehouseCode,
-          })) },
+          lines: { create: lines.map((l: any, i: number) => {
+            const solId = l.salesOrderLineId || l.id || null;
+            const sol = solId ? soLineMap.get(solId) : null;
+            return {
+              tenantId, lineNo: l.lineNo ?? i + 1,
+              salesOrderLineId: solId,
+              materialCode: l.materialCode, materialName: l.materialName,
+              spec: l.spec, unit: l.unit,
+              orderQty: l.orderQty != null ? String(l.orderQty) : null,
+              shippedQty: l.shippedQty != null ? String(l.shippedQty) : null,
+              unitPrice: sol?.unitPrice != null ? String(sol.unitPrice) : null,
+              amount: sol != null ? String((Number(sol.amount || 0) * (Number(l.shippedQty || 0) / Math.max(1, Number(sol.quantity || 0)))).toFixed(2)) : null,
+              warehouseCode: l.warehouseCode,
+            };
+          }) },
         } as any,
         include: { lines: true },
       });

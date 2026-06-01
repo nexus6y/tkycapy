@@ -1,6 +1,8 @@
-'use client';import { useEffect, useState } from 'react';import { useRouter, useParams } from 'next/navigation';import api from '@/lib/api';import { Input } from '@/components/ui/input';import { Select,SelectContent,SelectItem,SelectTrigger,SelectValue } from '@/components/ui/select';import { Button } from '@/components/ui/button';import { toast } from '@/components/ui/toast';
+'use client';import { useEffect, useState } from 'react';import { useRouter, useParams } from 'next/navigation';import api from '@/lib/api';import { Input } from '@/components/ui/input';import { Button } from '@/components/ui/button';import { toast } from '@/components/ui/toast';
 import { FormLayout,FormSection,FormGrid,FormField } from '@/components/form/form-layout';
 import { LinesEditor, LineItem } from '@/components/ui/lines-editor';
+import { EntitySelect } from '@/components/form/entity-select';
+import { applyMaterialSelection } from '@/lib/field-linkage';
 const FI='h-9 rounded-md border border-border bg-background px-3 text-[13px] w-full';
 
 const QC_COLS = [
@@ -19,6 +21,11 @@ export default function IEdit(){const router=useRouter();const {id}=useParams<{i
 const [lines,setLines]=useState<LineItem[]>([]);
 useEffect(()=>{api.get('/inspections/'+id).then(r=>{const d=r.data;setF(d);if(d.lines)setLines(d.lines);setLoading(false);});},[id]);
 
+const onLinesChange=(newLines:LineItem[])=>{
+  setLines(newLines);
+  if(newLines.length>0){setF((prev:any)=>({...prev,quantity:String(newLines.reduce((s,l)=>s+Number(l.inspectQty||0),0))}));}
+};
+
 const saveAndSubmit=async()=>{try{await api.put('/inspections/'+id,{...f,lines});await api.put(`/inspections/${id}/submit`);toast('已保存并提交','success');router.push('/quality/inspection');}catch(e:any){toast(e.response?.data?.message||'提交失败','error');}};
 const doApprove=async()=>{try{await api.put('/inspections/'+id,{...f,lines});await api.put(`/inspections/${id}/approve`);toast('审核完成，已生成入库单','success');router.push('/quality/inspection');}catch(e:any){toast(e.response?.data?.message||'审核失败','error');}};
 
@@ -28,19 +35,16 @@ return(<FormLayout title={'编辑质检单：'+f.inspectionNo} onSave={async()=>
 <FormField label="质检单号"><Input className={FI} value={f.inspectionNo} disabled/></FormField>
 <FormField label="来源类型"><Input className={FI} value={f.sourceType||''} disabled/></FormField>
 <FormField label="来源单号"><Input className={FI} value={f.sourceNo||''} disabled/></FormField>
-<FormField label="物料名称"><Input className={FI} value={f.materialName||''} onChange={e=>setF({...f,materialName:e.target.value})}/></FormField>
+<FormField label="物料"><EntitySelect entity="material" value={f.materialId||''} onChange={(id,m)=>{setF({...f,...applyMaterialSelection(m)});}}/></FormField>
 <FormField label="检验员"><Input className={FI} value={f.inspector||''} onChange={e=>setF({...f,inspector:e.target.value})}/></FormField>
-<FormField label="检验总量"><Input className={FI} value={f.quantity||''} disabled/></FormField>
+<FormField label="检验总量"><Input className={FI} value={lines.length>0?String(lines.reduce((s,l)=>s+Number(l.inspectQty||0),0)):(f.quantity||'')} disabled/></FormField>
 <FormField label="合格数"><Input type="number" className={FI} value={f.qualifiedQty||''} onChange={e=>setF({...f,qualifiedQty:e.target.value})}/></FormField>
 <FormField label="不合格数"><Input type="number" className={FI} value={f.unqualifiedQty||''} onChange={e=>setF({...f,unqualifiedQty:e.target.value})}/></FormField>
-<FormField label="检验结果">
-<Select value={f.result||''} onValueChange={(v:any)=>setF({...f,result:v})}>
-<SelectTrigger className={FI}><SelectValue placeholder="选择结果"/></SelectTrigger>
-<SelectContent><SelectItem value="合格">合格</SelectItem><SelectItem value="不合格">不合格</SelectItem><SelectItem value="待定">待定</SelectItem></SelectContent></Select></FormField>
+<FormField label="检验结果"><Input className={FI} value={f.result||''} onChange={e=>setF({...f,result:e.target.value})}/></FormField>
 <div className="col-span-2 flex gap-2 mt-1">
 {f.approvalStatus==='DRAFT'&&<Button variant="default" size="sm" onClick={saveAndSubmit} className="bg-primary">保存并提交</Button>}
 {f.approvalStatus==='SUBMITTED'&&<Button variant="default" size="sm" onClick={doApprove} className="bg-green-600 hover:bg-green-700">审核通过 / 生成入库单</Button>}
 </div>
 </FormGrid></FormSection>
-<FormSection id="l" title="检验明细"><LinesEditor lines={lines} onChange={setLines} columns={QC_COLS}/></FormSection>
+<FormSection id="l" title="检验明细"><LinesEditor lines={lines} onChange={onLinesChange} columns={QC_COLS}/></FormSection>
 </FormLayout>);}

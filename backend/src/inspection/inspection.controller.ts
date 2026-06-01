@@ -111,6 +111,16 @@ export class InspectionController {
       throw new Error(`该质检单已生成入库单 ${existingInbound.orderNo}，不能重复生成`);
     }
 
+    // Cross-guard: if arrival-confirm already created an inbound for the same PO, reject
+    if (insp.sourceType === 'PURCHASE_ORDER' && insp.sourceNo) {
+      const arrivalInbound = await this.prisma.inboundOrder.findFirst({
+        where: { sourceType: 'ARRIVAL_CONFIRM', sourceNo: insp.sourceNo },
+      });
+      if (arrivalInbound) {
+        throw new Error(`该采购订单已通过到货确认生成入库单 ${arrivalInbound.orderNo}，不能重复生成质检入库`);
+      }
+    }
+
     // Default: mark all pending lines as qualified, use inspectQty as qualifiedQty
     if (insp.lines && insp.lines.length > 0) {
       for (const line of insp.lines) {

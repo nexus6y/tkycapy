@@ -1,34 +1,83 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import api from '@/lib/api';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { toast } from '@/components/ui/toast';
+import { useState, useEffect } from 'react';import { useRouter } from 'next/navigation';import api from '@/lib/api';
+import { Input } from '@/components/ui/input';import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';import { toast } from '@/components/ui/toast';
 import { FormLayout, FormSection, FormGrid, FormField } from '@/components/form/form-layout';
-
+import { LinesEditor, LineItem } from '@/components/ui/lines-editor';
+import { EntitySelect } from '@/components/form/entity-select';
+import { applyMaterialSelection } from '@/lib/field-linkage';
+import { calcTotalQtyFromLines } from '@/lib/calc';
 const FI='h-9 rounded-md border border-border bg-background px-3 text-[13px] w-full';
-const SECS=[{id:'basic',title:'质检单信息'}];
+const SECS=[{id:'basic',title:'质检单信息'},{id:'lines',title:'检验明细'}];
+
+const QC_COLS = [
+  { key: 'lineNo', label: '行号', width: '60px', type: 'number' as const },
+  { key: 'materialCode', label: '物料编码', width: '120px' },
+  { key: 'materialName', label: '物料名称', width: '120px' },
+  { key: 'spec', label: '规格型号', width: '100px' },
+  { key: 'unit', label: '单位', width: '60px' },
+  { key: 'inspectQty', label: '检验数量', width: '80px', type: 'number' as const },
+  { key: 'qualifiedQty', label: '合格数量', width: '80px', type: 'number' as const },
+  { key: 'unqualifiedQty', label: '不合格数', width: '80px', type: 'number' as const },
+  { key: 'result', label: '结果', width: '80px' },
+];
 
 export default function InspectionCreatePage() {
   const router=useRouter();
-  useEffect(()=>{api.get('/common/next-code',{params:{entity:'inspection'}}).then(r=>setF((prev:any)=>({...prev,inspectionNo:r.data.code})));},[]);const [f,setF]=useState({inspectionNo:'',sourceType:'采购单',sourceNo:'',materialName:'',quantity:'',inspector:'',result:''});
-  const save=async()=>{try{await api.post('/inspections',{...f,quantity:+f.quantity});router.push('/quality/inspection');}catch(e:any){toast(e.response?.data?.message||'保存失败','error');}};
+  const [lines,setLines]=useState<LineItem[]>([]);
+  const [srcLoading,setSrcLoading]=useState(false);
+  useEffect(()=>{api.get('/common/next-code',{params:{entity:'inspection'}}).then(r=>setF((prev:any)=>({...prev,inspectionNo:r.data.code})));},[]);
+  const [f,setF]=useState({inspectionNo:'',sourceType:'采购单',sourceId:'',sourceNo:'',materialId:'',materialCode:'',materialName:'',specification:'',unit:'',quantity:'',inspector:'',result:''});
+
+  const onSourceSelect=async(sourceId:string)=>{
+    setSrcLoading(true);
+    try{
+      const srcPath=f.sourceType==='采购单'?'/purchase-orders':'/production-orders';
+      const {data}=await api.get(`${srcPath}/${sourceId}`);
+      const srcLines=data.lines||data.materials||[];
+      const firstLine=srcLines[0]||{};
+      setF(prev=>({...prev,sourceId,sourceNo:data.orderNo||data.planNo||'',
+        materialName:firstLine.materialName||data.materialName||prev.materialName,
+        materialCode:firstLine.materialCode||'',
+        specification:firstLine.spec||'',
+        unit:firstLine.unit||'',
+        quantity:srcLines.length>0?String(srcLines.reduce((s:number,l:any)=>s+Number(l.quantity||l.plannedQty||0),0)):(data.quantity||prev.quantity)}));
+      if(srcLines.length>0){
+        setLines(srcLines.map((l:any,i:number)=>({lineNo:l.lineNo??i+1,materialCode:l.materialCode||'',materialName:l.materialName||'',spec:l.spec||'',unit:l.unit||'',inspectQty:l.quantity||l.plannedQty||'0',qualifiedQty:'0',unqualifiedQty:'0',result:'PENDING'})));
+      }
+      toast('已加载来源单明细','success');
+    }catch(e:any){toast(e.response?.data?.message||'加载失败','error');}
+    finally{setSrcLoading(false);}
+  };
+
+  const save=async()=>{
+    try{
+      const payload:any={...f};
+      if(lines.length>0){payload.lines=lines;payload.quantity=String(lines.reduce((s,l)=>s+Number(l.inspectQty||0),0));}
+      await api.post('/inspections',payload);router.push('/quality/inspection');
+    }catch(e:any){toast(e.response?.data?.message||'保存失败','error');}
+  };
+
   return (<FormLayout title="新增质检单" onSave={save} sections={SECS} activeSection="basic">
     <FormSection id="basic" title="质检单信息"><FormGrid>
       <FormField label="质检单号" required><Input className={FI} value={f.inspectionNo} readOnly disabled/></FormField>
       <FormField label="来源类型" required>
-        <RadioGroup value={f.sourceType} onValueChange={(v:any)=>setF({...f,sourceType:v})} className="flex gap-4 pt-1.5">
+        <RadioGroup value={f.sourceType} onValueChange={(v:any)=>setF({...f,sourceType:v,sourceId:'',sourceNo:''})} className="flex gap-4 pt-1.5">
           <div className="flex items-center gap-1.5"><RadioGroupItem value="采购单" id="st-po"/><label htmlFor="st-po" className="text-[13px]">采购单</label></div>
           <div className="flex items-center gap-1.5"><RadioGroupItem value="生产退料" id="st-pr"/><label htmlFor="st-pr" className="text-[13px]">生产退料</label></div>
         </RadioGroup>
       </FormField>
-      <FormField label="来源单号"><Input className={FI} value={f.sourceNo} onChange={e=>setF({...f,sourceNo:e.target.value})}/></FormField>
-      <FormField label="物料名称" required><Input className={FI} value={f.materialName} onChange={e=>setF({...f,materialName:e.target.value})}/></FormField>
-      <FormField label="数量"><Input type="number" className={FI} value={f.quantity} onChange={e=>setF({...f,quantity:e.target.value})}/></FormField>
+      <FormField label="来源单号">
+        <EntitySelect entity={f.sourceType==='采购单'?'purchaseOrder':'productionOrder'} value={f.sourceId} status="APPROVED"
+          onChange={(id)=>{setF({...f,sourceId:id});onSourceSelect(id);}} disabled={srcLoading}/>
+      </FormField>
+      <FormField label="物料"><EntitySelect entity="material" value={f.materialId} onChange={(id,m)=>{setF({...f,...applyMaterialSelection(m)});}}/></FormField>
+      <FormField label="物料编码">{f.materialCode&&<Input className={FI} value={f.materialCode} readOnly disabled/>}</FormField>
+      <FormField label="规格型号"><Input className={FI} value={f.specification||''} readOnly disabled/></FormField>
+      <FormField label="单位"><Input className={FI} value={f.unit||''} readOnly disabled/></FormField>
+      <FormField label="数量"><Input className={FI} value={f.quantity} readOnly disabled/></FormField>
       <FormField label="检验员"><Input className={FI} value={f.inspector} onChange={e=>setF({...f,inspector:e.target.value})}/></FormField>
-      <FormField label="检验结果"><Select value={f.result} onValueChange={(v:any)=>setF({...f,result:v})}><SelectTrigger className={FI}><SelectValue placeholder="选择结果"/></SelectTrigger><SelectContent><SelectItem value="合格">合格</SelectItem><SelectItem value="不合格">不合格</SelectItem><SelectItem value="待定">待定</SelectItem></SelectContent></Select></FormField>
+      <FormField label="检验结果"><Input className={FI} value={f.result} onChange={e=>setF({...f,result:e.target.value})} placeholder="合格/不合格/待定"/></FormField>
     </FormGrid></FormSection>
+    <FormSection id="lines" title="检验明细"><LinesEditor lines={lines} onChange={setLines} columns={QC_COLS}/></FormSection>
   </FormLayout>);
 }

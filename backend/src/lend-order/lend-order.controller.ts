@@ -11,8 +11,8 @@ export class LendOrderController {
     return { items, total, page: +page, pageSize: +pageSize };
   }
   @Get(':id') async findOne(@Param('id') id: string) { return this.prisma.lendOrder.findUniqueOrThrow({ where: { id } }); }
-  @Post() async create(@Body() dto: any) { const tenantId = await this.tid(); return this.prisma.lendOrder.create({ data: { ...dto, tenantId } as any }); }
-  @Put(':id/submit') async submit(@Param(':id') id: string) { return this.prisma.lendOrder.update({ where: { id }, data: { approvalStatus: "SUBMITTED" } as any }); }
+  @Post() async create(@Body() dto: any) { const tenantId = await this.tid(); const data: any = { ...dto, tenantId }; if (data.borrowDate) data.borrowDate = new Date(data.borrowDate); if (data.expectedReturn) data.expectedReturn = new Date(data.expectedReturn); return this.prisma.lendOrder.create({ data }); }
+  @Put(':id/submit') async submit(@Param('id') id: string) { return this.prisma.lendOrder.update({ where: { id }, data: { approvalStatus: "SUBMITTED" } as any }); }
   @Put(':id') async update(@Param('id') id: string, @Body() dto: any) { return this.prisma.lendOrder.update({ where: { id }, data: dto as any }); }
   @Put(':id/approve') async approve(@Param('id') id: string) {
     const order = await guardApprove(this.prisma, 'lendOrder', id);

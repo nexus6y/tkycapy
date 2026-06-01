@@ -119,6 +119,15 @@ export class QuotationController {
   @Put(':id/mark-result')
   async markResult(@Param('id') id: string, @Body() dto: { markResult: string }) {
     if (!['WON', 'LOST', 'PENDING'].includes(dto.markResult)) throw new BadRequestException('标记结果必须为 WON/LOST/PENDING');
+    // WON should only be set via generate-pre-order; prevent manual WON to avoid inconsistency
+    // between the UI button guard and the backend duplicate guard
+    if (dto.markResult === 'WON') {
+      const tenantId = await this.tid();
+      const existing = await this.prisma.preOrder.findFirst({
+        where: { quotationId: id, tenantId },
+      });
+      if (!existing) throw new BadRequestException('尚未生成分劈单，请使用"下推分劈单"按钮生成后再标记');
+    }
     return this.prisma.quotation.update({ where: { id }, data: { markResult: dto.markResult } as any });
   }
 
@@ -131,21 +140,28 @@ export class QuotationController {
         where: { id }, include: { lines: { orderBy: { lineNo: 'asc' } } },
       });
 
-      if (qt.approvalStatus !== 'APPROVED' && qt.markResult !== 'WON') {
-        throw new BadRequestException('只能从已审批或已赢标的报价单生成分劈单');
+      if (qt.approvalStatus !== 'APPROVED') {
+        throw new BadRequestException('只能从已审批的报价单生成分劈单');
       }
       if (!qt.lines || qt.lines.length === 0) throw new BadRequestException('报价单没有明细行');
 
-      if (qt.markResult !== 'PENDING') {
-        throw new BadRequestException(`该报价单已处理(markResult=${qt.markResult})，不能重复下推`);
-      }
+      // Idempotency: check by quotationId on PreOrder, not by markResult
+      const existing = await tx.preOrder.findFirst({
+        where: { quotationId: id, approvalStatus: { in: ['DRAFT', 'SUBMITTED', 'APPROVED'] } },
+      });
+      if (existing) throw new BadRequestException(`该报价单已存在分劈单 ${existing.orderNo}，不能重复下推`);
 
       const preNo = await this.codeGen.generate('PRE', 'preOrder', 'orderNo');
-      const totalAmt = qt.lines.reduce((s, l) => s + num(l.amount || 0) || (num(l.quantity) * num(l.unitPrice)), 0);
+      // totalAmount = sum of each line's amount (or quantity*unitPrice if amount is missing)
+      const totalAmt = qt.lines.reduce((s, l) => {
+        const amt = num(l.amount) > 0 ? num(l.amount) : (num(l.quantity) * num(l.unitPrice));
+        return s + amt;
+      }, 0);
 
       await tx.preOrder.create({
         data: {
           tenantId, orderNo: preNo, orderName: qt.quotationName,
+          quotationId: qt.id, quotationNo: qt.quotationNo,  // audit trail
           customerName: qt.customerName, totalAmount: String(totalAmt),
           approvalStatus: 'DRAFT',
           lines: { create: qt.lines.map((l, i) => ({
@@ -160,6 +176,7 @@ export class QuotationController {
         } as any,
       });
 
+      // Mark quotation as WON after creating pre-order
       await tx.quotation.update({ where: { id }, data: { markResult: 'WON' } as any });
 
       return { message: '分劈单已生成', preOrderNo: preNo };

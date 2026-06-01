@@ -3,10 +3,12 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { FormLayout, FormSection, FormGrid, FormField } from '@/components/form/form-layout';
 import { LinesEditor, LineItem } from '@/components/ui/lines-editor';
+import { EntitySelect } from '@/components/form/entity-select';
+import { applyCustomerSelection, applyProjectSelection, applyContractSelection, applySourceDocumentSelection, applyDepartmentSelection } from '@/lib/field-linkage';
+import { calcTotalFromLines, recalcHeaderTotals } from '@/lib/calc';
 import { toast } from '@/components/ui/toast';
 
 const FI = 'h-9 rounded-md border border-border bg-background px-3 text-[13px] w-full';
@@ -21,52 +23,94 @@ const SECTIONS = [
 
 export default function SalesOrderCreate() {
   const router = useRouter();
-  const [customers, setCustomers] = useState<any[]>([]);
-  const [projects, setProjects] = useState<any[]>([]);
-  const [contracts, setContracts] = useState<any[]>([]);
-  const [quotations, setQuotations] = useState<any[]>([]);
-  const [preOrders, setPreOrders] = useState<any[]>([]);
-  const [depts, setDepts] = useState<any[]>([]);
   const [lines, setLines] = useState<LineItem[]>([]);
+  const [quotationLoading, setQuotationLoading] = useState(false);
+  const [preOrderLoading, setPreOrderLoading] = useState(false);
 
   const [f, setF] = useState<any>({
     orderNo: '', orderName: '', orderType: '',
-    customerId: '', customerName: '',
-    projectId: '', projectName: '',
-    contractId: '', contractName: '',
+    customerId: '', customerCode: '', customerName: '',
+    projectId: '', projectCode: '', projectName: '',
+    contractId: '', contractCode: '', contractName: '',
     quotationId: '', quotationNo: '',
     preOrderId: '', preOrderNo: '',
-    departmentName: '', salesperson: '', organizationName: '',
+    departmentId: '', departmentCode: '', departmentName: '',
+    salesperson: '', organizationName: '',
     totalAmount: '', deliveryDate: '', orderDate: new Date().toISOString().split('T')[0],
     remark: '',
   });
 
   useEffect(() => {
     api.get('/common/next-code', { params: { entity: 'salesOrder' } }).then(r => setF((prev: any) => ({ ...prev, orderNo: r.data.code })));
-    api.get('/customers', { params: { pageSize: 999 } }).then(r => setCustomers(r.data.items));
-    api.get('/projects', { params: { pageSize: 999 } }).then(r => setProjects(r.data.items));
-    api.get('/contracts', { params: { pageSize: 999 } }).then(r => setContracts(r.data.items));
-    api.get('/quotations', { params: { pageSize: 999 } }).then(r => setQuotations(r.data.items));
-    api.get('/pre-orders', { params: { pageSize: 999 } }).then(r => setPreOrders(r.data.items));
-    api.get('/departments', { params: { pageSize: 999 } }).then(r => setDepts(r.data.items));
   }, []);
 
   const save = async () => {
     if (!f.orderName) return toast('请填写订单名称', 'error');
-    const validFields = ['orderNo','orderName','orderType','orderDate','deliveryDate','totalAmount','remark',
-      'customerId','customerName','projectId','projectName',
-      'contractId','contractName','quotationId','quotationNo',
-      'preOrderId','preOrderNo'];
-    const payload: any = {};
-    validFields.forEach(k => { if (f[k] !== '' && f[k] !== undefined) payload[k] = f[k]; });
-    if (payload.totalAmount === '') payload.totalAmount = undefined;
-    if (lines.length > 0) payload.lines = lines;
+    const payload: any = {
+      orderNo: f.orderNo, orderName: f.orderName, orderType: f.orderType,
+      orderDate: f.orderDate, deliveryDate: f.deliveryDate, remark: f.remark,
+      customerId: f.customerId, customerName: f.customerName,
+      projectId: f.projectId, projectName: f.projectName,
+      contractId: f.contractId, contractName: f.contractName,
+      quotationId: f.quotationId, quotationNo: f.quotationNo,
+      preOrderId: f.preOrderId, preOrderNo: f.preOrderNo,
+    };
+    if (lines.length > 0) {
+      payload.lines = lines;
+      payload.totalAmount = calcTotalFromLines(lines);
+    } else if (f.totalAmount) {
+      payload.totalAmount = f.totalAmount;
+    }
     await api.post('/sales-orders', payload);
     router.push('/sales/order');
   };
 
-  // Helper to find item label by ID from an array
-  const label = (arr: any[], id: any, field = 'name') => arr.find(x => x.id === id)?.[field] || id;
+  // When lines change, update header totalAmount
+  const onLinesChange = (newLines: LineItem[]) => {
+    setLines(newLines);
+    if (newLines.length > 0) {
+      const h = recalcHeaderTotals(newLines);
+      setF((prev: any) => ({ ...prev, totalAmount: h.totalAmount }));
+    }
+  };
+
+  // Source quotation → auto-fill customer + lines
+  const onQuotationSelect = async (id: string) => {
+    setQuotationLoading(true);
+    try {
+      const result = await applySourceDocumentSelection('QUOTATION', id, {
+        materialCode: 'materialCode', materialName: 'materialName', spec: 'spec', unit: 'unit',
+        quantity: 'quantity', unitPrice: 'unitPrice', amount: 'amount', deliveryDate: 'deliveryDate', warehouseCode: 'warehouseCode',
+      }, api);
+      setF((prev: any) => ({
+        ...prev, quotationId: id, quotationNo: result.header.sourceNo || '',
+        customerId: result.header.customerId || prev.customerId,
+        customerName: result.header.customerName || prev.customerName,
+      }));
+      if (result.lines.length > 0) onLinesChange(result.lines as LineItem[]);
+      toast('已加载报价明细', 'success');
+    } catch (e: any) { toast(e.response?.data?.message || '加载失败', 'error'); }
+    finally { setQuotationLoading(false); }
+  };
+
+  // Source preOrder → auto-fill customer + lines
+  const onPreOrderSelect = async (id: string) => {
+    setPreOrderLoading(true);
+    try {
+      const result = await applySourceDocumentSelection('PRE_ORDER', id, {
+        materialCode: 'materialCode', materialName: 'materialName', spec: 'spec', unit: 'unit',
+        quantity: 'quantity', unitPrice: 'unitPrice', amount: 'amount', deliveryDate: 'deliveryDate', warehouseCode: 'warehouseCode',
+      }, api);
+      setF((prev: any) => ({
+        ...prev, preOrderId: id, preOrderNo: result.header.sourceNo || '',
+        customerId: result.header.customerId || prev.customerId,
+        customerName: result.header.customerName || prev.customerName,
+      }));
+      if (result.lines.length > 0) onLinesChange(result.lines as LineItem[]);
+      toast('已加载分劈明细', 'success');
+    } catch (e: any) { toast(e.response?.data?.message || '加载失败', 'error'); }
+    finally { setPreOrderLoading(false); }
+  };
 
   return (
     <FormLayout title="新增销售订单" onSave={save} sections={SECTIONS} activeSection="basic">
@@ -94,49 +138,26 @@ export default function SalesOrderCreate() {
       <FormSection id="source" title="来源关联">
         <FormGrid>
           <FormField label="客户">
-            <Select value={f.customerId} onValueChange={(v: any) => {
-              const c = customers.find(x => x.id === v);
-              setF({ ...f, customerId: v, customerName: c?.name || '' });
-            }}>
-              <SelectTrigger className={FI}><SelectValue placeholder="选择客户">{label(customers, f.customerId)}</SelectValue></SelectTrigger>
-              <SelectContent>{customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-            </Select>
+            <EntitySelect entity="customer" value={f.customerId}
+              onChange={(id, c) => { setF({ ...f, ...applyCustomerSelection(c) }); }} />
           </FormField>
           <FormField label="项目">
-            <Select value={f.projectId} onValueChange={(v: any) => {
-              const p = projects.find(x => x.id === v);
-              setF({ ...f, projectId: v, projectName: p?.name || '' });
-            }}>
-              <SelectTrigger className={FI}><SelectValue placeholder="选择项目（可选）">{label(projects, f.projectId)}</SelectValue></SelectTrigger>
-              <SelectContent>{projects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
-            </Select>
+            <EntitySelect entity="project" value={f.projectId}
+              onChange={(id, p) => { setF({ ...f, ...applyProjectSelection(p) }); }} />
           </FormField>
           <FormField label="关联合同">
-            <Select value={f.contractId} onValueChange={(v: any) => {
-              const c = contracts.find(x => x.id === v);
-              setF({ ...f, contractId: v, contractName: c?.name || '' });
-            }}>
-              <SelectTrigger className={FI}><SelectValue placeholder="选择合同（可选）">{label(contracts, f.contractId)}</SelectValue></SelectTrigger>
-              <SelectContent>{contracts.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-            </Select>
+            <EntitySelect entity="contract" value={f.contractId}
+              onChange={(id, c) => { setF({ ...f, ...applyContractSelection(c) }); }} />
           </FormField>
           <FormField label="关联报价单">
-            <Select value={f.quotationId} onValueChange={(v: any) => {
-              const q = quotations.find(x => x.id === v);
-              setF({ ...f, quotationId: v, quotationNo: q?.quotationNo || '' });
-            }}>
-              <SelectTrigger className={FI}><SelectValue placeholder="选择报价单（可选）">{label(quotations, f.quotationId, 'quotationName')}</SelectValue></SelectTrigger>
-              <SelectContent>{quotations.map(q => <SelectItem key={q.id} value={q.id}>{q.quotationName}</SelectItem>)}</SelectContent>
-            </Select>
+            <EntitySelect entity="quotation" value={f.quotationId} status="APPROVED"
+              onChange={(id) => { setF({ ...f, quotationId: id }); onQuotationSelect(id); }}
+              disabled={quotationLoading} />
           </FormField>
           <FormField label="关联分劈单">
-            <Select value={f.preOrderId} onValueChange={(v: any) => {
-              const p = preOrders.find(x => x.id === v);
-              setF({ ...f, preOrderId: v, preOrderNo: p?.orderNo || '' });
-            }}>
-              <SelectTrigger className={FI}><SelectValue placeholder="选择分劈单（可选）">{label(preOrders, f.preOrderId, 'orderName')}</SelectValue></SelectTrigger>
-              <SelectContent>{preOrders.map(p => <SelectItem key={p.id} value={p.id}>{p.orderName}</SelectItem>)}</SelectContent>
-            </Select>
+            <EntitySelect entity="preOrder" value={f.preOrderId} status="APPROVED"
+              onChange={(id) => { setF({ ...f, preOrderId: id }); onPreOrderSelect(id); }}
+              disabled={preOrderLoading} />
           </FormField>
         </FormGrid>
       </FormSection>
@@ -144,10 +165,8 @@ export default function SalesOrderCreate() {
       <FormSection id="org" title="组织与人员">
         <FormGrid>
           <FormField label="销售部门">
-            <Select value={f.departmentName} onValueChange={(v: any) => setF({ ...f, departmentName: v })}>
-              <SelectTrigger className={FI}><SelectValue placeholder="选择部门（可选）">{f.departmentName}</SelectValue></SelectTrigger>
-              <SelectContent>{depts.map(d => <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>)}</SelectContent>
-            </Select>
+            <EntitySelect entity="department" value={f.departmentId}
+              onChange={(id, d) => { setF({ ...f, ...applyDepartmentSelection(d) }); }} />
           </FormField>
           <FormField label="销售负责人">
             <Input className={FI} value={f.salesperson} onChange={e => setF({ ...f, salesperson: e.target.value })} placeholder="输入负责人" />
@@ -161,7 +180,8 @@ export default function SalesOrderCreate() {
       <FormSection id="detail" title="金额与交货">
         <FormGrid>
           <FormField label="金额">
-            <Input type="number" className={FI} value={f.totalAmount} onChange={e => setF({ ...f, totalAmount: e.target.value })} placeholder="0.00" />
+            <Input className={FI} value={lines.length > 0 ? calcTotalFromLines(lines) : f.totalAmount}
+              placeholder="自动=明细合计" readOnly disabled />
           </FormField>
           <FormField label="交货日期">
             <Input type="date" className={FI} value={f.deliveryDate} onChange={e => setF({ ...f, deliveryDate: e.target.value })} />
@@ -170,7 +190,7 @@ export default function SalesOrderCreate() {
       </FormSection>
 
       <FormSection id="lines" title="明细信息">
-        <LinesEditor lines={lines} onChange={setLines} />
+        <LinesEditor lines={lines} onChange={onLinesChange} />
       </FormSection>
 
     </FormLayout>

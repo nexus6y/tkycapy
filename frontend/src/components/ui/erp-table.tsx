@@ -1,3 +1,6 @@
+'use client';
+
+import React from 'react';
 import { cn } from '@/lib/utils';
 import { ChevronLeft, ChevronRight, RefreshCw, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -99,6 +102,15 @@ export function ErpPagination({ page, pageSize, total, onPage, onPageSize }: {
         ))}
         <Button variant="outline" size="icon" className="h-8 w-8" disabled={page >= tp} onClick={() => onPage(page + 1)}><ChevronRight className="h-4 w-4" /></Button>
       </div>
+    </div>
+  );
+}
+
+/* ===== ErpListPage — unified list page container (no card shadow, just border) ===== */
+export function ErpListPage({ children, className }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={cn('bg-background rounded-lg border border-border', className)}>
+      {children}
     </div>
   );
 }
