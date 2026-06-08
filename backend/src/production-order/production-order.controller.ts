@@ -9,9 +9,33 @@ export class ProductionOrderController {
   private async tid() { return (await this.prisma.tenant.findUniqueOrThrow({ where: { code: 'default' } })).id; }
 
   @Get()
-  async findAll(@Query('status') status?: string, @Query('biz') biz?: string, @Query('code') code?: string, @Query('page') page = 1, @Query('pageSize') pageSize = 30, @Query('mode') mode?: string) {
+  async findAll(
+    @Query('status') status?: string,
+    @Query('biz') biz?: string,
+    @Query('code') code?: string,
+    @Query('name') name?: string,
+    @Query('materialName') materialName?: string,
+    @Query('materialCode') materialCode?: string,
+    @Query('departmentName') departmentName?: string,
+    @Query('page') page = 1,
+    @Query('pageSize') pageSize = 30,
+    @Query('mode') mode?: string,
+  ) {
     const tenantId = await this.tid(); const where: any = { tenantId };
-    if (status) where.approvalStatus = status; if (biz) where.businessStatus = biz; if (code) where.orderNo = { contains: code };
+    if (status) where.approvalStatus = status;
+    if (biz) where.businessStatus = biz;
+    if (code) where.orderNo = { contains: code };
+    if (name) where.orderName = { contains: name };
+    if (departmentName) where.departmentName = { contains: departmentName };
+    if (materialName) {
+      where.OR = [
+        { materialName: { contains: materialName } },
+        { lines: { some: { materialName: { contains: materialName } } } },
+      ];
+    }
+    if (materialCode) {
+      where.lines = { some: { materialCode: { contains: materialCode } } };
+    }
     const [items, total] = await Promise.all([
       this.prisma.productionOrder.findMany({
         where, orderBy: { createdAt: 'desc' }, skip: (+page - 1) * +pageSize, take: +pageSize,
