@@ -1,15 +1,12 @@
 import { Injectable, ConflictException, UnauthorizedException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
+import * as jwt from 'jsonwebtoken';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto, RegisterDto } from './dto/auth.dto';
 
 @Injectable()
 export class AuthService {
-  constructor(
-    private prisma: PrismaService,
-    private jwt: JwtService,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
   async register(dto: RegisterDto) {
     const existing = await this.prisma.user.findUnique({ where: { username: dto.username } });
@@ -46,6 +43,10 @@ export class AuthService {
   }
 
   private signToken(user: { id: string; username: string }) {
-    return this.jwt.sign({ sub: user.id, username: user.username });
+    return jwt.sign(
+      { sub: user.id, username: user.username },
+      process.env.JWT_SECRET || 'change-me',
+      { expiresIn: 604800 },
+    );
   }
 }
