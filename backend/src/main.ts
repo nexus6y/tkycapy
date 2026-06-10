@@ -1,10 +1,10 @@
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe, BadRequestException } from '@nestjs/common';
-import { join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import { AppModule } from './app.module';
 import { PrismaExceptionFilter } from './common/prisma-exception.filter';
+import { getUploadsDir } from './common/uploads-path';
 
 // Map DTO field names to Chinese labels for validation errors
 const FIELD_LABELS: Record<string, string> = {
@@ -24,7 +24,7 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   // Ensure uploads directory exists
-  const uploadsDir = join(process.cwd(), 'uploads');
+  const uploadsDir = getUploadsDir();
   if (!existsSync(uploadsDir)) mkdirSync(uploadsDir, { recursive: true });
 
   // Serve uploaded files at /uploads/... (before /api prefix applies)

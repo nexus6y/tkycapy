@@ -4,10 +4,11 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { extname, join } from 'path';
+import { extname } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import { Response } from 'express';
 import { ContractService } from './contract.service';
+import { getUploadsDir } from '../common/uploads-path';
 
 @Controller('contracts')
 export class ContractController {
@@ -107,7 +108,7 @@ export class ContractController {
   @UseInterceptors(FileInterceptor('file', {
     storage: diskStorage({
       destination: (_req, _file, cb) => {
-        const dir = join(process.cwd(), 'uploads', 'contracts');
+        const dir = getUploadsDir('contracts');
         if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
         cb(null, dir);
       },
