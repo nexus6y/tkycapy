@@ -1,9 +1,12 @@
+// Explicit imports to force Vercel nft bundler to include dynamically-required deps
+import 'multer';
+import 'tslib';
 import { NestFactory } from '@nestjs/core';
 import { ExpressAdapter, NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe, BadRequestException } from '@nestjs/common';
 import { existsSync, mkdirSync } from 'fs';
-import { AppModule } from './app.module';
 import { PrismaExceptionFilter } from './common/prisma-exception.filter';
+import { AppModule } from './app.module';
 import { getUploadsDir } from './common/uploads-path';
 
 // Map DTO field names to Chinese labels for validation errors
