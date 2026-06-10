@@ -1,7 +1,7 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import jwt = require('jsonwebtoken');
 import { PrismaService } from '../prisma/prisma.service';
+import { verifyAuthToken } from './jwt-token';
 import { IS_PUBLIC_KEY } from './public.decorator';
 
 @Injectable()
@@ -23,10 +23,7 @@ export class JwtAuthGuard implements CanActivate {
     if (!token) throw new UnauthorizedException();
 
     try {
-      const payload = jwt.verify(token, process.env.JWT_SECRET || 'change-me') as {
-        sub: string;
-        username: string;
-      };
+      const payload = verifyAuthToken(token);
       const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
       if (!user) throw new UnauthorizedException();
 

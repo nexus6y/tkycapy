@@ -1,8 +1,8 @@
 import { Injectable, ConflictException, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
-import jwt = require('jsonwebtoken');
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto, RegisterDto } from './dto/auth.dto';
+import { signAuthToken } from './jwt-token';
 
 @Injectable()
 export class AuthService {
@@ -43,10 +43,6 @@ export class AuthService {
   }
 
   private signToken(user: { id: string; username: string }) {
-    return jwt.sign(
-      { sub: user.id, username: user.username },
-      process.env.JWT_SECRET || 'change-me',
-      { expiresIn: 604800 },
-    );
+    return signAuthToken({ sub: user.id, username: user.username });
   }
 }
