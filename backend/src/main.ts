@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { NestExpressApplication } from '@nestjs/platform-express';
+import { ExpressAdapter, NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe, BadRequestException } from '@nestjs/common';
 import { existsSync, mkdirSync } from 'fs';
 import { AppModule } from './app.module';
@@ -21,7 +21,7 @@ const FIELD_LABELS: Record<string, string> = {
 };
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, new ExpressAdapter());
 
   // Ensure uploads directory exists
   const uploadsDir = getUploadsDir();
