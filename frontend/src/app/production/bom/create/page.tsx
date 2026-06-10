@@ -16,6 +16,7 @@ import { applyMaterialSelection } from '@/lib/field-linkage';
 
 const inputClass = 'h-10 rounded-md border border-[#dcdfe6] bg-white px-3 text-[14px]';
 const disabledClass = 'h-10 rounded-md border border-[#dcdfe6] bg-[#f5f7fa] px-3 text-[14px] text-[#909399]';
+const PLAN_ATTRIBUTE_OPTIONS = ['自制', '外购', '委外', '虚拟件', '无计划'];
 
 interface BomItemRow {
   lineNo: number;
@@ -24,6 +25,7 @@ interface BomItemRow {
   materialName: string;
   spec: string;
   unit: string;
+  planAttribute: string;
   quantity: string;
   denominator: string;
   issueMethod: string;
@@ -37,9 +39,10 @@ const emptyRow = (lineNo: number): BomItemRow => ({
   materialName: '',
   spec: '',
   unit: '',
+  planAttribute: '',
   quantity: '1',
   denominator: '1',
-  issueMethod: '一般件',
+  issueMethod: '',
   remark: '',
 });
 
@@ -119,6 +122,7 @@ export default function BomCreatePage() {
       materialName: fill.materialName,
       spec: fill.specification,
       unit: fill.unit,
+      planAttribute: fill.planAttribute,
     });
   };
 
@@ -367,12 +371,18 @@ export default function BomCreatePage() {
                       <Td className="text-[#909399]">{row.spec || '-'}</Td>
                       <Td>{row.unit || '-'}</Td>
                       <Td>
-                        <Select value={row.issueMethod} onValueChange={v => updateRow(idx, { issueMethod: String(v) })}>
-                          <SelectTrigger className="h-8 border-[#dcdfe6] text-[13px]"><SelectValue /></SelectTrigger>
+                        <Select value={row.planAttribute || '请选择'} onValueChange={v => {
+                          const value = String(v);
+                          updateRow(idx, { planAttribute: value === '请选择' ? '' : value });
+                        }}>
+                          <SelectTrigger className="h-8 border-[#dcdfe6] text-[13px]">
+                            <SelectValue placeholder="请选择" />
+                          </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="一般件">一般件</SelectItem>
-                            <SelectItem value="关键件">关键件</SelectItem>
-                            <SelectItem value="替代件">替代件</SelectItem>
+                            <SelectItem value="请选择">请选择</SelectItem>
+                            {[...new Set([...PLAN_ATTRIBUTE_OPTIONS, row.planAttribute].filter(Boolean))].map(option => (
+                              <SelectItem key={option} value={option}>{option}</SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </Td>

@@ -12,6 +12,7 @@ export interface MaterialFill {
   unit: string;
   unitId: string;
   defaultWarehouseId: string;
+  planAttribute: string;
   needInspection: boolean;
   batchManaged: boolean;
   shelfLifeManaged: boolean;
@@ -27,6 +28,7 @@ export function applyMaterialSelection(material: Record<string, any>): MaterialF
     unit: material.unitName || material.unitSymbol || '',
     unitId: material.unitId || '',
     defaultWarehouseId: material.defaultWarehouseId || '',
+    planAttribute: material.planAttribute || '',
     needInspection: material.needInspection ?? false,
     batchManaged: material.batchManaged ?? false,
     shelfLifeManaged: material.shelfLifeManaged ?? false,
