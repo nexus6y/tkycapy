@@ -43,6 +43,7 @@ export function EntityPickerDialog({
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(30);
   const [selected, setSelected] = useState<any>(null);
+  const selectedRef = useRef<any>(null);
   const [search, setSearch] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
 
@@ -88,6 +89,7 @@ export function EntityPickerDialog({
   useEffect(() => {
     if (open) {
       setSelected(null);
+      selectedRef.current = null;
       setPage(1);
       setSearch({});
       searchRef.current = {};
@@ -139,26 +141,30 @@ export function EntityPickerDialog({
     fetchData({ page: 1, search: {} });
   };
 
-  const handleRowClick = (item: any) => {
+  const doSelect = (item: any) => {
     setSelected(item);
+    selectedRef.current = item;
+  };
+
+  const handleRowClick = (item: any) => {
+    doSelect(item);
   };
 
   const handleRowDoubleClick = (item: any) => {
-    setSelected(item);
+    doSelect(item);
     onConfirm(item);
     onOpenChange(false);
   };
 
   const handleCodeClick = (item: any) => {
-    // Clicking a code-type column directly confirms — no need to click "确定"
-    setSelected(item);
+    doSelect(item);
     onConfirm(item);
     onOpenChange(false);
   };
 
-  const handleConfirm = (item?: any) => {
-    // Optional item param: when provided, confirm directly without relying on stale state
-    const target = item || selected;
+  const handleConfirm = () => {
+    // Read from ref to avoid stale React state closure
+    const target = selectedRef.current;
     if (!target) {
       toast('请选择一条数据', 'info');
       return;

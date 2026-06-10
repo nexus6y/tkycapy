@@ -300,4 +300,38 @@ export const ENTITY_PICKERS: Record<string, EntityPickerDefinition> = {
       { key: 'createdAt', label: '创建时间', render: 'date' },
     ],
   },
+
+  productionOrder: {
+    entity: 'productionOrder',
+    title: '选择生产订单',
+    apiPath: '/production-orders',
+    searchFields: [
+      { label: '生产编号', param: 'code', width: 'w-[140px]', placeholder: '编号' },
+      { label: '生产名称', param: 'name', width: 'w-[160px]', placeholder: '名称' },
+    ],
+    columns: [
+      { key: 'orderNo', label: '生产编号', render: 'code' },
+      { key: 'orderName', label: '生产名称' },
+      { key: 'materialName', label: '产品名称' },
+      { key: 'businessStatus', label: '生产状态' },
+      { key: 'approvalStatus', label: '审批状态', render: 'approval' },
+      { key: 'createdAt', label: '创建时间', render: 'date' },
+    ],
+  },
+
+  demandPlan: {
+    entity: 'demandPlan',
+    title: '选择需求计划',
+    apiPath: '/demand-plans',
+    searchFields: [
+      { label: '计划编号', param: 'code', width: 'w-[140px]', placeholder: '编号' },
+      { label: '计划名称', param: 'name', width: 'w-[160px]', placeholder: '名称' },
+    ],
+    columns: [
+      { key: 'planNo', label: '计划编号', render: 'code' },
+      { key: 'planName', label: '计划名称' },
+      { key: 'approvalStatus', label: '审批状态', render: 'approval' },
+      { key: 'createdAt', label: '创建时间', render: 'date' },
+    ],
+  },
 };

@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +24,7 @@ export function MaterialPickerDialog({ open, onOpenChange, onConfirm }: Material
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(30);
   const [selected, setSelected] = useState<any>(null);
+  const selectedRef = useRef<any>(null);
   const [loading, setLoading] = useState(false);
 
   // Search
@@ -86,11 +87,13 @@ export function MaterialPickerDialog({ open, onOpenChange, onConfirm }: Material
 
   // Reset on open
   useEffect(() => {
-    if (open) { setSelected(null); setPage(1); setCode(''); setName(''); setSpec(''); setPlanAttr(''); setActiveCatId(null); }
+    if (open) { setSelected(null); selectedRef.current = null; setPage(1); setCode(''); setName(''); setSpec(''); setPlanAttr(''); setActiveCatId(null); }
   }, [open]);
 
+  const doSelect = (item: any) => { setSelected(item); selectedRef.current = item; };
+
   const handleSearch = () => { setPage(1); fetchData(); };
-  const handleReset = () => { setCode(''); setName(''); setSpec(''); setPlanAttr(''); setPage(1); };
+  const handleReset = () => { setCode(''); setName(''); setSpec(''); setPlanAttr(''); setPage(1); setSelected(null); selectedRef.current = null; };
 
   const toggleExpand = (id: string) => {
     setExpanded(prev => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
@@ -121,8 +124,8 @@ export function MaterialPickerDialog({ open, onOpenChange, onConfirm }: Material
   );
 
   const handleConfirm = () => {
-    if (!selected) { toast('请选择一条数据', 'info'); return; }
-    confirmItem(selected);
+    if (!selectedRef.current) { toast('请选择一条数据', 'info'); return; }
+    confirmItem(selectedRef.current);
   };
 
   // Direct confirm with a specific item — bypasses React state timing issue
@@ -185,7 +188,7 @@ export function MaterialPickerDialog({ open, onOpenChange, onConfirm }: Material
                     return (
                       <ErpTr key={item.id} className={isSel ? 'bg-[#ecf5ff]' : ''}>
                         <ErpTd>
-                          <input type="radio" checked={isSel} onChange={() => setSelected(item)} className="accent-[#409eff]" />
+                          <input type="radio" checked={isSel} onChange={() => doSelect(item)} className="accent-[#409eff]" />
                         </ErpTd>
                         <ErpTd className="text-[#909399]">{(page - 1) * pageSize + idx + 1}</ErpTd>
                         <ErpTd><span className="text-[#409eff] cursor-pointer" onClick={() => confirmItem(item)}>{item.code}</span></ErpTd>
