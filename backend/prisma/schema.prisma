@@ -100,6 +100,9 @@ model Tenant {
   measurementUnits   MeasurementUnit[]
   materials          Material[]
   materialParam      MaterialParam?
+  salesParam         SalesParam?
+  purchaseParam      PurchaseParam?
+  qualityParam       QualityParam?
   projects           Project[]
   suppliers          Supplier[]
   customers          Customer[]
@@ -140,6 +143,8 @@ model Tenant {
   adjustOrders       AdjustOrder[]
   completeReports    CompleteReport[]
   boms               Bom[]
+  processes          Process[]
+  processRoutes      ProcessRoute[]
   productionOrders   ProductionOrder[]
   inspections        Inspection[]
   preOrders          PreOrder[]
@@ -391,6 +396,53 @@ model MaterialParam {
   @@map("material_param")
 }
 
+model SalesParam {
+  id               String   @id @default(cuid())
+  tenantId        String
+  autoCode        String   @default("Q{yyyyMM}{seq:4}")
+  defaultTax      String   @default("13")
+  pricePrecision  String   @default("2")
+  amountPrecision String   @default("2")
+  validDays       String   @default("30")
+  updatedAt       DateTime @updatedAt
+  createdAt       DateTime @default(now())
+
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId])
+  @@map("sales_param")
+}
+
+model PurchaseParam {
+  id               String   @id @default(cuid())
+  tenantId        String
+  autoCode        String   @default("PO{yyyyMM}{seq:4}")
+  defaultTax      String   @default("13")
+  approvalRequired Boolean @default(true)
+  updatedAt       DateTime @updatedAt
+  createdAt       DateTime @default(now())
+
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId])
+  @@map("purchase_param")
+}
+
+model QualityParam {
+  id                  String   @id @default(cuid())
+  tenantId           String
+  autoApproval       Boolean  @default(false)
+  defectRateThreshold String  @default("5")
+  inspectionTemplate String   @default("标准质检模板")
+  updatedAt          DateTime @updatedAt
+  createdAt          DateTime @default(now())
+
+  tenant             Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId])
+  @@map("quality_param")
+}
+
 model Supplier {
   id              String        @id @default(cuid())
   tenantId        String
@@ -504,6 +556,7 @@ model PreOrder {
   contractId      String?
   contractName    String?
   customerId      String?
+  customerCode    String?
   customerName    String?
   totalAmount     Decimal?       @db.Decimal(18, 6)
   approvalStatus  ApprovalStatus @default(DRAFT)
@@ -744,35 +797,119 @@ model PurchaseReturn {
 }
 
 model Contract {
-  id                  String         @id @default(cuid())
-  tenantId            String
-  code                String
-  name                String
-  type                String         // 销售合同/采购合同
-  isProjectContract   Boolean        @default(false)
-  isFrameworkContract Boolean        @default(false)
-  projectId           String?
-  projectCode         String?
-  projectName         String?
-  customerId          String?
-  customerCode        String?
-  customerName        String?
-  supplierId          String?
-  supplierCode        String?
-  supplierName        String?
-  startDate           DateTime?
-  endDate             DateTime?
-  totalAmount         Decimal?       @db.Decimal(18, 6)
-  approvalStatus      ApprovalStatus @default(DRAFT)
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
-  deletedAt           DateTime?
+  id                    String         @id @default(cuid())
+  tenantId              String
+  code                  String
+  name                  String
+  type                  String         // 销售合同/采购合同
+  isProjectContract     Boolean        @default(false)
+  isFrameworkContract   Boolean        @default(false)
+  projectId             String?
+  projectCode           String?
+  projectName           String?
+  customerId            String?
+  customerCode          String?
+  customerName          String?
+  supplierId            String?
+  supplierCode          String?
+  supplierName          String?
+  organizationId        String?        // 所属组织ID
+  organizationName      String?        // 所属组织名称
+  category              String?        // 合同类别
+  purchaseMethod        String?        // 采购方式
+  currencyType          String?        @default("人民币")  // 支付货币类型
+  receiptPaymentMethod  String?        // 收付方式
+  amountType            String?        // 合同金额类型
+  taxMonth              String?        // 缴税年月
+  performanceBond       Decimal?       @db.Decimal(18, 6)  // 履约保证金
+  performanceMode       String?        // 履约方式
+  performanceLocation   String?        // 履约地点
+  effectiveDate         DateTime?      // 生效日期
+  signDate              DateTime?      // 签约日期
+  signUrl               String?        // 签约网址
+  undertakingDepartmentId   String?    // 承办部门ID
+  undertakingDepartmentName String?    // 承办部门名称
+  undertakerName        String?        // 承办人姓名
+  undertakerPhone       String?        // 承办人电话
+  qualityRequirement    String?        // 质量要求
+  warrantyPeriod        String?        // 质保期限
+  disputeResolution     String?        // 争议解决方式
+  liabilityForBreach    String?        // 违约责任
+  internalCode          String?        // 合同编码(内部)
+  legalCode             String?        // 合同编码(企法)
+  startDate             DateTime?
+  endDate               DateTime?
+  totalAmount           Decimal?       @db.Decimal(18, 6)
+  approvalStatus        ApprovalStatus @default(DRAFT)
+  remark                String?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  deletedAt             DateTime?
 
-  tenant              Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant                Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  paymentPlans          ContractPaymentPlan[]
+  lines                 ContractLine[]
+  attachments           ContractAttachment[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
   @@map("contract")
+}
+
+model ContractPaymentPlan {
+  id          String    @id @default(cuid())
+  contractId  String
+  lineNo      Int
+  amount      Decimal   @db.Decimal(18, 6)
+  planDate    DateTime
+  ratio       Decimal   @default(0) @db.Decimal(5, 2)
+  remark      String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  contract    Contract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([contractId])
+  @@map("contract_payment_plan")
+}
+
+model ContractLine {
+  id              String    @id @default(cuid())
+  contractId      String
+  lineNo          Int
+  materialId      String?
+  materialCode    String?
+  materialName    String?
+  specification   String?
+  unit            String?
+  quantity        Decimal?  @db.Decimal(18, 6)
+  unitPrice       Decimal?  @db.Decimal(18, 6)
+  amount          Decimal?  @db.Decimal(18, 6)
+  remark          String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  contract        Contract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([contractId])
+  @@map("contract_line")
+}
+
+model ContractAttachment {
+  id          String    @id @default(cuid())
+  contractId  String
+  description String?
+  fileName    String
+  fileUrl     String?
+  fileId      String?
+  uploadedBy  String?
+  uploadedAt  DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+
+  contract    Contract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([contractId])
+  @@map("contract_attachment")
 }
 
 model Project {
@@ -891,24 +1028,105 @@ model Material {
 }
 
 model Bom {
-  id              String         @id @default(cuid())
-  tenantId        String
-  code            String
-  name            String
-  materialId      String?
-  materialName    String?
-  version         String?
-  quantity        Decimal?       @db.Decimal(18,6)
-  approvalStatus  ApprovalStatus @default(DRAFT)
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  deletedAt       DateTime?
+  id                    String         @id @default(cuid())
+  tenantId              String
+  code                  String
+  name                  String
+  productMaterialId     String?
+  productMaterialCode   String?
+  productMaterialName   String?
+  productSpec           String?
+  productUnit           String?
+  version               String?
+  baseQty               Decimal?       @default(1) @db.Decimal(10,2)
+  effectiveDate         DateTime?
+  expireDate            DateTime?
+  status                CommonStatus   @default(ACTIVE)
+  approvalStatus        ApprovalStatus @default(DRAFT)
+  remark                String?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  deletedAt             DateTime?
 
-  tenant          Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant                Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  items                 BomItem[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
   @@map("bom")
+}
+
+model BomItem {
+  id                String   @id @default(cuid())
+  bomId             String
+  lineNo            Int
+  parentMaterialId  String?
+  parentMaterialCode String?
+  parentMaterialName String?
+  materialId        String
+  materialCode      String
+  materialName      String
+  spec              String?
+  unit              String?
+  quantity          Decimal  @db.Decimal(10,6)
+  denominator       Int?
+  numerator         Int?
+  lossRate          Decimal? @default(0) @db.Decimal(5,2)
+  fixedLossQty      Decimal? @db.Decimal(10,6)
+  issueMethod       String?
+  warehouseId       String?
+  warehouseCode     String?
+  warehouseName     String?
+  processId         String?
+  processName       String?
+  replaceable       Boolean  @default(false)
+  remark            String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  bom               Bom      @relation(fields: [bomId], references: [id], onDelete: Cascade)
+
+  @@index([bomId])
+  @@map("bom_item")
+}
+
+model Process {
+  id            String       @id @default(cuid())
+  tenantId      String
+  code          String
+  name          String
+  processType   String?
+  workCenter    String?
+  standardTime  String?
+  status        CommonStatus @default(ACTIVE)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  deletedAt     DateTime?
+
+  tenant        Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("process")
+}
+
+model ProcessRoute {
+  id            String       @id @default(cuid())
+  tenantId      String
+  code          String
+  name          String
+  bomId         String?
+  processIds    String?
+  status        CommonStatus @default(ACTIVE)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  deletedAt     DateTime?
+
+  tenant        Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("process_route")
 }
 
 model InboundOrder {
@@ -927,6 +1145,7 @@ model InboundOrder {
   qualifiedQty    Decimal?       @default(0) @db.Decimal(18,6)
   unqualifiedQty  Decimal?       @default(0) @db.Decimal(18,6)
   warehouseId     String?
+  warehouseCode   String?
   warehouseName   String?
   unitPrice       Decimal?       @db.Decimal(18,6)
   totalAmount     Decimal?       @db.Decimal(18,6)

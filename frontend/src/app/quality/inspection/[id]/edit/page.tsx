@@ -1,7 +1,7 @@
 'use client';import { useEffect, useState } from 'react';import { useRouter, useParams } from 'next/navigation';import api from '@/lib/api';import { Input } from '@/components/ui/input';import { Button } from '@/components/ui/button';import { toast } from '@/components/ui/toast';
 import { FormLayout,FormSection,FormGrid,FormField } from '@/components/form/form-layout';
 import { LinesEditor, LineItem } from '@/components/ui/lines-editor';
-import { EntitySelect } from '@/components/form/entity-select';
+import { EntityPickerInput } from '@/components/form/entity-picker-input';
 import { applyMaterialSelection } from '@/lib/field-linkage';
 const FI='h-9 rounded-md border border-border bg-background px-3 text-[13px] w-full';
 
@@ -35,7 +35,7 @@ return(<FormLayout title={'编辑质检单：'+f.inspectionNo} onSave={async()=>
 <FormField label="质检单号"><Input className={FI} value={f.inspectionNo} disabled/></FormField>
 <FormField label="来源类型"><Input className={FI} value={f.sourceType||''} disabled/></FormField>
 <FormField label="来源单号"><Input className={FI} value={f.sourceNo||''} disabled/></FormField>
-<FormField label="物料"><EntitySelect entity="material" value={f.materialId||''} onChange={(id,m)=>{setF({...f,...applyMaterialSelection(m)});}}/></FormField>
+<FormField label="物料"><EntityPickerInput entity="material" value={f.materialCode||''} displayText={f.materialCode ? `${f.materialCode} ${f.materialName||''}` : ''} onChange={(id:any,m:any)=>{setF({...f,...applyMaterialSelection(m)});}}/></FormField>
 <FormField label="检验员"><Input className={FI} value={f.inspector||''} onChange={e=>setF({...f,inspector:e.target.value})}/></FormField>
 <FormField label="检验总量"><Input className={FI} value={lines.length>0?String(lines.reduce((s,l)=>s+Number(l.inspectQty||0),0)):(f.quantity||'')} disabled/></FormField>
 <FormField label="合格数"><Input type="number" className={FI} value={f.qualifiedQty||''} onChange={e=>setF({...f,qualifiedQty:e.target.value})}/></FormField>

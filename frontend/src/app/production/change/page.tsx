@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +15,7 @@ import { ErpTable,ErpThead,ErpTh,ErpTbody,ErpTr,ErpTd,ErpEmpty,ErpLink,ErpAction
 interface Item { id:string;orderNo:string;orderName:string;materialName:string|null;quantity:string;departmentName:string|null;startDate:string|null;endDate:string|null;approvalStatus:string;businessStatus:string;remark:string|null;createdAt:string; }
 
 export default function ProductionChangePage() {
+  const router = useRouter();
   const [items,setItems]=useState<Item[]>([]);const [total,setTotal]=useState(0);const [pg,setPg]=useState(1);const [ps,setPs]=useState(30);
   const [sel,setSel]=useState<Set<string>>(new Set());const [s,setS]=useState({code:'',name:'',status:''});
   const [del,setDel]=useState<string|null>(null);
@@ -29,7 +31,7 @@ export default function ProductionChangePage() {
   return (<TooltipProvider><div className="bg-background rounded-lg border shadow-sm">
     <div className="flex items-center justify-between px-4 h-14 border-b border-border">
       <div className="flex items-center gap-1">
-        <Button variant="secondary" size="sm"><Plus className="h-3.5 w-3.5"/>新增</Button>
+        <Button variant="secondary" size="sm" onClick={()=>router.push('/production/change/create')}><Plus className="h-3.5 w-3.5"/>新增</Button>
         <Button variant="outline" size="sm" disabled={sel.size===0} onClick={()=>toast('请先勾选数据','info')}>修改</Button>
         <Button variant="outline" size="sm" disabled={sel.size===0} onClick={()=>toast('请先勾选数据','info')}>删除</Button>
         <Button variant="outline" size="sm"><Download className="h-3.5 w-3.5 mr-1"/>导出</Button>

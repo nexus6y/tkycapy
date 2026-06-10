@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';import { useRouter } from 'next/navi
 import { Input } from '@/components/ui/input';import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';import { toast } from '@/components/ui/toast';
 import { FormLayout, FormSection, FormGrid, FormField } from '@/components/form/form-layout';
 import { LinesEditor, LineItem } from '@/components/ui/lines-editor';
-import { EntitySelect } from '@/components/form/entity-select';
+import { EntityPickerInput } from '@/components/form/entity-picker-input';
 import { applyMaterialSelection } from '@/lib/field-linkage';
 import { calcTotalQtyFromLines } from '@/lib/calc';
 const FI='h-9 rounded-md border border-border bg-background px-3 text-[13px] w-full';
@@ -18,6 +18,7 @@ const QC_COLS = [
   { key: 'inspectQty', label: '检验数量', width: '80px', type: 'number' as const },
   { key: 'qualifiedQty', label: '合格数量', width: '80px', type: 'number' as const },
   { key: 'unqualifiedQty', label: '不合格数', width: '80px', type: 'number' as const },
+  { key: 'unqualifiedReason', label: '不合格原因', width: '120px' },
   { key: 'result', label: '结果', width: '80px' },
 ];
 
@@ -25,8 +26,8 @@ export default function InspectionCreatePage() {
   const router=useRouter();
   const [lines,setLines]=useState<LineItem[]>([]);
   const [srcLoading,setSrcLoading]=useState(false);
-  useEffect(()=>{api.get('/common/next-code',{params:{entity:'inspection'}}).then(r=>setF((prev:any)=>({...prev,inspectionNo:r.data.code})));},[]);
   const [f,setF]=useState({inspectionNo:'',sourceType:'采购单',sourceId:'',sourceNo:'',materialId:'',materialCode:'',materialName:'',specification:'',unit:'',quantity:'',inspector:'',result:''});
+  useEffect(()=>{api.get('/common/next-code',{params:{entity:'inspection'}}).then(r=>setF((prev:any)=>({...prev,inspectionNo:r.data.code})));},[]);
 
   const onSourceSelect=async(sourceId:string)=>{
     setSrcLoading(true);
@@ -50,9 +51,29 @@ export default function InspectionCreatePage() {
   };
 
   const save=async()=>{
+    // Validation
+    for (const l of lines) {
+      const insp = Number(l.inspectQty || 0);
+      const qual = Number(l.qualifiedQty || 0);
+      const unqual = Number(l.unqualifiedQty || 0);
+      if (qual + unqual > insp) return toast(`第${l.lineNo}行：合格+不合格不能超过检验数量`, 'error');
+      if (unqual > 0 && !l.unqualifiedReason) return toast(`第${l.lineNo}行：不合格数量>0时必须填写不合格原因`, 'error');
+    }
     try{
-      const payload:any={...f};
-      if(lines.length>0){payload.lines=lines;payload.quantity=String(lines.reduce((s,l)=>s+Number(l.inspectQty||0),0));}
+      // Only keep valid Inspection model fields
+      const payload: any = {} as any;
+      for (const k of ['inspectionNo','sourceType','sourceNo','materialId','materialName','quantity','inspector','result']) {
+        if ((f as any)[k] !== undefined && (f as any)[k] !== '') (payload as any)[k] = (f as any)[k];
+      }
+      if(lines.length>0){
+        // Map unqualifiedReason → remark (InspectionLine has no unqualifiedReason field)
+        payload.lines = lines.map((l:any) => {
+          const {unqualifiedReason, ...rest} = l;
+          if (unqualifiedReason && !rest.remark) rest.remark = unqualifiedReason;
+          return rest;
+        });
+        payload.quantity = String(lines.reduce((s:number,l:any)=>s+Number(l.inspectQty||0),0));
+      }
       await api.post('/inspections',payload);router.push('/quality/inspection');
     }catch(e:any){toast(e.response?.data?.message||'保存失败','error');}
   };
@@ -67,10 +88,10 @@ export default function InspectionCreatePage() {
         </RadioGroup>
       </FormField>
       <FormField label="来源单号">
-        <EntitySelect entity={f.sourceType==='采购单'?'purchaseOrder':'productionOrder'} value={f.sourceId} status="APPROVED"
-          onChange={(id)=>{setF({...f,sourceId:id});onSourceSelect(id);}} disabled={srcLoading}/>
+        <EntityPickerInput entity={f.sourceType==='采购单'?'purchaseOrder':'productionOrder'} value={f.sourceNo} displayText={f.sourceNo || ''} status="APPROVED"
+          onChange={(id:any)=>{setF({...f,sourceId:id});onSourceSelect(id);}}/>
       </FormField>
-      <FormField label="物料"><EntitySelect entity="material" value={f.materialId} onChange={(id,m)=>{setF({...f,...applyMaterialSelection(m)});}}/></FormField>
+      <FormField label="物料"><EntityPickerInput entity="material" value={f.materialCode} displayText={f.materialCode ? `${f.materialCode} ${f.materialName}` : ''} onChange={(id:any,m:any)=>{setF({...f,...applyMaterialSelection(m)});}}/></FormField>
       <FormField label="物料编码">{f.materialCode&&<Input className={FI} value={f.materialCode} readOnly disabled/>}</FormField>
       <FormField label="规格型号"><Input className={FI} value={f.specification||''} readOnly disabled/></FormField>
       <FormField label="单位"><Input className={FI} value={f.unit||''} readOnly disabled/></FormField>

@@ -59,7 +59,15 @@ export default function ShipmentCreate() {
     payload.totalQuantity = String(totalQty > 0 ? totalQty : f.totalQuantity || '0');
     payload.totalAmount = calcTotalFromLines(lines);
     if (payload.shipmentDate) payload.shipmentDate = new Date(payload.shipmentDate).toISOString();
-    if (lines.length > 0) payload.lines = lines;
+    if (lines.length > 0) {
+      payload.lines = lines.map(l => {
+        const clean: any = {};
+        for (const [k, v] of Object.entries(l)) {
+          if (v !== '' && v !== null && v !== undefined) clean[k] = v;
+        }
+        return clean;
+      });
+    }
     await api.post('/sales-shipments', payload);
     router.push('/sales/shipment');
   };

@@ -12,7 +12,7 @@ import { Download, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { toast } from '@/components/ui/toast';
 import { ErpTable,ErpThead,ErpTh,ErpTbody,ErpTr,ErpTd,ErpEmpty,ErpLink,ErpAction,ErpActionBtn,ErpTools,ErpApproval,ErpPagination } from '@/components/ui/erp-table';
 
-interface Item { returnNo:string; id:string;orderNo:string;orderName:string;customerName:string|null;totalAmount:string|null;approvalStatus:string;createdAt:string; }
+interface Item { id:string;returnNo:string;supplierName:string|null;totalAmount:string|null;approvalStatus:string;createdAt:string; }
 
 export default function PurchaseReturnPage() {
   const router=useRouter();
@@ -22,16 +22,16 @@ export default function PurchaseReturnPage() {
 
   const fetch=useCallback(async()=>{
     const p:any={page:pg,pageSize:ps}; if(s.code)p.code=s.code; if(s.name)p.name=s.name; if(s.status)p.status=s.status;
-    const {data}=await api.get('/sales-returns',{params:p}); setItems(data.items); setTotal(data.total);
+    const {data}=await api.get('/purchase-returns',{params:p}); setItems(data.items); setTotal(data.total);
   },[pg,ps,s]); useEffect(()=>{fetch();},[fetch]);
 
-  const doDel=async()=>{if(!del)return;try{await api.delete(`/sales-returns/${del}`);setDel(null);fetch();}catch(e:any){toast(e.response?.data?.message||'删除失败','error');}};
+  const doDel=async()=>{if(!del)return;try{await api.delete(`/purchase-returns/${del}`);setDel(null);fetch();}catch(e:any){toast(e.response?.data?.message||'删除失败','error');}};
   const toggleAll=(v:boolean)=>setSel(v?new Set(items.map(i=>i.id)):new Set());
 
   return (<TooltipProvider><div className="bg-background rounded-lg border shadow-sm">
     <div className="flex items-center justify-between px-4 h-14 border-b border-border">
       <div className="flex items-center gap-1">
-        <Button variant="secondary" size="sm"><Plus className="h-3.5 w-3.5"/>新增</Button>
+        <Button variant="secondary" size="sm" onClick={()=>router.push('/purchase/return/create')}><Plus className="h-3.5 w-3.5"/>新增</Button>
         <Button variant="outline" size="sm" disabled={sel.size===0} onClick={()=>toast('请先勾选数据','info')}>修改</Button>
         <Button variant="outline" size="sm" disabled={sel.size===0} onClick={()=>toast('请先勾选数据','info')}>删除</Button>
         <Button variant="outline" size="sm"><Download className="h-3.5 w-3.5 mr-1"/>导出</Button>
@@ -48,7 +48,7 @@ export default function PurchaseReturnPage() {
     </div>
     <ErpTools onRefresh={fetch}/>
     <div className="overflow-auto"><ErpTable><ErpThead><ErpTh className="w-10"><Checkbox checked={items.length>0&&sel.size===items.length} onCheckedChange={(v:boolean)=>toggleAll(v)}/></ErpTh><ErpTh>退供单号</ErpTh><ErpTh>供应商</ErpTh><ErpTh>金额</ErpTh><ErpTh>审批状态</ErpTh><ErpTh>创建时间</ErpTh><ErpTh>操作</ErpTh></ErpThead><ErpTbody>
-    {items.map(i=>(<ErpTr key={i.id}><ErpTd><Checkbox checked={sel.has(i.id)} onCheckedChange={(v:boolean)=>{const n=new Set(sel);v?n.add(i.id):n.delete(i.id);setSel(n);}}/></ErpTd><ErpTd><ErpLink>{i.orderNo||i.returnNo}</ErpLink></ErpTd><ErpTd>{i.customerName||'-'}</ErpTd><ErpTd>{i.totalAmount?Number(i.totalAmount).toLocaleString():'-'}</ErpTd><ErpTd><ErpApproval status={i.approvalStatus}/></ErpTd><ErpTd className="text-muted-foreground">{new Date(i.createdAt).toLocaleDateString('zh-CN')}</ErpTd><ErpTd><ErpAction><ErpActionBtn><Pencil className="h-3.5 w-3.5"/>修改</ErpActionBtn><ErpActionBtn danger onClick={()=>setDel(i.id)}><Trash2 className="h-3.5 w-3.5"/>删除</ErpActionBtn></ErpAction></ErpTd></ErpTr>))}
+    {items.map(i=>(<ErpTr key={i.id}><ErpTd><Checkbox checked={sel.has(i.id)} onCheckedChange={(v:boolean)=>{const n=new Set(sel);v?n.add(i.id):n.delete(i.id);setSel(n);}}/></ErpTd><ErpTd><ErpLink onClick={()=>router.push(`/purchase/return/${i.id}/edit`)}>{i.returnNo}</ErpLink></ErpTd><ErpTd>{i.supplierName||'-'}</ErpTd><ErpTd>{i.totalAmount?Number(i.totalAmount).toLocaleString():'-'}</ErpTd><ErpTd><ErpApproval status={i.approvalStatus}/></ErpTd><ErpTd className="text-muted-foreground">{new Date(i.createdAt).toLocaleDateString('zh-CN')}</ErpTd><ErpTd><ErpAction><ErpActionBtn onClick={()=>router.push(`/purchase/return/${i.id}/edit`)}><Pencil className="h-3.5 w-3.5"/>修改</ErpActionBtn>{i.approvalStatus==='DRAFT'&&<button onClick={()=>{api.put(`/purchase-returns/${i.id}/submit`).then(fetch);}} className="text-primary text-[13px] hover:underline">提交</button>}{i.approvalStatus==='SUBMITTED'&&<button onClick={()=>{api.put(`/purchase-returns/${i.id}/approve`).then(fetch);}} className="text-green-600 text-[13px] hover:underline">通过</button>}<ErpActionBtn danger onClick={()=>setDel(i.id)}><Trash2 className="h-3.5 w-3.5"/>删除</ErpActionBtn></ErpAction></ErpTd></ErpTr>))}
     {items.length===0&&<ErpEmpty colSpan={7}/>}
     </ErpTbody></ErpTable></div>
     <ErpPagination page={pg} pageSize={ps} total={total} onPage={setPg} onPageSize={v=>setPs(+v)}/>

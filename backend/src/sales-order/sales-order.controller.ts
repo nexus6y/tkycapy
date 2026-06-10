@@ -1,10 +1,93 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { pickAllowed } from '../common/dto-normalizer';
 import { CodeGeneratorService } from '../common/code-generator.service';
 import { guardSubmit, guardApprove, guardWithdraw } from '../common/business-rules.helper';
 
+// ===== Whitelists =====
+
+const SO_KEYS = [
+  'orderNo','orderName','preOrderId','preOrderNo','quotationId','quotationNo',
+  'customerId','customerName','projectId','projectName','contractId','contractName',
+  'orderType','orderDate','deliveryDate','totalAmount','approvalStatus','businessStatus','remark','tenantId',
+];
+
+/** SalesOrderLine schema fields (excludes id/tenantId/salesOrderId — server-set) */
+const SO_LINE_KEYS = [
+  'materialCode','materialName','spec','unit','quantity','unitPrice','amount',
+  'deliveryDate','shippedQty','warehouseCode','remark',
+];
+
+// ===== Cleaners =====
+
+function cleanHeader(dto: any): any {
+  const d = pickAllowed(dto, SO_KEYS);
+  for (const k of Object.keys(d)) {
+    if (d[k] === '' || d[k] === null) delete d[k];
+  }
+  // Decimal
+  if (d.totalAmount !== undefined && !isValidDecimal(d.totalAmount)) delete d.totalAmount;
+  return d;
+}
+
+function cleanSalesOrderLine(raw: any, idx: number): any {
+  const line: any = {};
+  for (const k of SO_LINE_KEYS) {
+    const v = raw[k];
+    if (v === undefined || v === null || v === '') continue;
+    line[k] = v;
+  }
+
+  line.lineNo = toLineNo(raw.lineNo, idx);
+
+  for (const dk of ['quantity','unitPrice','amount','shippedQty']) {
+    if (line[dk] !== undefined) {
+      if (!isValidDecimal(line[dk])) delete line[dk];
+      else line[dk] = String(line[dk]);
+    }
+  }
+
+  if (line.deliveryDate !== undefined) {
+    const dd = parseDate(line.deliveryDate);
+    if (dd) line.deliveryDate = dd;
+    else delete line.deliveryDate;
+  }
+
+  return line;
+}
+
+// ===== Helpers =====
+
+function toLineNo(v: any, idx: number): number {
+  if (typeof v === 'number' && Number.isFinite(v) && v >= 1) return Math.floor(v);
+  const n = Number(v);
+  if (Number.isFinite(n) && n >= 1) return Math.floor(n);
+  return idx + 1;
+}
+
+function isValidDecimal(v: any): boolean {
+  if (v === null || v === undefined) return false;
+  const s = String(v).trim();
+  if (s === '') return false;
+  const n = Number(s);
+  return !isNaN(n) && Number.isFinite(n);
+}
+
+function parseDate(v: any): Date | null {
+  if (v === null || v === undefined) return null;
+  const s = String(v).trim();
+  if (s === '') return null;
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return null;
+  return d;
+}
+
+// ===== Controller =====
+
 @Controller('sales-orders')
 export class SalesOrderController {
+  private readonly logger = new Logger(SalesOrderController.name);
+
   constructor(private prisma: PrismaService, private codeGen: CodeGeneratorService) {}
 
   private async tid() { return (await this.prisma.tenant.findUniqueOrThrow({ where: { code: 'default' } })).id; }
@@ -31,70 +114,69 @@ export class SalesOrderController {
     });
   }
 
+  // ========== CREATE ==========
+
   @Post()
   async create(@Body() dto: any) {
     const tenantId = await this.tid();
-    const data: any = { ...dto, tenantId };
-    if (!data.orderNo) data.orderNo = await this.codeGen.generate('SO', 'salesOrder', 'orderNo');
-    if (data.deliveryDate) data.deliveryDate = new Date(data.deliveryDate);
-    if (data.orderDate) data.orderDate = new Date(data.orderDate);
-    if (data.totalAmount != null && data.totalAmount !== '') data.totalAmount = String(data.totalAmount);
-    else delete data.totalAmount;
+    const { lines, ...rawData } = dto;
 
-    const { lines, ...orderData } = data;
-    if (lines && Array.isArray(lines) && lines.length > 0) {
-      return this.prisma.salesOrder.create({
+    const data = cleanHeader(rawData);
+    data.tenantId = tenantId;
+    if (!data.orderNo) data.orderNo = await this.codeGen.generate('SO', 'salesOrder', 'orderNo');
+
+    // Dates
+    if (data.deliveryDate) data.deliveryDate = parseDate(data.deliveryDate);
+    if (data.orderDate) data.orderDate = parseDate(data.orderDate);
+
+    const cleanedLines = (Array.isArray(lines) ? lines : []).map((l: any, i: number) =>
+      ({ tenantId, ...cleanSalesOrderLine(l, i) }));
+
+    try {
+      const result = await this.prisma.salesOrder.create({
         data: {
-          ...orderData,
-          lines: { create: lines.map((l: any, i: number) => ({
-            tenantId, lineNo: l.lineNo ?? i + 1,
-            materialCode: l.materialCode, materialName: l.materialName,
-            spec: l.spec, unit: l.unit,
-            quantity: l.quantity != null ? String(l.quantity) : null,
-            unitPrice: l.unitPrice != null ? String(l.unitPrice) : null,
-            amount: l.amount != null ? String(l.amount) : null,
-            deliveryDate: l.deliveryDate ? new Date(l.deliveryDate) : null,
-            warehouseCode: l.warehouseCode,
-          })) },
-        },
+          ...data,
+          ...(cleanedLines.length > 0 ? { lines: { create: cleanedLines } } : {}),
+        } as any,
         include: { lines: true },
       });
+      return result;
+    } catch (e: any) {
+      this.logger.error(`sales-order create failed: ${e.message}`, e.stack?.substring(0, 300));
+      if (e.code === 'P2002') throw new BadRequestException('销售订单号已存在');
+      if (e.code === 'P2003') throw new BadRequestException('关联数据不存在');
+      if (e.code === 'P2025') throw new BadRequestException('记录未找到');
+      throw e;
     }
-    return this.prisma.salesOrder.create({ data: orderData });
   }
+
+  // ========== UPDATE ==========
 
   @Put(':id')
   async update(@Param('id') id: string, @Body() dto: any) {
-    const data: any = { ...dto };
-    if (data.deliveryDate) data.deliveryDate = new Date(data.deliveryDate);
-    if (data.orderDate) data.orderDate = new Date(data.orderDate);
-    if (data.totalAmount != null && data.totalAmount !== '') data.totalAmount = String(data.totalAmount);
-    else delete data.totalAmount;
+    const { lines, ...rawData } = dto;
 
-    const { lines, ...orderData } = data;
+    const data = cleanHeader(rawData);
+    if (data.deliveryDate) data.deliveryDate = parseDate(data.deliveryDate);
+    if (data.orderDate) data.orderDate = parseDate(data.orderDate);
+
     if (lines !== undefined) {
       await this.prisma.salesOrderLine.deleteMany({ where: { salesOrderId: id } });
       if (lines.length > 0) {
         const tenantId = await this.tid();
-        await this.prisma.salesOrderLine.createMany({
-          data: lines.map((l: any, i: number) => ({
-            tenantId, salesOrderId: id, lineNo: l.lineNo ?? i + 1,
-            materialCode: l.materialCode, materialName: l.materialName,
-            spec: l.spec, unit: l.unit,
-            quantity: l.quantity != null ? String(l.quantity) : null,
-            unitPrice: l.unitPrice != null ? String(l.unitPrice) : null,
-            amount: l.amount != null ? String(l.amount) : null,
-            deliveryDate: l.deliveryDate ? new Date(l.deliveryDate) : null,
-            warehouseCode: l.warehouseCode,
-          })),
-        });
+        const cleanedLines = lines.map((l: any, i: number) =>
+          ({ tenantId, salesOrderId: id, ...cleanSalesOrderLine(l, i) }));
+        await this.prisma.salesOrderLine.createMany({ data: cleanedLines as any });
       }
     }
+
     return this.prisma.salesOrder.update({
-      where: { id }, data: orderData,
+      where: { id }, data: data as any,
       include: { lines: { orderBy: { lineNo: 'asc' } } },
     });
   }
+
+  // ========== WORKFLOW ==========
 
   @Put(':id/withdraw')
   async withdraw(@Param('id') id: string) {
@@ -119,8 +201,6 @@ export class SalesOrderController {
   async approve(@Param('id') id: string) {
     const order = await guardApprove(this.prisma, 'salesOrder', id);
     await this.prisma.salesOrder.update({ where: { id }, data: { approvalStatus: 'APPROVED' } as any });
-    // NOTE: Production orders are now created via manual push-down or demand plan,
-    // NOT auto-created unconditionally on sales order approval.
     return order;
   }
 }

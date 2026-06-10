@@ -6,45 +6,81 @@ import { ChevronLeft, ChevronRight, RefreshCw, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-/* ===== Table header ===== */
+/* ===== ErpTable — nowrap + ellipsis + horizontal scroll ===== */
 export function ErpTable({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <table className={cn('w-full text-[14px]', className)}>{children}</table>;
+  return (
+    <div className="overflow-x-auto w-full">
+      <table className={cn('w-full text-[14px] bg-white', className)}>
+        {children}
+      </table>
+    </div>
+  );
 }
 
-export function ErpThead({ children }: { children: React.ReactNode }) {
-  return <thead><tr className="bg-[#f5f7fa]">{children}</tr></thead>;
+/* ===== ErpThead — accepts className ===== */
+export function ErpThead({ children, className }: { children: React.ReactNode; className?: string }) {
+  return <thead className={className}><tr className="bg-[#f5f7fa]">{children}</tr></thead>;
 }
 
+/* ===== ErpTh — nowrap + ellipsis + align-middle ===== */
 export function ErpTh({ children, className, ...props }: React.ThHTMLAttributes<HTMLTableCellElement>) {
-  return <th className={cn('text-left px-4 py-3 text-[#909399] font-medium border-b border-[#ebeef5]', className)} {...props}>{children}</th>;
+  return (
+    <th
+      className={cn('text-left px-4 py-3 text-[#909399] font-medium border-b border-[#ebeef5] whitespace-nowrap overflow-hidden text-ellipsis align-middle', className)}
+      {...props}
+    >
+      {children}
+    </th>
+  );
 }
 
+/* ===== ErpTbody ===== */
 export function ErpTbody({ children }: { children: React.ReactNode }) {
   return <tbody>{children}</tbody>;
 }
 
+/* ===== ErpTr ===== */
 export function ErpTr({ children, className }: { children: React.ReactNode; className?: string }) {
   return <tr className={cn('border-b border-[#ebeef5] hover:bg-[#f5f7fa] transition-colors', className)}>{children}</tr>;
 }
 
+/* ===== ErpTd — nowrap + ellipsis + align-middle ===== */
 export function ErpTd({ children, className, ...props }: React.TdHTMLAttributes<HTMLTableCellElement>) {
-  return <td className={cn('px-4 py-2.5 text-[#606266]', className)} {...props}>{children}</td>;
+  return (
+    <td
+      className={cn('px-4 py-2.5 text-[#606266] whitespace-nowrap overflow-hidden text-ellipsis align-middle', className)}
+      {...props}
+    >
+      {children}
+    </td>
+  );
 }
 
+/* ===== ErpEmpty ===== */
 export function ErpEmpty({ colSpan, message = '暂无数据' }: { colSpan: number; message?: string }) {
-  return <tr><td colSpan={colSpan} className="text-center text-[#909399] py-16">{message}</td></tr>;
+  return <tr><td colSpan={colSpan} className="text-center text-[#909399] py-16 whitespace-nowrap">{message}</td></tr>;
 }
 
+/* ===== ErpLink ===== */
 export function ErpLink({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) {
-  return <button onClick={onClick} className="text-[#409eff] cursor-pointer hover:underline">{children}</button>;
+  return <button onClick={onClick} className="text-[#409eff] cursor-pointer hover:underline whitespace-nowrap">{children}</button>;
 }
 
+/* ===== ErpAction — flex-nowrap ===== */
 export function ErpAction({ children }: { children: React.ReactNode }) {
-  return <div className="flex items-center gap-4">{children}</div>;
+  return <div className="flex items-center gap-2 flex-nowrap">{children}</div>;
 }
 
+/* ===== ErpActionBtn ===== */
 export function ErpActionBtn({ children, onClick, danger }: { children: React.ReactNode; onClick?: () => void; danger?: boolean }) {
-  return <button onClick={onClick} className={`text-[13px] inline-flex items-center gap-0.5 hover:opacity-80 ${danger ? 'text-[#f56c6c]' : 'text-[#409eff]'}`}>{children}</button>;
+  return (
+    <button
+      onClick={onClick}
+      className={`text-[13px] inline-flex items-center gap-0.5 hover:opacity-80 whitespace-nowrap ${danger ? 'text-[#f56c6c]' : 'text-[#409eff]'}`}
+    >
+      {children}
+    </button>
+  );
 }
 
 /* ===== Table toolbar icons ===== */
@@ -60,8 +96,8 @@ export function ErpTools({ onRefresh, onSettings }: { onRefresh?: () => void; on
 /* ===== Status dot ===== */
 export function ErpStatus({ active }: { active: boolean }) {
   return (
-    <span className="inline-flex items-center gap-1.5">
-      <span className={`w-1.5 h-1.5 rounded-full ${active ? 'bg-[#67c23a]' : 'bg-[#c0c4cc]'}`} />
+    <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${active ? 'bg-[#67c23a]' : 'bg-[#c0c4cc]'}`} />
       {active ? '启用' : '停用'}
     </span>
   );
@@ -75,7 +111,7 @@ export function ErpApproval({ status, labels = { DRAFT: '草稿', SUBMITTED: '�
     REJECTED: 'bg-[#fef0f0] text-[#f56c6c]',
     DRAFT: 'bg-[#f4f4f5] text-[#909399]',
   };
-  return <span className={`inline-flex px-1.5 py-0.5 rounded text-[12px] ${colors[status] || colors.DRAFT}`}>{labels[status] || status}</span>;
+  return <span className={`inline-flex px-1.5 py-0.5 rounded text-[12px] whitespace-nowrap ${colors[status] || colors.DRAFT}`}>{labels[status] || status}</span>;
 }
 
 /* ===== Pagination ===== */
@@ -86,8 +122,8 @@ export function ErpPagination({ page, pageSize, total, onPage, onPageSize }: {
   const tp = Math.ceil(total / pageSize);
   const pgs = Array.from({ length: tp }, (_, i) => i + 1).filter(p => p === 1 || p === tp || Math.abs(p - page) <= 2);
   return (
-    <div className="flex items-center justify-end px-4 py-2.5 border-t border-[#ebeef5] gap-3">
-      <span className="text-[13px] text-[#909399]">共 <span className="text-[#409eff]">{total}</span> 条</span>
+    <div className="flex items-center justify-end px-4 py-2.5 border-t border-[#ebeef5] gap-3 shrink-0" data-testid="erp-pagination">
+      <span className="text-[13px] text-[#909399] whitespace-nowrap">共 <span className="text-[#409eff]">{total}</span> 条</span>
       <Select value={String(pageSize)} onValueChange={v => { if (v) { onPageSize(v); onPage(1); } }}>
         <SelectTrigger className="w-[100px] h-9 rounded-md border border-border bg-background px-3 text-[13px]"><SelectValue /></SelectTrigger>
         <SelectContent>{[20, 30, 50, 100].map(n => <SelectItem key={n} value={String(n)}>{n}条/页</SelectItem>)}</SelectContent>
@@ -109,7 +145,7 @@ export function ErpPagination({ page, pageSize, total, onPage, onPageSize }: {
 /* ===== ErpListPage — unified list page container (no card shadow, just border) ===== */
 export function ErpListPage({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={cn('bg-background rounded-lg border border-border', className)}>
+    <div className={cn('bg-background rounded-lg border border-border flex flex-col min-h-0', className)}>
       {children}
     </div>
   );

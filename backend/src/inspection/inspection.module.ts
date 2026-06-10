@@ -1,1 +1,1 @@
-import { Module } from '@nestjs/common'; import { InspectionController } from './inspection.controller'; @Module({ controllers: [InspectionController] }) export class InspectionModule {}
+import { Module } from '@nestjs/common'; import { InspectionController } from './inspection.controller'; import { QualityParamController } from './quality-params.controller'; @Module({ controllers: [InspectionController, QualityParamController] }) export class InspectionModule {}

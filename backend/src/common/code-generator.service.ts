@@ -18,8 +18,10 @@ export class CodeGeneratorService {
       orderBy: { [field]: "desc" },
     }).catch(() => null);
 
-    const seq = last?.[field] ? parseInt(String(last[field]).slice(-4)) + 1 : 1;
-    return `${pattern}${String(seq).padStart(4, "0")}`;
+    const seqLen = last?.[field] ? String(last[field]).length - pattern.length : 4;
+    const seq = last?.[field] ? parseInt(String(last[field]).slice(-Math.max(4, seqLen))) + 1 : 1;
+    const padLen = Math.max(4, seqLen > 0 ? seqLen : 4);
+    return `${pattern}${String(seq).padStart(padLen, "0")}`;
   }
 
   /** Prefix map for common entities */
@@ -32,6 +34,7 @@ export class CodeGeneratorService {
     demandPlan: "DP", purchasePlan: "PPLAN", purchaseOrder: "PO",
     productionOrder: "PROD", issueOrder: "ISS", returnOrder: "RET",
     completeReport: "RPT",
+    bom: "BOM", process: "PROC", processRoute: "RT",
     inboundOrder: "IN", outboundOrder: "OUT",
     transferOrder: "TR", scrapOrder: "SCRP", lendOrder: "LEND",
     checkOrder: "CHK", adjustOrder: "ADJ",

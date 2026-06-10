@@ -1,7 +1,16 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpException, HttpStatus, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CodeGeneratorService } from '../common/code-generator.service';
+import { pickAllowed } from '../common/dto-normalizer';
 import { guardSubmit, guardApprove, guardWithdraw } from '../common/business-rules.helper';
+
+const DP_KEYS = ['planNo','planName','demandSource','demandUse','projectId','projectCode','projectName','departmentId','departmentCode','departmentName','requiredDate','totalQuantity','approvalStatus','businessStatus','remark','tenantId'];
+
+function clean(dto: any): any {
+  const d = pickAllowed(dto, DP_KEYS);
+  for (const k of Object.keys(d)) { if (d[k] === '' || d[k] === null) delete d[k]; }
+  return d;
+}
 
 @Controller('demand-plans')
 export class DemandPlanController {
@@ -33,38 +42,44 @@ export class DemandPlanController {
   @Post()
   async create(@Body() dto: any) {
     const tenantId = await this.tid();
-    const { lines, ...orderData } = dto;
-    const data: any = { ...orderData, tenantId };
+    const { lines, ...rawData } = dto;
+    const data = clean(rawData);
+    data.tenantId = tenantId;
     if (data.requiredDate) data.requiredDate = new Date(data.requiredDate);
     if (data.totalQuantity != null && data.totalQuantity !== '') data.totalQuantity = String(data.totalQuantity);
     else delete data.totalQuantity;
 
     if (!data.planNo) data.planNo = await this.codeGen.generate('DP', 'demandPlan', 'planNo');
 
-    if (lines && Array.isArray(lines) && lines.length > 0) {
-      return this.prisma.demandPlan.create({
-        data: {
-          ...data,
-          lines: { create: lines.map((l: any, i: number) => ({
-            tenantId, lineNo: l.lineNo ?? i + 1,
-            materialCode: l.materialCode, materialName: l.materialName,
-            spec: l.spec, unit: l.unit,
-            quantity: l.quantity != null ? String(l.quantity) : null,
-            requiredDate: l.requiredDate ? new Date(l.requiredDate) : null,
-            warehouseCode: l.warehouseCode,
-            remark: l.remark,
-          })) },
-        },
-        include: { lines: true },
-      });
+    try {
+      if (lines && Array.isArray(lines) && lines.length > 0) {
+        return await this.prisma.demandPlan.create({
+          data: {
+            ...data,
+            lines: { create: lines.map((l: any, i: number) => ({
+              tenantId, lineNo: l.lineNo ?? i + 1,
+              materialCode: l.materialCode, materialName: l.materialName,
+              spec: l.spec, unit: l.unit,
+              quantity: l.quantity != null ? String(l.quantity) : null,
+              requiredDate: l.requiredDate ? new Date(l.requiredDate) : null,
+              warehouseCode: l.warehouseCode,
+              remark: l.remark,
+            })) },
+          },
+          include: { lines: true },
+        });
+      }
+      return await this.prisma.demandPlan.create({ data });
+    } catch (e: any) {
+      if (e.code === 'P2002') throw new HttpException('需求计划号已存在', HttpStatus.BAD_REQUEST);
+      throw e;
     }
-    return this.prisma.demandPlan.create({ data });
   }
 
   @Put(':id')
   async update(@Param('id') id: string, @Body() dto: any) {
-    const { lines, ...orderData } = dto;
-    const data: any = { ...orderData };
+    const { lines, ...rawData } = dto;
+    const data = clean(rawData);
     if (data.requiredDate) data.requiredDate = new Date(data.requiredDate);
     if (data.totalQuantity != null && data.totalQuantity !== '') data.totalQuantity = String(data.totalQuantity);
     else delete data.totalQuantity;

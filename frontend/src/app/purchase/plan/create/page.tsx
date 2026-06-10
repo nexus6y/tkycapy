@@ -24,9 +24,22 @@ const onDemandPlanSelect=async(id:string)=>{
 
 const save=async()=>{
   if(!f.orderName)return toast('请填写计划名称','error');
-  const payload:any={...f};
-  if(lines.length>0){payload.lines=lines;payload.totalAmount=calcTotalFromLines(lines);}
-  await api.post('/purchase-plans',payload);router.push('/purchase/plan');
+  const payload:any={
+    orderName:f.orderName,
+    supplierId:f.supplierId||undefined,
+    supplierName:f.supplierName||undefined,
+    demandPlanId:f.demandPlanId||undefined,
+    materialName:f.materialName||undefined,
+    requiredDate:f.requiredDate||undefined,
+    remark:f.remark||undefined,
+  };
+  if(lines.length>0)payload.lines=lines.map((l:any)=>({
+    lineNo:l.lineNo,materialCode:l.materialCode,materialName:l.materialName,
+    spec:l.spec,unit:l.unit,quantity:l.quantity,unitPrice:l.unitPrice,
+    amount:l.amount,requiredDate:l.requiredDate,warehouseCode:l.warehouseCode,
+  }));
+  await api.post('/purchase-plans',payload);
+  router.push('/purchase/plan');
 };
 
 return(<FormLayout title="新增采购计划" onSave={save} sections={[{id:'b',title:'计划信息'},{id:'s',title:'来源关联'},{id:'l',title:'明细信息'}]} activeSection="b">

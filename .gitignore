@@ -5,3 +5,7 @@ node_modules/
 *.log
 .env
 backend/dist/
+backend/test-results/
+backend/.next/
+backend/uploads/
+frontend/test-results/

@@ -1,6 +1,15 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, BadRequestException } from "@nestjs/common";
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpException, HttpStatus, BadRequestException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { CodeGeneratorService } from "../common/code-generator.service";
+import { pickAllowed } from "../common/dto-normalizer";
+
+const ADJ_KEYS = ['orderNo','checkOrderId','checkOrderNo','materialCode','materialName','spec','unit','warehouseCode','warehouseName','locationCode','batchNo','qualityStatus','adjustQty','adjustReason','approvalStatus','businessStatus','tenantId'];
+
+function clean(dto: any): any {
+  const d = pickAllowed(dto, ADJ_KEYS);
+  for (const k of Object.keys(d)) { if (d[k] === '' || d[k] === null) delete d[k]; }
+  return d;
+}
 
 @Controller("adjust-orders")
 export class AdjustOrderController {
@@ -17,12 +26,20 @@ export class AdjustOrderController {
 
   @Post() async create(@Body() dto: any) {
     const tenantId = await this.tid();
-    if (!dto.orderNo) dto.orderNo = await this.codeGen.generate('ADJ', 'adjustOrder', 'orderNo');
-    return this.prisma.adjustOrder.create({ data: { ...dto, tenantId } as any });
+    const data = clean(dto);
+    data.tenantId = tenantId;
+    if (!data.orderNo) data.orderNo = await this.codeGen.generate('ADJ', 'adjustOrder', 'orderNo');
+    try {
+      return await this.prisma.adjustOrder.create({ data: data as any });
+    } catch (e: any) {
+      if (e.code === 'P2002') throw new HttpException('调整单号已存在', HttpStatus.BAD_REQUEST);
+      throw e;
+    }
   }
 
   @Put(":id") async update(@Param("id") id: string, @Body() dto: any) {
-    return this.prisma.adjustOrder.update({ where: { id }, data: dto as any });
+    const data = clean(dto);
+    return this.prisma.adjustOrder.update({ where: { id }, data: data as any });
   }
 
   @Put(":id/submit") async submit(@Param("id") id: string) {

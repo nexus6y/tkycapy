@@ -25,6 +25,8 @@ export class CommonController {
       inboundOrder: 'orderNo', outboundOrder: 'orderNo',
       checkOrder: 'orderNo', adjustOrder: 'orderNo',
       department: 'code', warehouse: 'code',
+      bom: 'code', process: 'code', processRoute: 'code',
+      inspection: 'inspectionNo', demandPlan: 'planNo', purchasePlan: 'orderNo',
     };
     return map[entity] || 'code';
   }

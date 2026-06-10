@@ -10,7 +10,8 @@ import { FormLayout, FormSection, FormGrid, FormField } from '@/components/form/
 const FI='h-9 rounded-md border border-border bg-background px-3 text-[13px] w-full';
 export default function CustomerCreatePage() {
   const router=useRouter();
-  useEffect(()=>{api.get('/common/next-code',{params:{entity:'customer'}}).then(r=>setF((prev:any)=>({...prev,code:r.data.code})));},[]);const [f,setF]=useState({code:'',name:'',industry:'',valueLevel:'',creditLevel:'',contactPerson:'',contactPhone:'',contactEmail:'',address:'',status:'ACTIVE'});
+  const [f,setF]=useState({code:'',name:'',industry:'',valueLevel:'',creditLevel:'',contactPerson:'',contactPhone:'',contactEmail:'',address:'',status:'ACTIVE'});
+  useEffect(()=>{api.get('/common/next-code',{params:{entity:'customer'}}).then(r=>setF((prev:any)=>({...prev,code:r.data.code})));},[]);
   const save=async()=>{try{await api.post('/customers',f);router.push('/sales/customer');}catch(e:any){toast(e.response?.data?.message||'保存失败','error');}};
   return (<FormLayout title="新增客户" onSave={save} sections={[{id:'b',title:'基本信息'},{id:'c',title:'联系方式'}]} activeSection="b">
     <FormSection id="b" title="基本信息"><FormGrid>

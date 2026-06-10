@@ -2,6 +2,20 @@ import { Controller, Get, Post, Put, Delete, Body, Param, Query, BadRequestExcep
 import { PrismaService } from '../prisma/prisma.service';
 import { CodeGeneratorService } from '../common/code-generator.service';
 import { guardSubmit } from '../common/business-rules.helper';
+import { pickAllowed } from '../common/dto-normalizer';
+
+const INB_KEYS = ['orderNo','sourceType','sourceNo','sourceLineNo','inspectionNo','supplierId','supplierName','materialName','specification','quantity','qualifiedQty','unqualifiedQty','warehouseId','warehouseCode','warehouseName','unitPrice','totalAmount','approvalStatus','businessStatus','receiptDate','remark','tenantId'];
+
+function cleanInbound(dto: any, tenantId: string): any {
+  const data = pickAllowed(dto, INB_KEYS);
+  data.tenantId = tenantId;
+  for (const k of Object.keys(data)) { if (data[k] === '' || data[k] === null) delete data[k]; }
+  if (data.receiptDate) data.receiptDate = new Date(data.receiptDate);
+  ['quantity','qualifiedQty','unqualifiedQty','unitPrice','totalAmount'].forEach(f => {
+    if (data[f] != null) data[f] = String(data[f]);
+  });
+  return data;
+}
 
 @Controller('inbound-orders')
 export class InboundOrderController {
@@ -37,6 +51,30 @@ export class InboundOrderController {
 
     // Idempotency: prevent duplicate inbound from same source document
     if (dto.sourceNo && dto.sourceType) {
+      // Cross-source guard: if source is a PO, check whether materials need inspection
+      if (dto.sourceType === 'PURCHASE') {
+        const po = await this.prisma.purchaseOrder.findFirst({
+          where: { tenantId, orderNo: dto.sourceNo },
+          include: { lines: true },
+        });
+        if (po) {
+          if (po.approvalStatus !== 'APPROVED') {
+            throw new BadRequestException('该采购订单尚未审批通过，不能手动生成入库单');
+          }
+          const matCodes = [...new Set((po.lines || []).map((l: any) => l.materialCode).filter(Boolean))] as string[];
+          if (matCodes.length > 0) {
+            const materials = await this.prisma.material.findMany({
+              where: { tenantId, code: { in: matCodes } },
+              select: { code: true, needInspection: true },
+            });
+            if (materials.some(m => m.needInspection)) {
+              throw new BadRequestException('该采购订单包含需质检物料，请通过质检流程入库，不能手动生成入库单');
+            }
+          }
+        }
+      }
+
+      // Exact match (same sourceType + sourceNo)
       const existing = await this.prisma.inboundOrder.findFirst({
         where: { tenantId, sourceNo: dto.sourceNo, sourceType: dto.sourceType },
       });
@@ -45,13 +83,24 @@ export class InboundOrderController {
           `来源单 ${dto.sourceNo} 已生成入库单 ${existing.orderNo}，不能重复生成`
         );
       }
+      // Cross-guard: same sourceNo via different sourceType (e.g. manual + arrival-confirm for same PO)
+      const crossExisting = await this.prisma.inboundOrder.findFirst({
+        where: { tenantId, sourceNo: dto.sourceNo, sourceType: { not: dto.sourceType } },
+      });
+      if (crossExisting) {
+        throw new BadRequestException(
+          `来源单 ${dto.sourceNo} 已生成入库单 ${crossExisting.orderNo}（来源类型：${crossExisting.sourceType}），不能重复生成`
+        );
+      }
     }
 
-    const { lines, ...orderData } = dto;
-    if (lines && Array.isArray(lines) && lines.length > 0) {
+    const lines = Array.isArray(dto.lines) ? dto.lines : null;
+    const orderData = cleanInbound(dto, tenantId);
+
+    if (lines && lines.length > 0) {
       return this.prisma.inboundOrder.create({
         data: {
-          ...orderData, tenantId,
+          ...orderData,
           lines: { create: lines.map((l: any, i: number) => ({
             tenantId, lineNo: l.lineNo ?? i + 1,
             materialCode: l.materialCode, materialName: l.materialName,
@@ -66,7 +115,7 @@ export class InboundOrderController {
         include: { lines: true },
       });
     }
-    return this.prisma.inboundOrder.create({ data: { ...orderData, tenantId } as any });
+    return this.prisma.inboundOrder.create({ data: orderData });
   }
 
   @Put(':id')
@@ -113,16 +162,64 @@ export class InboundOrderController {
     const lines = order.lines && order.lines.length > 0 ? order.lines : [{
       materialCode: null, materialName: order.materialName, spec: order.specification,
       unit: null, quantity: order.quantity, unitPrice: order.unitPrice,
-      amount: order.totalAmount, warehouseCode: order.warehouseName,
+      amount: order.totalAmount, warehouseCode: order.warehouseCode || order.warehouseName,
       locationCode: null, batchNo: null,
     } as any];
+
+    // Phase 0: resolve missing warehouseCodes from material default or existing inventory
+    const noWhLines = lines.filter((l: any) => !(l.warehouseCode || order.warehouseCode || order.warehouseName));
+    if (noWhLines.length > 0) {
+      const matCodes = [...new Set(noWhLines.map((l: any) => (l.materialCode || '').trim()).filter(Boolean))] as string[];
+      const matWhMap = new Map<string, string>(); // materialCode → warehouseCode
+      if (matCodes.length > 0) {
+        // ① Material default warehouse
+        const materials = await this.prisma.material.findMany({
+          where: { tenantId, code: { in: matCodes } },
+          select: { code: true, defaultWarehouseId: true },
+        });
+        const whIds = [...new Set(materials.map(m => m.defaultWarehouseId).filter((id): id is string => !!id))];
+        const whIdToCode = new Map<string, string>();
+        if (whIds.length > 0) {
+          const whs = await this.prisma.warehouse.findMany({
+            where: { tenantId, id: { in: whIds } },
+            select: { id: true, code: true },
+          });
+          for (const w of whs) whIdToCode.set(w.id, w.code);
+        }
+        for (const m of materials) {
+          if (m.defaultWarehouseId && whIdToCode.has(m.defaultWarehouseId)) {
+            matWhMap.set(m.code, whIdToCode.get(m.defaultWarehouseId)!);
+          }
+        }
+        // ② Inventory fallback
+        const stillMissing = matCodes.filter(c => !matWhMap.has(c));
+        if (stillMissing.length > 0) {
+          const invs = await this.prisma.inventory.findMany({
+            where: { tenantId, materialCode: { in: stillMissing }, qualityStatus: 'QUALIFIED' },
+            select: { materialCode: true, warehouseCode: true },
+            orderBy: { quantity: 'desc' },
+          });
+          const seen = new Set<string>();
+          for (const inv of invs) {
+            if (inv.materialCode && inv.warehouseCode && !matWhMap.has(inv.materialCode) && !seen.has(inv.materialCode)) {
+              matWhMap.set(inv.materialCode, inv.warehouseCode);
+              seen.add(inv.materialCode);
+            }
+          }
+        }
+      }
+      for (const line of noWhLines) {
+        const wc = matWhMap.get((line.materialCode || '').trim());
+        if (wc) (line as any).warehouseCode = wc;
+      }
+    }
 
     // Phase 1: validate + prepare operations
     const operations: any[] = [];
 
     for (const line of lines) {
       const matCode = (line.materialCode || '').trim();
-      const whCode = (line.warehouseCode || '').trim();
+      const whCode = (line.warehouseCode || order.warehouseCode || order.warehouseName || '').trim();
       const qty = Number(line.quantity || 0);
 
       if (!matCode) throw new Error(`入库登卡失败：明细行缺少物料编码 (${line.materialName || '未知物料'})`);

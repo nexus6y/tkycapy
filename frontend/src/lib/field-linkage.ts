@@ -136,6 +136,30 @@ export interface ContractFill {
   contractId: string;
   contractCode: string;
   contractName: string;
+  // 供应商信息（采购合同）
+  supplierId: string;
+  supplierCode: string;
+  supplierName: string;
+  // 客户信息（销售合同）
+  customerId: string;
+  customerCode: string;
+  customerName: string;
+  // 项目信息
+  projectId: string;
+  projectCode: string;
+  projectName: string;
+  // 金额
+  totalAmount: string;
+  // 采购信息
+  purchaseMethod: string;
+  // 承办部门
+  departmentId: string;
+  departmentCode: string;
+  departmentName: string;
+  // 承办人
+  undertakerName: string;
+  // 备注
+  remark: string;
 }
 
 export function applyContractSelection(contract: Record<string, any>): ContractFill {
@@ -143,6 +167,52 @@ export function applyContractSelection(contract: Record<string, any>): ContractF
     contractId: contract.id || '',
     contractCode: contract.code || '',
     contractName: contract.name || '',
+
+    supplierId: contract.supplierId || '',
+    supplierCode: contract.supplierCode || '',
+    supplierName: contract.supplierName || '',
+
+    customerId: contract.customerId || '',
+    customerCode: contract.customerCode || '',
+    customerName: contract.customerName || '',
+
+    projectId: contract.projectId || '',
+    projectCode: contract.projectCode || '',
+    projectName: contract.projectName || '',
+
+    totalAmount: contract.totalAmount ? String(contract.totalAmount) : '',
+
+    purchaseMethod: contract.purchaseMethod || contract.orderType || '',
+
+    departmentId: contract.undertakingDepartmentId || contract.organizationId || '',
+    departmentCode: contract.undertakingDepartmentCode || '',
+    departmentName: contract.undertakingDepartmentName || contract.organizationName || '',
+
+    undertakerName: contract.undertakerName || '',
+
+    remark: contract.remark || '',
+  };
+}
+
+// ==================== 采购合同选择（仅带回供应商，不含客户） ====================
+
+export function applyPurchaseContractSelection(contract: Record<string, any>): Record<string, any> {
+  return {
+    contractId: contract.id || '',
+    contractName: contract.name || '',
+
+    supplierId: contract.supplierId || '',
+    supplierName: contract.supplierName || '',
+
+    projectId: contract.projectId || '',
+    projectName: contract.projectName || '',
+
+    departmentId: contract.undertakingDepartmentId || contract.organizationId || '',
+    departmentName: contract.undertakingDepartmentName || contract.organizationName || '',
+
+    purchaseType: contract.purchaseMethod || '',
+
+    totalAmount: contract.totalAmount != null ? String(contract.totalAmount) : '',
   };
 }
 
@@ -156,7 +226,7 @@ export interface SourceDocResult {
 /** Resolve a field value from a source line object with layered fallback. */
 function resolveField(src: Record<string, any>, key: string): string {
   // 1. Direct field
-  let v = src[key];
+  const v = src[key];
   if (v != null) return String(v);
 
   // 2. Dot-notation nested: "material.code" → src.material?.code
@@ -174,7 +244,7 @@ function resolveField(src: Record<string, any>, key: string): string {
   const flatFallbacks: Record<string, string[]> = {
     materialCode:  ['materialCode', 'materialNo', 'code'],
     materialName:  ['materialName', 'name'],
-    quantity:      ['quantity', 'inboundQty', 'plannedQty', 'actualQty', 'shippedQty'],
+    quantity:      ['quantity', 'inboundQty', 'plannedQty', 'actualQty', 'shippedQty', 'inspectQty'],
     spec:          ['spec', 'specification'],
     unitPrice:     ['unitPrice', 'price'],
     amount:        ['amount', 'totalAmount'],
@@ -242,6 +312,7 @@ export async function applySourceDocumentSelection(
   if (data.supplierName) {
     header.supplierId = data.supplierId || '';
     header.supplierName = data.supplierName;
+    header.supplierCode = data.supplierCode || '';
   }
   if (data.customerName) {
     header.customerId = data.customerId || '';

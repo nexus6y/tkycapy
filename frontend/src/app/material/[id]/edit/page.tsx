@@ -3,27 +3,21 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import api from '@/lib/api';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { EntitySelect } from '@/components/form/entity-select';
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/toast';
 import { FormLayout, FormSection, FormGrid, FormField } from '@/components/form/form-layout';
 
-interface Category { id:string;code:string;name:string; }
-interface Unit { id:string;code:string;name:string;symbol:string|null; }
-
 const FI = 'h-9 rounded-md border border-border bg-background px-3 text-[13px] w-full';
 const SECTIONS = [{id:'basic',title:'基本信息'},{id:'nature',title:'物料性质'},{id:'unit',title:'计量单位'},{id:'purchase',title:'采购信息'},{id:'qa_sales',title:'质检与销售'},{id:'warehouse',title:'仓储信息'},{id:'prod',title:'生产与工时'}];
 
 export default function MaterialEditPage() {
   const router = useRouter(); const { id } = useParams<{id:string}>();
-  const [categories,setCategories]=useState<Category[]>([]);const [units,setUnits]=useState<Unit[]>([]);
   const [loading,setLoading]=useState(true); const [f,setF]=useState<any>({});
 
   useEffect(()=>{
-    api.get('/material-categories',{params:{pageSize:200}}).then(r=>setCategories(r.data.items));
-    api.get('/measurement-units',{params:{pageSize:200}}).then(r=>setUnits(r.data.items));
     api.get(`/materials/${id}`).then(r=>{ setF({...r.data}); setLoading(false); });
   },[id]);
 
@@ -37,12 +31,12 @@ export default function MaterialEditPage() {
   return (
     <FormLayout title={`编辑物料档案：${f.code}`} onSave={save} sections={SECTIONS} activeSection="basic">
       <FormSection id="basic" title="基本信息"><FormGrid>
-        <FormField label="1级分类" required><Select value={f.categoryId} onValueChange={(v:any)=>setF({...f,categoryId:v})}><SelectTrigger className={FI}><SelectValue/></SelectTrigger><SelectContent>{categories.map(c=><SelectItem key={c.id} value={c.id}>{c.code} {c.name}</SelectItem>)}</SelectContent></Select></FormField>
-        <FormField label="物料编号"><Input className={FI} value={f.code} disabled/></FormField>
-        <FormField label="物料名称" required><Input className={FI} value={f.name} onChange={e=>setF({...f,name:e.target.value})}/></FormField>
-        <FormField label="规格型号"><Input className={FI} value={f.specification} onChange={e=>setF({...f,specification:e.target.value})}/></FormField>
-        <FormField label="外部编码"><Input className={FI} value={f.externalCode} onChange={e=>setF({...f,externalCode:e.target.value})}/></FormField>
-        <FormField label="排序"><Input type="number" className={FI} value={f.sortOrder} onChange={e=>setF({...f,sortOrder:+e.target.value})}/></FormField>
+        <FormField label="1级分类" required><EntitySelect entity="materialCategory" value={f.categoryId||''} onChange={(id:any)=>setF({...f,categoryId:id})} placeholder="选择分类"/></FormField>
+        <FormField label="物料编号"><Input className={FI} value={f.code||''} disabled/></FormField>
+        <FormField label="物料名称" required><Input className={FI} value={f.name||''} onChange={e=>setF({...f,name:e.target.value})}/></FormField>
+        <FormField label="规格型号"><Input className={FI} value={f.specification||''} onChange={e=>setF({...f,specification:e.target.value})}/></FormField>
+        <FormField label="外部编码"><Input className={FI} value={f.externalCode||''} onChange={e=>setF({...f,externalCode:e.target.value})}/></FormField>
+        <FormField label="排序"><Input type="number" className={FI} value={f.sortOrder ?? ''} onChange={e=>setF({...f,sortOrder:+e.target.value})}/></FormField>
         <FormField label="状态"><RadioGroup value={f.status} onValueChange={(v:any)=>setF({...f,status:v})} className="flex gap-4 pt-1.5"><div className="flex items-center gap-1.5"><RadioGroupItem value="ACTIVE" id="es-a"/><label htmlFor="es-a" className="text-[13px]">启用</label></div><div className="flex items-center gap-1.5"><RadioGroupItem value="INACTIVE" id="es-i"/><label htmlFor="es-i" className="text-[13px]">停用</label></div></RadioGroup></FormField>
         <div className="col-span-2"><FormField label="备注"><Textarea className={`${FI} h-20`} value={f.remark||''} onChange={e=>setF({...f,remark:e.target.value})}/></FormField></div>
       </FormGrid></FormSection>
@@ -53,7 +47,7 @@ export default function MaterialEditPage() {
       </FormGrid></FormSection>
       <FormSection id="unit" title="计量单位"><FormGrid>
         <FormField label="统一计量单位"><RadioGroup value={f.unifiedUnit?'true':'false'} onValueChange={(v:any)=>setF({...f,unifiedUnit:v==='true'})} className="flex gap-4 pt-1.5"><div className="flex items-center gap-1.5"><RadioGroupItem value="true" id="eu-y"/><label htmlFor="eu-y" className="text-[13px]">是</label></div><div className="flex items-center gap-1.5"><RadioGroupItem value="false" id="eu-n"/><label htmlFor="eu-n" className="text-[13px]">否</label></div></RadioGroup></FormField>
-        <FormField label="计量单位" required><Select value={f.unitId} onValueChange={(v:any)=>setF({...f,unitId:v})}><SelectTrigger className={FI}><SelectValue/></SelectTrigger><SelectContent>{units.map(u=><SelectItem key={u.id} value={u.id}>{u.name}{u.symbol?`(${u.symbol})`:''}</SelectItem>)}</SelectContent></Select></FormField>
+        <FormField label="计量单位" required><EntitySelect entity="measurementUnit" value={f.unitId||''} onChange={(id:any)=>setF({...f,unitId:id})} placeholder="选择单位"/></FormField>
       </FormGrid></FormSection>
       <FormSection id="purchase" title="采购信息"><FormGrid>
         <FormField label="默认供应商"><Input className={FI} value={f.defaultSupplier||''} onChange={e=>setF({...f,defaultSupplier:e.target.value})}/></FormField>

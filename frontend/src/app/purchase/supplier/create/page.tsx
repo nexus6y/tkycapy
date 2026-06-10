@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { Input } from '@/components/ui/input';
@@ -11,10 +11,11 @@ const FI='h-9 rounded-md border border-border bg-background px-3 text-[13px] w-f
 export default function SupplierCreatePage() {
   const router=useRouter();
   const [f,setF]=useState({code:'',name:'',contactPerson:'',contactPhone:'',contactEmail:'',address:'',creditLevel:'',taxId:'',bankName:'',bankAccount:'',status:'ACTIVE'});
+  useEffect(()=>{api.get('/common/next-code',{params:{entity:'supplier'}}).then(r=>setF((prev:any)=>({...prev,code:r.data.code})));},[]);
   const save=async()=>{try{await api.post('/suppliers',f);router.push('/purchase/supplier');}catch(e:any){toast(e.response?.data?.message||'保存失败','error');}};
   return (<FormLayout title="新增供应商" onSave={save} sections={[{id:'b',title:'基本信息'},{id:'f',title:'财务信息'}]} activeSection="b">
     <FormSection id="b" title="基本信息"><FormGrid>
-      <FormField label="供应商编码" required><Input className={FI} value={f.code} onChange={e=>setF({...f,code:e.target.value})}/></FormField>
+      <FormField label="供应商编码" required><Input className={FI} value={f.code} readOnly disabled/></FormField>
       <FormField label="供应商名称" required><Input className={FI} value={f.name} onChange={e=>setF({...f,name:e.target.value})}/></FormField>
       <FormField label="联系人"><Input className={FI} value={f.contactPerson} onChange={e=>setF({...f,contactPerson:e.target.value})}/></FormField>
       <FormField label="联系电话"><Input className={FI} value={f.contactPhone} onChange={e=>setF({...f,contactPhone:e.target.value})}/></FormField>

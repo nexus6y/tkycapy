@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState, useCallback } from 'react';
+import { Fragment, useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';import { Input } from '@/components/ui/input';
@@ -15,13 +15,12 @@ import { ErpTable,ErpThead,ErpTh,ErpTbody,ErpTr,ErpTd,ErpEmpty,ErpLink,ErpAction
 
 interface LineItem { id:string;lineNo:number;materialCode:string|null;materialName:string|null;spec:string|null;unit:string|null;quantity:string|null;unitPrice:string|null;amount:string|null; }
 interface Item { id:string;orderNo:string;orderName:string;customerName:string|null;projectName:string|null;orderType:string|null;totalAmount:string|null;approvalStatus:string;businessStatus:string;createdAt:string;lines?:LineItem[] }
-const AP:Record<string,string>={DRAFT:'草稿',SUBMITTED:'已提交',APPROVED:'已通过',REJECTED:'已拒绝'};
 const BS:Record<string,string>={PENDING_SHIP:'待出货',PARTIAL_SHIP:'部分出货',FULLY_SHIPPED:'出货完成',CLOSED:'已关闭'};
 
 export default function SalesOrderPage() {
   const router=useRouter();
   const [items,setItems]=useState<Item[]>([]);const [total,setTotal]=useState(0);const [pg,setPg]=useState(1);const [ps,setPs]=useState(30);
-  const [sel,setSel]=useState<Set<string>>(new Set());const [s,setS]=useState({code:'',name:'',status:'',bizStatus:''});
+  const [sel]=useState<Set<string>>(new Set());const [s,setS]=useState({code:'',name:'',status:'',bizStatus:''});
   const [del,setDel]=useState<string|null>(null);
   const [detailMode,setDetailMode]=useState(false);
 
@@ -32,9 +31,7 @@ export default function SalesOrderPage() {
   },[pg,ps,s,detailMode]); useEffect(()=>{fetch();},[fetch]);
 
   const doDel=async()=>{if(!del)return;try{await api.delete(`/sales-orders/${del}`);setDel(null);fetch();}catch(e:any){toast(e.response?.data?.message||'删除失败','error');}};
-  const tp=Math.ceil(total/ps);const pgs=Array.from({length:tp},(_,i)=>i+1).filter(p=>p===1||p===tp||Math.abs(p-pg)<=2);
-
-  return (<TooltipProvider><div className="bg-background rounded-lg border shadow-sm">
+    return (<TooltipProvider><div className="bg-background rounded-lg border shadow-sm">
     <div className="flex items-center justify-between px-4 h-14 border-b border-border">
       <div className="flex items-center gap-1">
         <Button variant="secondary" size="sm" onClick={()=>router.push('/sales/order/create')}><Plus className="h-3.5 w-3.5"/>新增</Button>
@@ -52,9 +49,9 @@ export default function SalesOrderPage() {
     </div>
     <ErpTools onRefresh={fetch}/>
     <div className="overflow-auto"><ErpTable><ErpThead><ErpTh className="w-10"><Checkbox/></ErpTh><ErpTh>审批状态</ErpTh><ErpTh>业务状态</ErpTh><ErpTh>订单号</ErpTh><ErpTh>订单名称</ErpTh><ErpTh>客户</ErpTh><ErpTh>项目</ErpTh><ErpTh>金额</ErpTh><ErpTh>创建时间</ErpTh><ErpTh>操作</ErpTh></ErpThead><ErpTbody>
-    {items.map(i=>(<><ErpTr key={i.id} className={detailMode&&i.lines&&i.lines.length>0?'border-b-0':''}><ErpTd><Checkbox/></ErpTd><ErpTd><ErpApproval status={i.approvalStatus}/></ErpTd><ErpTd><span className="text-[12px] text-muted-foreground">{BS[i.businessStatus]||i.businessStatus}{i.lines?` (${i.lines.length}行)`:''}</span></ErpTd><ErpTd><ErpLink onClick={()=>router.push('/sales/order/'+i.id+'/edit')}>{i.orderNo}</ErpLink></ErpTd><ErpTd>{i.orderName}</ErpTd><ErpTd className="text-muted-foreground">{i.customerName||'-'}</ErpTd><ErpTd className="text-muted-foreground">{i.projectName||'-'}</ErpTd><ErpTd>{i.totalAmount?Number(i.totalAmount).toLocaleString():'-'}</ErpTd><ErpTd className="text-muted-foreground">{new Date(i.createdAt).toLocaleDateString('zh-CN')}</ErpTd><ErpTd><ErpAction><ErpActionBtn onClick={()=>router.push('/sales/order/'+i.id+'/edit')}><Pencil className="h-3.5 w-3.5"/>修改</ErpActionBtn>{i.approvalStatus==='DRAFT'&&<button onClick={()=>{api.put(`/sales-orders/${i.id}/submit`).then(fetch).catch((e:any)=>toast(e.response?.data?.message||'提交失败','error'));}} className="text-primary text-[13px] hover:underline">提交</button>}{i.approvalStatus==='SUBMITTED'&&<button onClick={()=>{api.put(`/sales-orders/${i.id}/approve`).then(fetch).catch((e:any)=>toast(e.response?.data?.message||'审批失败','error'));}} className="text-green-600 text-[13px] hover:underline">通过</button>}{i.approvalStatus==='SUBMITTED'&&<button onClick={()=>{api.put(`/sales-orders/${i.id}/withdraw`).then(fetch).catch((e:any)=>toast(e.response?.data?.message||'撤回失败','error'));}} className="text-orange-500 text-[13px] hover:underline">撤回</button>}<ErpActionBtn danger onClick={()=>setDel(i.id)}><Trash2 className="h-3.5 w-3.5"/>删除</ErpActionBtn></ErpAction></ErpTd></ErpTr>
+    {items.map(i=>(<Fragment key={i.id}><ErpTr className={detailMode&&i.lines&&i.lines.length>0?'border-b-0':''}><ErpTd><Checkbox/></ErpTd><ErpTd><ErpApproval status={i.approvalStatus}/></ErpTd><ErpTd><span className="text-[12px] text-muted-foreground">{BS[i.businessStatus]||i.businessStatus}{i.lines?` (${i.lines.length}行)`:''}</span></ErpTd><ErpTd><ErpLink onClick={()=>router.push('/sales/order/'+i.id+'/edit')}>{i.orderNo}</ErpLink></ErpTd><ErpTd>{i.orderName}</ErpTd><ErpTd className="text-muted-foreground">{i.customerName||'-'}</ErpTd><ErpTd className="text-muted-foreground">{i.projectName||'-'}</ErpTd><ErpTd>{i.totalAmount?Number(i.totalAmount).toLocaleString():'-'}</ErpTd><ErpTd className="text-muted-foreground">{new Date(i.createdAt).toLocaleDateString('zh-CN')}</ErpTd><ErpTd><ErpAction><ErpActionBtn onClick={()=>router.push('/sales/order/'+i.id+'/edit')}><Pencil className="h-3.5 w-3.5"/>修改</ErpActionBtn>{i.approvalStatus==='DRAFT'&&<button onClick={()=>{api.put(`/sales-orders/${i.id}/submit`).then(fetch).catch((e:any)=>toast(e.response?.data?.message||'提交失败','error'));}} className="text-primary text-[13px] hover:underline">提交</button>}{i.approvalStatus==='SUBMITTED'&&<button onClick={()=>{api.put(`/sales-orders/${i.id}/approve`).then(fetch).catch((e:any)=>toast(e.response?.data?.message||'审批失败','error'));}} className="text-green-600 text-[13px] hover:underline">通过</button>}{i.approvalStatus==='SUBMITTED'&&<button onClick={()=>{api.put(`/sales-orders/${i.id}/withdraw`).then(fetch).catch((e:any)=>toast(e.response?.data?.message||'撤回失败','error'));}} className="text-orange-500 text-[13px] hover:underline">撤回</button>}<ErpActionBtn danger onClick={()=>setDel(i.id)}><Trash2 className="h-3.5 w-3.5"/>删除</ErpActionBtn></ErpAction></ErpTd></ErpTr>
     {detailMode&&i.lines&&i.lines.map(l=>(<ErpTr key={l.id||l.lineNo} className="bg-[#f0f7ff]"><ErpTd/><ErpTd/><ErpTd className="text-[12px] text-muted-foreground">└ 行{l.lineNo}</ErpTd><ErpTd className="text-[12px]">{l.materialCode||'-'}</ErpTd><ErpTd className="text-[12px]">{l.materialName||'-'}</ErpTd><ErpTd className="text-[12px] text-muted-foreground"/><ErpTd className="text-[12px] text-muted-foreground"/><ErpTd className="text-[12px]">{l.quantity?Number(l.quantity).toLocaleString():'-'}{l.unit?` ${l.unit}`:''}</ErpTd><ErpTd/><ErpTd/></ErpTr>))}
-    </>))}
+    </Fragment>))}
     {items.length===0&&<ErpEmpty colSpan={10}/>}
     </ErpTbody></ErpTable></div>
     <ErpPagination page={pg} pageSize={ps} total={total} onPage={setPg} onPageSize={v=>setPs(+v)}/>

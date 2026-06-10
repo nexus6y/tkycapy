@@ -1,7 +1,43 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, BadRequestException, HttpException, HttpStatus } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CodeGeneratorService } from '../common/code-generator.service';
 import { guardSubmit, guardApprove, guardWithdraw } from '../common/business-rules.helper';
+
+/** Allowed PurchaseOrder fields — anything else is stripped to prevent Prisma unknown argument errors */
+const PO_KEYS = new Set([
+  'orderNo','orderName','supplierId','supplierName',
+  'projectId','projectName','contractId','contractName',
+  'departmentId','departmentName',
+  'purchaseType','purchaser',
+  'purchasePlanId','purchasePlanNo',
+  'expectedDeliveryDate','totalAmount','remark',
+  'approvalStatus','tenantId','createdBy',
+]);
+
+function cleanPurchaseOrderDto(raw: any): any {
+  const data: any = {};
+  for (const k of Object.keys(raw)) {
+    if (PO_KEYS.has(k)) data[k] = raw[k];
+  }
+  // Normalize: empty strings → delete
+  for (const k of Object.keys(data)) {
+    if (data[k] === '' || data[k] === null) delete data[k];
+  }
+  // Map orderType → purchaseType
+  if (!data.purchaseType && raw.orderType) data.purchaseType = raw.orderType;
+  // Convert dates
+  if (data.expectedDeliveryDate) data.expectedDeliveryDate = new Date(data.expectedDeliveryDate);
+  // Convert decimals
+  if (data.totalAmount != null) data.totalAmount = String(data.totalAmount);
+  return data;
+}
+
+function handlePrismaError(e: any): never {
+  if (e.code === 'P2002') throw new HttpException('唯一约束冲突，数据已存在', HttpStatus.BAD_REQUEST);
+  if (e.code === 'P2003') throw new HttpException('外键约束：关联数据不存在', HttpStatus.BAD_REQUEST);
+  if (e.code === 'P2025') throw new HttpException('记录未找到，可能已被删除', HttpStatus.NOT_FOUND);
+  throw e;
+}
 
 @Controller('purchase-orders')
 export class PurchaseOrderController {
@@ -53,24 +89,58 @@ export class PurchaseOrderController {
 
   @Post()
   async create(@Body() dto: any) {
-    const tenantId = await this.tid();
-    const data: any = { ...dto, tenantId };
-    if (!data.orderNo) {
-      data.orderNo = await this.codeGen.generate('PO', 'purchaseOrder', 'orderNo');
-    }
-    if (data.expectedDeliveryDate) data.expectedDeliveryDate = new Date(data.expectedDeliveryDate);
-    if (data.totalAmount != null && data.totalAmount !== '') data.totalAmount = String(data.totalAmount);
-    else delete data.totalAmount;
+    try {
+      const tenantId = await this.tid();
+      // Extract lines BEFORE cleaning so they don't get stripped by pickAllowed
+      const rawLines = Array.isArray(dto.lines) ? dto.lines : null;
+      const data = cleanPurchaseOrderDto(dto);
+      data.tenantId = tenantId;
+      if (!data.orderNo) {
+        data.orderNo = await this.codeGen.generate('PO', 'purchaseOrder', 'orderNo');
+      }
 
-    const { lines, ...orderData } = data;
+      if (rawLines && rawLines.length > 0) {
+        return await this.prisma.purchaseOrder.create({
+          data: {
+            ...data,
+            lines: {
+              create: rawLines.map((l: any, i: number) => ({
+                tenantId,
+                lineNo: l.lineNo ?? i + 1,
+                materialCode: l.materialCode,
+                materialName: l.materialName,
+                spec: l.spec,
+                unit: l.unit,
+                quantity: l.quantity != null ? String(l.quantity) : null,
+                unitPrice: l.unitPrice != null ? String(l.unitPrice) : null,
+                amount: l.amount != null ? String(l.amount) : null,
+                requiredDate: l.requiredDate ? new Date(l.requiredDate) : null,
+                warehouseCode: l.warehouseCode,
+              })),
+            },
+          },
+          include: { lines: true },
+        });
+      }
 
-    if (lines && Array.isArray(lines) && lines.length > 0) {
-      return this.prisma.purchaseOrder.create({
-        data: {
-          ...orderData,
-          lines: {
-            create: lines.map((l: any, i: number) => ({
+      return await this.prisma.purchaseOrder.create({ data });
+    } catch (e: any) { handlePrismaError(e); }
+  }
+
+  @Put(':id')
+  async update(@Param('id') id: string, @Body() dto: any) {
+    try {
+      const rawLines = Array.isArray(dto.lines) ? dto.lines : undefined;
+      const data = cleanPurchaseOrderDto(dto);
+
+      if (rawLines !== undefined) {
+        await this.prisma.purchaseOrderLine.deleteMany({ where: { purchaseOrderId: id } });
+        if (rawLines.length > 0) {
+          const tenantId = await this.tid();
+          await this.prisma.purchaseOrderLine.createMany({
+            data: rawLines.map((l: any, i: number) => ({
               tenantId,
+              purchaseOrderId: id,
               lineNo: l.lineNo ?? i + 1,
               materialCode: l.materialCode,
               materialName: l.materialName,
@@ -82,58 +152,59 @@ export class PurchaseOrderController {
               requiredDate: l.requiredDate ? new Date(l.requiredDate) : null,
               warehouseCode: l.warehouseCode,
             })),
-          },
-        },
-        include: { lines: true },
-      });
-    }
-
-    return this.prisma.purchaseOrder.create({ data: orderData });
-  }
-
-  @Put(':id')
-  async update(@Param('id') id: string, @Body() dto: any) {
-    const data: any = { ...dto };
-    if (data.expectedDeliveryDate) data.expectedDeliveryDate = new Date(data.expectedDeliveryDate);
-    if (data.totalAmount != null && data.totalAmount !== '') data.totalAmount = String(data.totalAmount);
-    else delete data.totalAmount;
-
-    const { lines, ...orderData } = data;
-
-    if (lines !== undefined) {
-      await this.prisma.purchaseOrderLine.deleteMany({ where: { purchaseOrderId: id } });
-      if (lines.length > 0) {
-        const tenantId = await this.tid();
-        await this.prisma.purchaseOrderLine.createMany({
-          data: lines.map((l: any, i: number) => ({
-            tenantId,
-            purchaseOrderId: id,
-            lineNo: l.lineNo ?? i + 1,
-            materialCode: l.materialCode,
-            materialName: l.materialName,
-            spec: l.spec,
-            unit: l.unit,
-            quantity: l.quantity != null ? String(l.quantity) : null,
-            unitPrice: l.unitPrice != null ? String(l.unitPrice) : null,
-            amount: l.amount != null ? String(l.amount) : null,
-            requiredDate: l.requiredDate ? new Date(l.requiredDate) : null,
-            warehouseCode: l.warehouseCode,
-          })),
-        });
+          });
+        }
       }
-    }
 
-    return this.prisma.purchaseOrder.update({
-      where: { id },
-      data: orderData,
-      include: { lines: { orderBy: { lineNo: 'asc' } } },
-    });
+      return await this.prisma.purchaseOrder.update({
+        where: { id },
+        data,
+        include: { lines: { orderBy: { lineNo: 'asc' } } },
+      });
+    } catch (e: any) { handlePrismaError(e); }
   }
 
   @Delete(':id')
   async remove(@Param('id') id: string) {
-    await this.prisma.purchaseOrderLine.deleteMany({ where: { purchaseOrderId: id } });
-    await this.prisma.purchaseOrder.delete({ where: { id } });
+    const po = await this.prisma.purchaseOrder.findUniqueOrThrow({
+      where: { id },
+      select: { id: true, orderNo: true, approvalStatus: true },
+    });
+
+    // Only DRAFT or REJECTED can be deleted
+    if (po.approvalStatus !== 'DRAFT' && po.approvalStatus !== 'REJECTED') {
+      throw new BadRequestException('只有草稿或已拒绝状态的采购订单可以删除');
+    }
+
+    const tenantId = await this.tid();
+
+    // Check for downstream references
+    const [inspectionCount, inboundCount, returnCount] = await Promise.all([
+      this.prisma.inspection.count({
+        where: { tenantId, sourceType: 'PURCHASE_ORDER', sourceNo: po.orderNo },
+      }),
+      this.prisma.inboundOrder.count({
+        where: { tenantId, sourceNo: po.orderNo },
+      }),
+      this.prisma.purchaseReturn.count({
+        where: { tenantId, OR: [{ purchaseOrderId: id }, { purchaseOrderNo: po.orderNo }] },
+      }),
+    ]);
+
+    if (inspectionCount + inboundCount + returnCount > 0) {
+      const refs: string[] = [];
+      if (inspectionCount > 0) refs.push('质检单');
+      if (inboundCount > 0) refs.push('入库单');
+      if (returnCount > 0) refs.push('退供单');
+      throw new BadRequestException(`采购订单已被后续单据引用（${refs.join('、')}），不可删除`);
+    }
+
+    // Delete in transaction: lines first, then header
+    await this.prisma.$transaction([
+      this.prisma.purchaseOrderLine.deleteMany({ where: { purchaseOrderId: id } }),
+      this.prisma.purchaseOrder.delete({ where: { id } }),
+    ]);
+
     return { message: '删除成功' };
   }
 
@@ -206,6 +277,12 @@ export class PurchaseOrderController {
           },
         } as any,
       });
+
+      // Mark PO as in inspection pipeline — blocks direct arrival confirm
+      await this.prisma.purchaseOrder.update({
+        where: { id },
+        data: { businessStatus: 'INSPECTING' } as any,
+      });
     }
 
     return order;
@@ -238,9 +315,9 @@ export class PurchaseOrderController {
         }
       }
 
-      // Idempotency guard: reject if any inbound already exists for this PO
+      // Idempotency guard: reject if any inbound already exists for this PO (manual, inspection, etc)
       const anyInbound = await tx.inboundOrder.findFirst({
-        where: { sourceNo: po.orderNo, sourceType: { in: ['ARRIVAL_CONFIRM', 'INSPECTION'] } },
+        where: { sourceNo: po.orderNo, sourceType: { in: ['ARRIVAL_CONFIRM', 'INSPECTION', 'PURCHASE'] } },
       });
       if (anyInbound) throw new BadRequestException(`该采购订单已生成入库单 ${anyInbound.orderNo}（来源：${anyInbound.sourceType}），不能重复生成`);
 
@@ -272,6 +349,18 @@ export class PurchaseOrderController {
           })) },
         } as any,
       });
+
+      // Update PO businessStatus & line receivedQty
+      await tx.purchaseOrder.update({
+        where: { id },
+        data: { businessStatus: 'FULLY_RECEIVED' } as any,
+      });
+      for (const l of po.lines) {
+        await tx.purchaseOrderLine.update({
+          where: { id: l.id },
+          data: { receivedQty: l.quantity != null ? String(l.quantity) : '0' },
+        });
+      }
 
       return { message: '到货确认成功，入库单已生成', inboundOrderNo: inNo };
     });

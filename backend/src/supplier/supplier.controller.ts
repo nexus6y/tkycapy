@@ -1,5 +1,9 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpException, HttpStatus } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { pickAllowed } from '../common/dto-normalizer';
+
+const SUP_KEYS = ['code','name','contactPerson','contactPhone','contactEmail','address','creditLevel','taxId','bankName','bankAccount','status','tenantId'];
+
 @Controller('suppliers')
 export class SupplierController {
   constructor(private prisma: PrismaService) {}
@@ -11,7 +15,22 @@ export class SupplierController {
     return { items, total, page: +page, pageSize: +pageSize };
   }
   @Get(':id') async findOne(@Param('id') id: string) { return this.prisma.supplier.findUniqueOrThrow({ where: { id } }); }
-  @Post() async create(@Body() dto: any) { const tenantId = await this.tid(); return this.prisma.supplier.create({ data: { ...dto, tenantId } as any }); }
-  @Put(':id') async update(@Param('id') id: string, @Body() dto: any) { return this.prisma.supplier.update({ where: { id }, data: dto as any }); }
+  @Post() async create(@Body() dto: any) {
+    const tenantId = await this.tid();
+    const data = pickAllowed(dto, SUP_KEYS);
+    data.tenantId = tenantId;
+    for (const k of Object.keys(data)) { if (data[k] === '' || data[k] === null) delete data[k]; }
+    try {
+      return await this.prisma.supplier.create({ data: data as any });
+    } catch (e: any) {
+      if (e.code === 'P2002') throw new HttpException('供应商编码已存在', HttpStatus.BAD_REQUEST);
+      throw e;
+    }
+  }
+  @Put(':id') async update(@Param('id') id: string, @Body() dto: any) {
+    const data = pickAllowed(dto, SUP_KEYS);
+    for (const k of Object.keys(data)) { if (data[k] === '' || data[k] === null) delete data[k]; }
+    return this.prisma.supplier.update({ where: { id }, data: data as any });
+  }
   @Delete(':id') async remove(@Param('id') id: string) { await this.prisma.supplier.delete({ where: { id } }); return { message: '删除成功' }; }
 }

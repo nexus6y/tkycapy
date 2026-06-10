@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { normalizeRelationId } from '../common/dto-normalizer';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCategoryDto, UpdateCategoryDto, QueryCategoryDto } from './dto/material-category.dto';
 
@@ -62,24 +63,48 @@ export class MaterialCategoryService {
     });
     if (existing) throw new ConflictException('分类编码已存在');
 
-    if (dto.parentId) {
-      const parent = await this.prisma.materialCategory.findUnique({ where: { id: dto.parentId } });
-      if (!parent) throw new BadRequestException('上级分类不存在');
+    // Normalize: empty/pseudo parentId → null
+    const parentId = normalizeRelationId(dto.parentId);
+    if (parentId) {
+      const parent = await this.prisma.materialCategory.findUnique({ where: { id: parentId } });
+      if (!parent) throw new BadRequestException('上级分类不存在或已被删除');
+      if (parent.tenantId !== tenantId) throw new BadRequestException('上级分类不属于当前租户');
     }
 
     return this.prisma.materialCategory.create({
-      data: { ...dto, tenantId } as any,
+      data: { ...dto, parentId, tenantId } as any,
       include: { parent: { select: { code: true, name: true } } },
     });
   }
 
   async update(id: string, dto: UpdateCategoryDto) {
     await this.findOne(id);
+    // Normalize empty parentId
+    const data: any = { ...dto };
+    if ('parentId' in data) {
+      data.parentId = normalizeRelationId(data.parentId);
+      if (data.parentId && data.parentId === id) throw new BadRequestException('上级分类不能是自身');
+      if (data.parentId) {
+        // Check circular reference: the new parent must not be a descendant of self
+        const isDescendant = await this.isDescendantOf(data.parentId, id);
+        if (isDescendant) throw new BadRequestException('上级分类不能是自己的下级分类（循环引用）');
+      }
+    }
     return this.prisma.materialCategory.update({
       where: { id },
-      data: dto as any,
+      data: data as any,
       include: { parent: { select: { code: true, name: true } } },
     });
+  }
+
+  /** Check if `targetId` is a descendant of `ancestorId` (follow parentId chain up) */
+  private async isDescendantOf(targetId: string, ancestorId: string): Promise<boolean> {
+    let current: any = await this.prisma.materialCategory.findUnique({ where: { id: targetId } });
+    while (current?.parentId) {
+      if (current.parentId === ancestorId) return true;
+      current = await this.prisma.materialCategory.findUnique({ where: { id: current.parentId } });
+    }
+    return false;
   }
 
   async remove(id: string) {

@@ -19,7 +19,8 @@ const onLinesChange=(newLines:LineItem[])=>{
 const save=async()=>{
   try{
     if(!f.orderName)return toast('请填写分劈名称','error');
-    const payload:any={...f};
+    const {customerCode, contractCode, ...cleanF} = f;
+      const payload:any={...cleanF};
     if(lines.length>0){payload.lines=lines;payload.totalAmount=calcTotalFromLines(lines);}
     await api.post('/pre-orders',payload);router.push('/sales/pre-order');
   }catch(e:any){toast(e.response?.data?.message||'保存失败','error');}};

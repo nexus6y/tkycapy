@@ -1,6 +1,10 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, BadRequestException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { CodeGeneratorService } from "../common/code-generator.service";
+import { pickAllowed } from "../common/dto-normalizer";
+
+const ISS_KEYS = ['orderNo','productionOrderId','productionOrderNo','materialId','materialName','spec','quantity','departmentId','departmentName','issueDate','approvalStatus','businessStatus','remark','tenantId'];
+function cleanIss(dto: any): any { const d = pickAllowed(dto, ISS_KEYS); for (const k of Object.keys(d)) { if (d[k] === '' || d[k] === null) delete d[k]; }; if (d.issueDate) d.issueDate = new Date(d.issueDate); if (d.quantity != null) d.quantity = String(d.quantity); return d; }
 
 @Controller("issue-orders")
 export class IssueOrderController {
@@ -25,10 +29,11 @@ export class IssueOrderController {
     const tenantId = await this.tid();
     if (!dto.orderNo) dto.orderNo = await this.codeGen.generate('ISS', 'issueOrder', 'orderNo');
     const { lines, ...orderData } = dto;
+    const clean = { ...cleanIss(orderData), tenantId };
     if (lines && Array.isArray(lines) && lines.length > 0) {
       return this.prisma.issueOrder.create({
         data: {
-          ...orderData, tenantId,
+          ...clean,
           lines: { create: lines.map((l: any, i: number) => ({
             tenantId, lineNo: l.lineNo ?? i + 1,
             materialCode: l.materialCode, materialName: l.materialName,
@@ -36,16 +41,17 @@ export class IssueOrderController {
             quantity: l.quantity != null ? String(l.quantity) : null,
             warehouseCode: l.warehouseCode,
           })) },
-        } as any,
+        },
         include: { lines: true },
       });
     }
-    return this.prisma.issueOrder.create({ data: { ...orderData, tenantId } as any });
+    return this.prisma.issueOrder.create({ data: clean });
   }
 
   @Put(":id")
   async update(@Param("id") id: string, @Body() dto: any) {
     const { lines, ...orderData } = dto;
+    const clean = cleanIss(orderData);
     if (lines !== undefined) {
       await this.prisma.issueOrderLine.deleteMany({ where: { issueOrderId: id } });
       if (lines.length > 0) {
@@ -61,7 +67,7 @@ export class IssueOrderController {
         });
       }
     }
-    return this.prisma.issueOrder.update({ where: { id }, data: orderData as any, include: { lines: { orderBy: { lineNo: 'asc' } } } });
+    return this.prisma.issueOrder.update({ where: { id }, data: clean, include: { lines: { orderBy: { lineNo: 'asc' } } } });
   }
 
   @Put(":id/submit")
@@ -153,6 +159,32 @@ export class IssueOrderController {
       this.prisma.issueOrder.update({ where: { id }, data: { approvalStatus: 'APPROVED', businessStatus: 'ISSUED' } as any }),
     );
 
+    // Update ProductionMaterialLine.issuedQty for each line
+    if (order.productionOrderId) {
+      for (const line of lines) {
+        const matCode = (line.materialCode || '').trim();
+        const qty = Number(line.quantity || 0);
+        if (!matCode || qty <= 0) continue;
+        // Find matching production material line by materialCode + warehouseCode
+        const pmlWhere: any = {
+          productionOrderId: order.productionOrderId,
+          materialCode: matCode,
+        };
+        const whCode = (line.warehouseCode || '').trim();
+        if (whCode) pmlWhere.warehouseCode = whCode;
+        const pml = await this.prisma.productionMaterialLine.findFirst({ where: pmlWhere });
+        if (pml) {
+          const newIssued = String(Number(pml.issuedQty || 0) + qty);
+          operations.push(
+            this.prisma.productionMaterialLine.update({
+              where: { id: pml.id },
+              data: { issuedQty: newIssued } as any,
+            }),
+          );
+        }
+      }
+    }
+
     // Transition production order: PENDING_ISSUE or ISSUING → IN_PRODUCTION
     if (order.productionOrderId) {
       operations.push(
@@ -225,6 +257,31 @@ export class IssueOrderController {
     operations.push(
       this.prisma.issueOrder.update({ where: { id }, data: { approvalStatus: 'SUBMITTED', businessStatus: 'PENDING' } as any }),
     );
+
+    // Decrement ProductionMaterialLine.issuedQty for each line
+    if (order.productionOrderId) {
+      for (const line of lines) {
+        const matCode = (line.materialCode || '').trim();
+        const qty = Number(line.quantity || 0);
+        if (!matCode || qty <= 0) continue;
+        const pmlWhere: any = {
+          productionOrderId: order.productionOrderId,
+          materialCode: matCode,
+        };
+        const whCode = (line.warehouseCode || '').trim();
+        if (whCode) pmlWhere.warehouseCode = whCode;
+        const pml = await this.prisma.productionMaterialLine.findFirst({ where: pmlWhere });
+        if (pml) {
+          const newIssued = String(Math.max(0, Number(pml.issuedQty || 0) - qty));
+          operations.push(
+            this.prisma.productionMaterialLine.update({
+              where: { id: pml.id },
+              data: { issuedQty: newIssued } as any,
+            }),
+          );
+        }
+      }
+    }
 
     // Transition production order back: IN_PRODUCTION → ISSUING
     if (order.productionOrderId) {

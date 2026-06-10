@@ -14,5 +14,5 @@ return(<FormLayout title={'编辑退货单：'+f.returnNo} onSave={save} section
 <FormField label="客户"><EntitySelect entity="customer" value={f.customerId||''} onChange={(id,c)=>{setF({...f,...applyCustomerSelection(c)});}}/></FormField>
 <FormField label="数量"><Input className={FI} value={f.totalQuantity||''} readOnly disabled/></FormField>
 <FormField label="金额"><Input className={FI} value={f.totalAmount||''} readOnly disabled/></FormField>
-<FormField label="退货原因"><Input className={FI} value={f.returnReason||''} onChange={e=>setF({...f,returnReason:e.target.value})}/></FormField>
+<FormField label="退货原因"><Input className={FI} value={f.returnReason||''} onChange={e=>setF({...f,returnReason:e.target.value})} data-testid="sr-returnreason-input"/></FormField>
 </FormGrid></FormSection></FormLayout>);}

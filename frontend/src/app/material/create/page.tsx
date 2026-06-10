@@ -3,15 +3,12 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { EntitySelect } from '@/components/form/entity-select';
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/toast';
 import { FormLayout, FormSection, FormGrid, FormField } from '@/components/form/form-layout';
-
-interface Category { id:string;code:string;name:string; }
-interface Unit { id:string;code:string;name:string;symbol:string|null; }
 
 const FI = 'h-9 rounded-md border border-border bg-background px-3 text-[13px] w-full';
 
@@ -27,21 +24,17 @@ const SECTIONS = [
 
 export default function MaterialCreatePage() {
   const router = useRouter();
-  const [categories,setCategories]=useState<Category[]>([]);const [units,setUnits]=useState<Unit[]>([]);
   const [f,setF]=useState<any>({
     code:'',name:'',categoryId:'',unitId:'',specification:'',externalCode:'',
     materialType:'PHYSICAL',materialProperty:'',productCategory:'',unifiedUnit:true,sortOrder:0,status:'ACTIVE',remark:'',
+
     defaultSupplier:'',defaultPurchaser:'',minPurchaseQty:'',plannedPrice:'',requiredManufacturer:'',excludedManufacturer:'',responsiblePerson:'',
     needInspection:false,defectRateLimit:'',defaultSalesperson:'',minOrderQty:'',
     defaultWarehouseId:'',safetyStockQty:'',maxStockQty:'',minStockQty:'',batchManaged:false,shelfLifeManaged:false,remainingShelfLife:'',serialManaged:false,
     directProduction:false,planAttribute:'',economicBatch:'',batchMultiple:'',lossRate:'',defaultDeptId:'',issueMethod:'',
     prodStdQty:'',prodStdHours:'',repairStdQty:'',repairStdHours:'',maintStdQty:'',maintStdHours:'',
   });
-
-  useEffect(()=>{
-    api.get('/material-categories',{params:{pageSize:200}}).then(r=>setCategories(r.data.items));
-    api.get('/measurement-units',{params:{pageSize:200}}).then(r=>setUnits(r.data.items));
-  },[]);
+  useEffect(()=>{api.get('/common/next-code',{params:{entity:'material'}}).then(r=>setF((prev:any)=>({...prev,code:r.data.code})));},[]);
 
   const save = async () => {
     try { await api.post('/materials', f); router.push('/material'); }
@@ -55,10 +48,10 @@ export default function MaterialCreatePage() {
       <FormSection id="basic" title="基本信息">
         <FormGrid>
           <FormField label="1级分类" required>
-            <Select value={f.categoryId} onValueChange={(v:any)=>setF({...f,categoryId:v})}><SelectTrigger className={FI}><SelectValue placeholder="选择分类"/></SelectTrigger><SelectContent>{categories.map(c=><SelectItem key={c.id} value={c.id}>{c.code} {c.name}</SelectItem>)}</SelectContent></Select>
+            <EntitySelect entity="materialCategory" value={f.categoryId} onChange={(id:any)=>setF({...f,categoryId:id})} placeholder="选择分类"/>
           </FormField>
-          <FormField label="物料编号"><Input className={FI} value={f.code} onChange={e=>setF({...f,code:e.target.value})}/></FormField>
-          <FormField label="物料名称" required><Input className={FI} value={f.name} onChange={e=>setF({...f,name:e.target.value})}/></FormField>
+          <FormField label="物料编号"><Input className={FI} value={f.code} readOnly disabled/></FormField>
+          <FormField label="物料名称" required><Input className={FI} value={f.name} onChange={e=>setF({...f,name:e.target.value})} data-testid="material-name-input"/></FormField>
           <FormField label="规格型号"><Input className={FI} value={f.specification} onChange={e=>setF({...f,specification:e.target.value})}/></FormField>
           <FormField label="外部编码"><Input className={FI} value={f.externalCode} onChange={e=>setF({...f,externalCode:e.target.value})}/></FormField>
           <FormField label="排序"><Input type="number" className={FI} value={f.sortOrder} onChange={e=>setF({...f,sortOrder:+e.target.value})}/></FormField>
@@ -96,7 +89,7 @@ export default function MaterialCreatePage() {
             </RadioGroup>
           </FormField>
           <FormField label="计量单位" required>
-            <Select value={f.unitId} onValueChange={(v:any)=>setF({...f,unitId:v})}><SelectTrigger className={FI}><SelectValue placeholder="选择单位"/></SelectTrigger><SelectContent>{units.map(u=><SelectItem key={u.id} value={u.id}>{u.name}{u.symbol?`(${u.symbol})`:''}</SelectItem>)}</SelectContent></Select>
+            <EntitySelect entity="measurementUnit" value={f.unitId} onChange={(id:any)=>setF({...f,unitId:id})} placeholder="选择单位"/>
           </FormField>
         </FormGrid>
       </FormSection>

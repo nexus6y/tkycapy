@@ -2,6 +2,10 @@ import { Controller, Get, Post, Put, Delete, Body, Param, Query, BadRequestExcep
 import { PrismaService } from '../prisma/prisma.service';
 import { CodeGeneratorService } from '../common/code-generator.service';
 import { guardSubmit, guardApprove, guardWithdraw } from '../common/business-rules.helper';
+import { pickAllowed } from '../common/dto-normalizer';
+
+const PROD_KEYS = ['orderNo','orderName','bomId','materialId','materialName','quantity','departmentId','departmentName','startDate','endDate','approvalStatus','businessStatus','remark','tenantId'];
+function cleanProd(dto: any): any { const d = pickAllowed(dto, PROD_KEYS); for (const k of Object.keys(d)) { if (d[k] === '' || d[k] === null) delete d[k]; }; if (d.startDate) d.startDate = new Date(d.startDate); if (d.endDate) d.endDate = new Date(d.endDate); if (d.quantity != null) d.quantity = String(d.quantity); return d; }
 
 @Controller('production-orders')
 export class ProductionOrderController {
@@ -59,7 +63,7 @@ export class ProductionOrderController {
     const tenantId = await this.tid();
     if (!dto.orderNo) dto.orderNo = await this.codeGen.generate('PROD', 'productionOrder', 'orderNo');
     const { lines, materials, ...orderData } = dto;
-    const data: any = { ...orderData, tenantId, businessStatus: 'PENDING_ISSUE' };
+    const data: any = { ...cleanProd(orderData), tenantId, businessStatus: 'PENDING_ISSUE' };
 
     if (lines && Array.isArray(lines) && lines.length > 0) {
       data.lines = { create: lines.map((l: any, i: number) => ({
@@ -146,6 +150,36 @@ export class ProductionOrderController {
   async approve(@Param('id') id: string) {
     const order = await guardApprove(this.prisma, 'productionOrder', id);
     return this.prisma.productionOrder.update({ where: { id }, data: { approvalStatus: 'APPROVED', businessStatus: 'PENDING_ISSUE' } as any });
+  }
+
+  @Put(':id/start')
+  async start(@Param('id') id: string) {
+    const order = await this.prisma.productionOrder.findUniqueOrThrow({ where: { id } });
+    if (order.approvalStatus !== 'APPROVED') throw new BadRequestException('只能对已通过的生产订单开工');
+    if (!['PENDING_ISSUE', 'ISSUING'].includes(order.businessStatus)) {
+      throw new BadRequestException(`当前生产状态为 ${order.businessStatus}，不允许开工`);
+    }
+    return this.prisma.productionOrder.update({ where: { id }, data: { businessStatus: 'IN_PRODUCTION' } as any });
+  }
+
+  @Put(':id/complete')
+  async complete(@Param('id') id: string) {
+    const order = await this.prisma.productionOrder.findUniqueOrThrow({ where: { id } });
+    if (order.approvalStatus !== 'APPROVED') throw new BadRequestException('只能对已通过的生产订单完工');
+    if (order.businessStatus !== 'IN_PRODUCTION' && order.businessStatus !== 'PENDING_STOCK') {
+      throw new BadRequestException(`当前生产状态为 ${order.businessStatus}，不允许完工`);
+    }
+    return this.prisma.productionOrder.update({ where: { id }, data: { businessStatus: 'COMPLETED' } as any });
+  }
+
+  @Put(':id/partial-complete')
+  async partialComplete(@Param('id') id: string) {
+    const order = await this.prisma.productionOrder.findUniqueOrThrow({ where: { id } });
+    if (order.approvalStatus !== 'APPROVED') throw new BadRequestException('只能对已通过的生产订单部分完工');
+    if (order.businessStatus !== 'IN_PRODUCTION') {
+      throw new BadRequestException(`当前生产状态为 ${order.businessStatus}，不允许部分完工`);
+    }
+    return this.prisma.productionOrder.update({ where: { id }, data: { businessStatus: 'PENDING_STOCK' } as any });
   }
 
   // Push-down: generate issue order from production material lines (idempotent)

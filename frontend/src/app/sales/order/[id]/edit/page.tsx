@@ -1,7 +1,7 @@
 'use client';import { useEffect, useState } from 'react';import { useRouter, useParams } from 'next/navigation';import api from '@/lib/api';import { Input } from '@/components/ui/input';import { toast } from '@/components/ui/toast';
 import { FormLayout,FormSection,FormGrid,FormField } from '@/components/form/form-layout';
 import { LinesEditor, LineItem } from '@/components/ui/lines-editor';
-import { EntitySelect } from '@/components/form/entity-select';
+import { EntityPickerInput } from '@/components/form/entity-picker-input';
 import { applyCustomerSelection, applyProjectSelection } from '@/lib/field-linkage';
 import { calcTotalFromLines } from '@/lib/calc';
 const FI='h-9 rounded-md border border-border bg-background px-3 text-[13px] w-full';
@@ -20,8 +20,8 @@ return(<FormLayout title={'编辑销售订单：'+f.orderNo} onSave={save} secti
 <FormSection id="b" title="订单信息"><FormGrid>
 <FormField label="订单号"><Input className={FI} value={f.orderNo} disabled/></FormField>
 <FormField label="订单名称" required><Input className={FI} value={f.orderName} onChange={e=>setF({...f,orderName:e.target.value})}/></FormField>
-<FormField label="客户"><EntitySelect entity="customer" value={f.customerId||''} onChange={(id,c)=>{setF({...f,...applyCustomerSelection(c)});}}/></FormField>
-<FormField label="项目"><EntitySelect entity="project" value={f.projectId||''} onChange={(id,p)=>{setF({...f,...applyProjectSelection(p)});}}/></FormField>
+<FormField label="客户"><EntityPickerInput entity="customer" value={f.customerCode||''} displayText={f.customerCode ? `${f.customerCode} ${f.customerName||''}` : ''} onChange={(id:any,c:any)=>{setF({...f,...applyCustomerSelection(c)});}}/></FormField>
+<FormField label="项目"><EntityPickerInput entity="project" value={f.projectCode||''} displayText={f.projectCode ? `${f.projectCode} ${f.projectName||''}` : ''} onChange={(id:any,p:any)=>{setF({...f,...applyProjectSelection(p)});}}/></FormField>
 <FormField label="订单类型"><Input className={FI} value={f.orderType||''} onChange={e=>setF({...f,orderType:e.target.value})}/></FormField>
 <FormField label="金额"><Input className={FI} value={lines.length>0?calcTotalFromLines(lines):(f.totalAmount||'')} placeholder="自动=明细合计" readOnly disabled/></FormField>
 </FormGrid></FormSection>

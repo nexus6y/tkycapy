@@ -23,7 +23,7 @@ export default function MaterialPage() {
   const [pg, setPg] = useState(1);
   const [ps, setPs] = useState(30);
   const [sel, setSel] = useState<Set<string>>(new Set());
-  const [s, setS] = useState({ status: '', approvalStatus: '', code: '', name: '', startDate: '', endDate: '' });
+  const [s, setS] = useState({ status: '', approvalStatus: '', code: '', name: '', externalCode: '', startDate: '', endDate: '' });
   const [del, setDel] = useState<string | null>(null);
   const [advanced, setAdvanced] = useState(false);
 
@@ -31,6 +31,7 @@ export default function MaterialPage() {
     const p: any = { page: pg, pageSize: ps };
     if (s.code) p.code = s.code;
     if (s.name) p.name = s.name;
+    if (s.externalCode) p.externalCode = s.externalCode;
     if (s.status) p.status = s.status;
     const { data } = await api.get('/materials', { params: p });
     setItems(data.items);
@@ -50,7 +51,7 @@ export default function MaterialPage() {
     }
   };
 
-  const resetSearch = () => setS({ status: '', approvalStatus: '', code: '', name: '', startDate: '', endDate: '' });
+  const resetSearch = () => setS({ status: '', approvalStatus: '', code: '', name: '', externalCode: '', startDate: '', endDate: '' });
 
   const colSpan = 11;
 
@@ -88,11 +89,16 @@ export default function MaterialPage() {
         />
 
         <ErpSearchFields advancedOpen={advanced} advancedChildren={
+          <>
+          <ErpSearchField label="外部编码">
+            <Input className="w-[140px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.externalCode} onChange={e => setS({ ...s, externalCode: e.target.value })} placeholder="外部编码" />
+          </ErpSearchField>
           <ErpSearchField label="创建时间">
             <Input type="date" className="w-[130px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.startDate} onChange={e => setS({ ...s, startDate: e.target.value })} />
             <span className="text-muted-foreground mx-1">-</span>
             <Input type="date" className="w-[130px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.endDate} onChange={e => setS({ ...s, endDate: e.target.value })} />
           </ErpSearchField>
+          </>
         }>
           <ErpSearchField label="状态">
             <Select value={s.status} onValueChange={(v: any) => setS({ ...s, status: v === 'ALL' ? '' : v })}>
@@ -129,20 +135,20 @@ export default function MaterialPage() {
 
         <ErpTools onRefresh={fetch} />
 
-        <div className="overflow-auto">
+        <div className="min-h-0">
           <ErpTable>
             <ErpThead>
-              <ErpTh className="w-10"><Checkbox checked={items.length > 0 && sel.size === items.length} onCheckedChange={(v: boolean) => setSel(v ? new Set(items.map(i => i.id)) : new Set())} /></ErpTh>
-              <ErpTh>启用状态</ErpTh>
-              <ErpTh>审批状态</ErpTh>
-              <ErpTh>物料编码</ErpTh>
-              <ErpTh>物料名称</ErpTh>
-              <ErpTh>规格型号</ErpTh>
-              <ErpTh>物料分类</ErpTh>
-              <ErpTh>物料性质</ErpTh>
-              <ErpTh>计量单位</ErpTh>
-              <ErpTh>创建时间</ErpTh>
-              <ErpTh>操作</ErpTh>
+              <ErpTh className="w-[48px]"><Checkbox checked={items.length > 0 && sel.size === items.length} onCheckedChange={(v: boolean) => setSel(v ? new Set(items.map(i => i.id)) : new Set())} /></ErpTh>
+              <ErpTh className="w-[80px]">启用状态</ErpTh>
+              <ErpTh className="w-[100px]">审批状态</ErpTh>
+              <ErpTh className="w-[160px]">物料编码</ErpTh>
+              <ErpTh className="w-[220px]">物料名称</ErpTh>
+              <ErpTh className="w-[140px]">规格型号</ErpTh>
+              <ErpTh className="w-[130px]">物料分类</ErpTh>
+              <ErpTh className="w-[90px]">物料性质</ErpTh>
+              <ErpTh className="w-[90px]">计量单位</ErpTh>
+              <ErpTh className="w-[160px]">创建时间</ErpTh>
+              <ErpTh className="w-[140px] sticky right-0 bg-[#f5f7fa] z-10">操作</ErpTh>
             </ErpThead>
             <ErpTbody>
               {items.map(i => (
@@ -157,7 +163,7 @@ export default function MaterialPage() {
                   <ErpTd>{i.materialType === 'PHYSICAL' ? '实物' : '虚拟'}</ErpTd>
                   <ErpTd>{i.unitName}{i.unitSymbol ? `(${i.unitSymbol})` : ''}</ErpTd>
                   <ErpTd className="text-[#909399]">{new Date(i.createdAt).toLocaleDateString('zh-CN')}</ErpTd>
-                  <ErpTd>
+                  <ErpTd className="sticky right-0 bg-white z-10">
                     <ErpAction>
                       <ErpActionBtn onClick={() => router.push(`/material/${i.id}/edit`)}>
                         <Pencil className="h-3.5 w-3.5" />修改

@@ -17,7 +17,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       <div className="flex-1 flex flex-col min-w-0">
         <Navbar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} />
         <TagsView />
-        <div className="flex-1 overflow-auto p-4">
+        <div className="flex-1 overflow-auto p-4 pb-8" data-testid="main-scroll-container">
           {children}
         </div>
       </div>

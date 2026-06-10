@@ -1,4 +1,4 @@
-'use client';import { useEffect, useState } from 'react';import { useRouter } from 'next/navigation';import api from '@/lib/api';import { Input } from '@/components/ui/input';import { Select,SelectContent,SelectItem,SelectTrigger,SelectValue } from '@/components/ui/select';import { Textarea } from '@/components/ui/textarea';import { FormLayout,FormSection,FormGrid,FormField } from '@/components/form/form-layout';import { LinesEditor, LineItem } from '@/components/ui/lines-editor';import { EntitySelect } from '@/components/form/entity-select';import { applyMaterialSelection, applyWarehouseSelection, applySourceDocumentSelection } from '@/lib/field-linkage';import { calcLineAmount, calcTotalFromLines, recalcHeaderTotals } from '@/lib/calc';import { toast } from '@/components/ui/toast';
+'use client';import { useEffect, useState } from 'react';import { useRouter } from 'next/navigation';import api from '@/lib/api';import { Input } from '@/components/ui/input';import { Select,SelectContent,SelectItem,SelectTrigger,SelectValue } from '@/components/ui/select';import { Textarea } from '@/components/ui/textarea';import { FormLayout,FormSection,FormGrid,FormField } from '@/components/form/form-layout';import { LinesEditor, LineItem } from '@/components/ui/lines-editor';import { EntityPickerInput } from '@/components/form/entity-picker-input';import { applyMaterialSelection, applyWarehouseSelection, applySourceDocumentSelection } from '@/lib/field-linkage';import { calcLineAmount, calcTotalFromLines, recalcHeaderTotals } from '@/lib/calc';import { toast } from '@/components/ui/toast';
 const FI='h-9 rounded-md border border-border bg-background px-3 text-[13px] w-full';
 
 const OUT_COLS = [
@@ -53,14 +53,14 @@ return(<FormLayout title="新增出库单" onSave={save} sections={[{id:'b',titl
 <FormSection id="b" title="出库信息"><FormGrid>
 <FormField label="出库单号"><Input className={FI} value={f.orderNo} readOnly disabled/></FormField>
 <FormField label="物料">
-  <EntitySelect entity="material" value={f.materialId} status="ACTIVE"
-    onChange={(id,m)=>{setF({...f,...applyMaterialSelection(m)});}}/></FormField>
+  <EntityPickerInput entity="material" value={f.materialCode} displayText={f.materialCode ? `${f.materialCode} ${f.materialName}` : ''} status="ACTIVE"
+    onChange={(id:any,m:any)=>{setF({...f,...applyMaterialSelection(m)});}}/></FormField>
 <FormField label="规格型号"><Input className={FI} value={f.specification} readOnly disabled/></FormField>
 <FormField label="单位"><Input className={FI} value={f.unit} readOnly disabled/></FormField>
 <FormField label="数量"><Input className={FI} value={lines.length>0?recalcHeaderTotals(lines).totalQuantity:f.quantity} readOnly disabled placeholder="自动=明细合计"/></FormField>
 <FormField label="仓库">
-  <EntitySelect entity="warehouse" value={f.warehouseId}
-    onChange={(id,w)=>{setF({...f,...applyWarehouseSelection(w)});}}/></FormField>
+  <EntityPickerInput entity="warehouse" value={f.warehouseCode} displayText={f.warehouseCode ? `${f.warehouseCode} ${f.warehouseName}` : ''}
+    onChange={(id:any,w:any)=>{setF({...f,...applyWarehouseSelection(w)});}}/></FormField>
 <FormField label="单价"><Input type="number" className={FI} value={f.unitPrice} onChange={e=>setF({...f,unitPrice:e.target.value})} placeholder="0.00"/></FormField>
 <FormField label="金额"><Input className={FI} value={lines.length>0||(f.quantity&&f.unitPrice)?f.totalAmount:''} placeholder="自动=数量×单价 或 明细合计" readOnly disabled/></FormField>
 <div className="col-span-2"><FormField label="备注"><Textarea className={`${FI} h-20`} value={f.remark} onChange={e=>setF({...f,remark:e.target.value})}/></FormField></div>
@@ -73,8 +73,8 @@ return(<FormLayout title="新增出库单" onSave={save} sections={[{id:'b',titl
 <SelectContent><SelectItem value="SALES_SHIPMENT">销售出货单</SelectItem><SelectItem value="OTHER">其他</SelectItem></SelectContent></Select></FormField>
 {f.sourceType==='SALES_SHIPMENT'?(
 <FormField label="来源单号">
-  <EntitySelect entity="salesShipment" value={f.sourceId} status="APPROVED"
-    onChange={(id)=>{setF({...f,sourceId:id});onShipmentSelect(id);}} disabled={sourceLoading}/></FormField>
+  <EntityPickerInput entity="salesShipment" value={f.sourceNo} displayText={f.sourceNo || ''} status="APPROVED"
+    onChange={(id:any)=>{setF({...f,sourceId:id});onShipmentSelect(id);}}/></FormField>
 ):(
 <FormField label="来源单号"><Input className={FI} value={f.sourceNo} onChange={e=>setF({...f,sourceNo:e.target.value})} placeholder="手动输入"/></FormField>
 )}

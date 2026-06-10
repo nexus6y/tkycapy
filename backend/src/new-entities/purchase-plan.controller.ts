@@ -2,6 +2,17 @@ import { Controller, Get, Post, Put, Delete, Body, Param, Query } from "@nestjs/
 import { PrismaService } from "../prisma/prisma.service";
 import { guardSubmit, guardApprove, guardWithdraw } from '../common/business-rules.helper';
 import { CodeGeneratorService } from "../common/code-generator.service";
+import { pickAllowed } from "../common/dto-normalizer";
+
+const PPL_KEYS = ['orderNo','orderName','demandPlanId','demandPlanNo','supplierId','supplierName','materialName','quantity','requiredDate','approvalStatus','businessStatus','remark','tenantId'];
+
+function cleanPpl(dto: any): any {
+  const data = pickAllowed(dto, PPL_KEYS);
+  for (const k of Object.keys(data)) { if (data[k] === '' || data[k] === null) delete data[k]; }
+  if (data.quantity != null) data.quantity = String(data.quantity);
+  if (data.requiredDate) data.requiredDate = new Date(data.requiredDate);
+  return data;
+}
 
 @Controller("purchase-plans")
 export class PurchasePlanController {
@@ -33,8 +44,10 @@ export class PurchasePlanController {
   @Post()
   async create(@Body() dto: any) {
     const tenantId = await this.tid();
-    if (!dto.orderNo) dto.orderNo = await this.codeGen.generate('PPLAN', 'purchasePlan', 'orderNo');
-    const { lines, ...orderData } = dto;
+    const data = cleanPpl(dto);
+    data.tenantId = tenantId;
+    if (!data.orderNo) data.orderNo = await this.codeGen.generate('PPLAN', 'purchasePlan', 'orderNo');
+    const { lines, ...orderData } = data;
     if (lines && Array.isArray(lines) && lines.length > 0) {
       return this.prisma.purchasePlan.create({
         data: {

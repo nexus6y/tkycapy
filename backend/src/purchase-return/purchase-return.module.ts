@@ -1,1 +1,1 @@
-import { Module } from '@nestjs/common'; import { PurchaseReturnController } from './purchase-return.controller'; @Module({ controllers: [PurchaseReturnController] }) export class PurchaseReturnModule {}
+import { Module } from '@nestjs/common'; import { PurchaseReturnController } from './purchase-return.controller'; import { PurchaseParamController } from './purchase-params.controller'; @Module({ controllers: [PurchaseReturnController, PurchaseParamController] }) export class PurchaseReturnModule {}

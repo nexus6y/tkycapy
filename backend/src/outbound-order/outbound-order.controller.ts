@@ -1,7 +1,16 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpException, HttpStatus, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CodeGeneratorService } from '../common/code-generator.service';
+import { pickAllowed } from '../common/dto-normalizer';
 import { guardSubmit } from '../common/business-rules.helper';
+
+const OUT_KEYS = ['orderNo','sourceType','sourceNo','materialName','specification','quantity','warehouseId','warehouseName','unitPrice','totalAmount','approvalStatus','businessStatus','shipmentDate','remark','tenantId'];
+
+function clean(dto: any): any {
+  const d = pickAllowed(dto, OUT_KEYS);
+  for (const k of Object.keys(d)) { if (d[k] === '' || d[k] === null) delete d[k]; }
+  return d;
+}
 
 @Controller('outbound-orders')
 export class OutboundOrderController {
@@ -33,38 +42,49 @@ export class OutboundOrderController {
   @Post()
   async create(@Body() dto: any) {
     const tenantId = await this.tid();
-    if (!dto.orderNo) dto.orderNo = await this.codeGen.generate('OUT', 'outboundOrder', 'orderNo');
-    const { lines, ...orderData } = dto;
-    // Map dto fields to OutboundOrder known fields + pass-through as needed
-    const clean: any = { tenantId };
-    const KNOWN = ['orderNo','sourceType','sourceNo','materialName','specification','quantity','warehouseId','warehouseName','unitPrice','totalAmount','approvalStatus','businessStatus','shipmentDate','remark'];
-    for (const [k, v] of Object.entries(orderData)) {
-      if (KNOWN.includes(k) || k === 'orderNo') clean[k] = v;
-    }
+    const lines = Array.isArray(dto.lines) ? dto.lines : null;
+    const data = clean(dto);
+    data.tenantId = tenantId;
+    if (!data.orderNo) data.orderNo = await this.codeGen.generate('OUT', 'outboundOrder', 'orderNo');
+    if (data.shipmentDate) data.shipmentDate = new Date(data.shipmentDate);
+    ['quantity','unitPrice','totalAmount'].forEach(f => {
+      if (data[f] != null) data[f] = String(data[f]);
+    });
 
-    if (lines && Array.isArray(lines) && lines.length > 0) {
-      return this.prisma.outboundOrder.create({
-        data: {
-          ...clean,
-          lines: { create: lines.map((l: any, i: number) => ({
-            tenantId, lineNo: l.lineNo ?? i + 1,
-            materialCode: l.materialCode, materialName: l.materialName,
-            spec: l.spec, unit: l.unit,
-            quantity: l.quantity != null ? String(l.quantity) : null,
-            unitPrice: l.unitPrice != null ? String(l.unitPrice) : null,
-            amount: l.amount != null ? String(l.amount) : null,
-            warehouseCode: l.warehouseCode, locationCode: l.locationCode, batchNo: l.batchNo,
-          })) },
-        } as any,
-        include: { lines: true },
-      });
+    try {
+      if (lines && Array.isArray(lines) && lines.length > 0) {
+        return await this.prisma.outboundOrder.create({
+          data: {
+            ...data,
+            lines: { create: lines.map((l: any, i: number) => ({
+              tenantId, lineNo: l.lineNo ?? i + 1,
+              materialCode: l.materialCode, materialName: l.materialName,
+              spec: l.spec, unit: l.unit,
+              quantity: l.quantity != null ? String(l.quantity) : null,
+              unitPrice: l.unitPrice != null ? String(l.unitPrice) : null,
+              amount: l.amount != null ? String(l.amount) : null,
+              warehouseCode: l.warehouseCode, locationCode: l.locationCode, batchNo: l.batchNo,
+            })) },
+          } as any,
+          include: { lines: true },
+        });
+      }
+      return await this.prisma.outboundOrder.create({ data } as any);
+    } catch (e: any) {
+      if (e.code === 'P2002') throw new HttpException('出库单号已存在', HttpStatus.BAD_REQUEST);
+      throw e;
     }
-    return this.prisma.outboundOrder.create({ data: clean } as any);
   }
 
   @Put(':id')
   async update(@Param('id') id: string, @Body() dto: any) {
-    const { lines, ...orderData } = dto;
+    const { lines, ...rawData } = dto;
+    const orderData = clean(rawData);
+    if (orderData.shipmentDate) orderData.shipmentDate = new Date(orderData.shipmentDate);
+    ['quantity','unitPrice','totalAmount'].forEach(f => {
+      if (orderData[f] != null) orderData[f] = String(orderData[f]);
+    });
+
     if (lines !== undefined) {
       await this.prisma.outboundOrderLine.deleteMany({ where: { outboundOrderId: id } });
       if (lines.length > 0) {
@@ -109,7 +129,53 @@ export class OutboundOrderController {
       locationCode: null, batchNo: null,
     } as any];
 
+    // Phase 0: resolve missing warehouseCodes
     const tenantId = await this.tid();
+    const noWhLines = lines.filter((l: any) => !(l.warehouseCode || '').trim());
+    if (noWhLines.length > 0) {
+      const matCodes = [...new Set(noWhLines.map((l: any) => (l.materialCode || '').trim()).filter(Boolean))] as string[];
+      const matWhMap = new Map<string, string>();
+      if (matCodes.length > 0) {
+        const materials = await this.prisma.material.findMany({
+          where: { tenantId, code: { in: matCodes } },
+          select: { code: true, defaultWarehouseId: true },
+        });
+        const whIds = [...new Set(materials.map(m => m.defaultWarehouseId).filter((id): id is string => !!id))];
+        const whIdToCode = new Map<string, string>();
+        if (whIds.length > 0) {
+          const whs = await this.prisma.warehouse.findMany({
+            where: { tenantId, id: { in: whIds } },
+            select: { id: true, code: true },
+          });
+          for (const w of whs) whIdToCode.set(w.id, w.code);
+        }
+        for (const m of materials) {
+          if (m.defaultWarehouseId && whIdToCode.has(m.defaultWarehouseId)) {
+            matWhMap.set(m.code, whIdToCode.get(m.defaultWarehouseId)!);
+          }
+        }
+        const stillMissing = matCodes.filter(c => !matWhMap.has(c));
+        if (stillMissing.length > 0) {
+          const invs = await this.prisma.inventory.findMany({
+            where: { tenantId, materialCode: { in: stillMissing }, qualityStatus: 'QUALIFIED' },
+            select: { materialCode: true, warehouseCode: true },
+            orderBy: { quantity: 'desc' },
+          });
+          const seen = new Set<string>();
+          for (const inv of invs) {
+            if (inv.materialCode && inv.warehouseCode && !matWhMap.has(inv.materialCode) && !seen.has(inv.materialCode)) {
+              matWhMap.set(inv.materialCode, inv.warehouseCode);
+              seen.add(inv.materialCode);
+            }
+          }
+        }
+      }
+      for (const line of noWhLines) {
+        const wc = matWhMap.get((line.materialCode || '').trim());
+        if (wc) (line as any).warehouseCode = wc;
+      }
+    }
+
     let totalAmt = 0;
     const operations: any[] = [];
 

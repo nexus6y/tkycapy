@@ -33,7 +33,7 @@ export function ErpSearchFields({
   advancedChildren?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-4 px-4 py-2.5 border-b border-border bg-muted/30 flex-wrap">
+    <div className="flex items-center gap-4 px-4 py-2.5 border-b border-border bg-[#f5f7fa] flex-wrap">
       {children}
       {advancedOpen && advancedChildren}
     </div>

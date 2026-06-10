@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { FormLayout, FormSection, FormGrid, FormField } from '@/components/form/form-layout';
 import { LinesEditor, LineItem } from '@/components/ui/lines-editor';
-import { EntitySelect } from '@/components/form/entity-select';
+import { EntityPickerInput } from '@/components/form/entity-picker-input';
 import { applyCustomerSelection, applyProjectSelection, applyContractSelection, applySourceDocumentSelection, applyDepartmentSelection } from '@/lib/field-linkage';
 import { calcTotalFromLines, recalcHeaderTotals } from '@/lib/calc';
 import { toast } from '@/components/ui/toast';
@@ -65,7 +65,6 @@ export default function SalesOrderCreate() {
     router.push('/sales/order');
   };
 
-  // When lines change, update header totalAmount
   const onLinesChange = (newLines: LineItem[]) => {
     setLines(newLines);
     if (newLines.length > 0) {
@@ -74,7 +73,6 @@ export default function SalesOrderCreate() {
     }
   };
 
-  // Source quotation → auto-fill customer + lines
   const onQuotationSelect = async (id: string) => {
     setQuotationLoading(true);
     try {
@@ -93,7 +91,6 @@ export default function SalesOrderCreate() {
     finally { setQuotationLoading(false); }
   };
 
-  // Source preOrder → auto-fill customer + lines
   const onPreOrderSelect = async (id: string) => {
     setPreOrderLoading(true);
     try {
@@ -138,26 +135,61 @@ export default function SalesOrderCreate() {
       <FormSection id="source" title="来源关联">
         <FormGrid>
           <FormField label="客户">
-            <EntitySelect entity="customer" value={f.customerId}
-              onChange={(id, c) => { setF({ ...f, ...applyCustomerSelection(c) }); }} />
+            <EntityPickerInput entity="customer" value={f.customerCode} displayText={f.customerCode ? `${f.customerCode} ${f.customerName}` : ''}
+              onChange={(id: any, c: any) => { setF({ ...f, ...applyCustomerSelection(c) }); }} />
           </FormField>
           <FormField label="项目">
-            <EntitySelect entity="project" value={f.projectId}
-              onChange={(id, p) => { setF({ ...f, ...applyProjectSelection(p) }); }} />
+            <EntityPickerInput entity="project" value={f.projectCode} displayText={f.projectCode ? `${f.projectCode} ${f.projectName}` : ''}
+              onChange={(id: any, p: any) => { setF({ ...f, ...applyProjectSelection(p) }); }} />
           </FormField>
           <FormField label="关联合同">
-            <EntitySelect entity="contract" value={f.contractId}
-              onChange={(id, c) => { setF({ ...f, ...applyContractSelection(c) }); }} />
+            <EntityPickerInput entity="contract" value={f.contractCode} displayText={f.contractCode ? `${f.contractCode} ${f.contractName}` : ''}
+              onChange={(id: any, c: any) => {
+                const fill = applyContractSelection(c);
+                // Only populate customer/project from contract; preserve existing values when contract lacks them
+                setF((prev: any) => ({
+                  ...prev,
+                  contractId: fill.contractId, contractCode: fill.contractCode, contractName: fill.contractName,
+                  customerId: fill.customerId || prev.customerId,
+                  customerCode: fill.customerCode || prev.customerCode,
+                  customerName: fill.customerName || prev.customerName,
+                  projectId: fill.projectId || prev.projectId,
+                  projectCode: fill.projectCode || prev.projectCode,
+                  projectName: fill.projectName || prev.projectName,
+                }));
+                // Load contract lines & auto-fill detail section
+                if (id) {
+                  api.get('/contracts/' + id).then(r => {
+                    const lns = r.data.lines;
+                    if (lns && lns.length > 0) {
+                      const stripDecimal = (v: any) => (v != null ? String(Number(v)) : '');
+                      const m: LineItem[] = lns.map((l: any, i: number) => ({
+                        lineNo: l.lineNo ?? i + 1,
+                        materialCode: l.materialCode || '',
+                        materialName: l.materialName || '',
+                        spec: l.specification || '',
+                        unit: l.unit || '',
+                        quantity: stripDecimal(l.quantity),
+                        unitPrice: stripDecimal(l.unitPrice),
+                        amount: stripDecimal(l.amount),
+                        remark: l.remark || '',
+                      }));
+                      setLines(m);
+                      onLinesChange(m);
+                    }
+                  }).catch(() => {});
+                }
+              }} />
           </FormField>
           <FormField label="关联报价单">
-            <EntitySelect entity="quotation" value={f.quotationId} status="APPROVED"
-              onChange={(id) => { setF({ ...f, quotationId: id }); onQuotationSelect(id); }}
-              disabled={quotationLoading} />
+            <EntityPickerInput entity="quotation" value={f.quotationNo} displayText={f.quotationNo || ''} status="APPROVED"
+              onChange={(id: any) => { setF({ ...f, quotationId: id }); onQuotationSelect(id); }}
+            />
           </FormField>
           <FormField label="关联分劈单">
-            <EntitySelect entity="preOrder" value={f.preOrderId} status="APPROVED"
-              onChange={(id) => { setF({ ...f, preOrderId: id }); onPreOrderSelect(id); }}
-              disabled={preOrderLoading} />
+            <EntityPickerInput entity="preOrder" value={f.preOrderNo} displayText={f.preOrderNo || ''} status="APPROVED"
+              onChange={(id: any) => { setF({ ...f, preOrderId: id }); onPreOrderSelect(id); }}
+            />
           </FormField>
         </FormGrid>
       </FormSection>
@@ -165,8 +197,8 @@ export default function SalesOrderCreate() {
       <FormSection id="org" title="组织与人员">
         <FormGrid>
           <FormField label="销售部门">
-            <EntitySelect entity="department" value={f.departmentId}
-              onChange={(id, d) => { setF({ ...f, ...applyDepartmentSelection(d) }); }} />
+            <EntityPickerInput entity="department" value={f.departmentCode} displayText={f.departmentCode ? `${f.departmentCode} ${f.departmentName}` : ''}
+              onChange={(id: any, d: any) => { setF({ ...f, ...applyDepartmentSelection(d) }); }} />
           </FormField>
           <FormField label="销售负责人">
             <Input className={FI} value={f.salesperson} onChange={e => setF({ ...f, salesperson: e.target.value })} placeholder="输入负责人" />

@@ -11,12 +11,13 @@ export class MaterialService {
   }
 
   async findAll(query: QueryMaterialDto) {
-    const { code, name, categoryId, status, specification, page = 1, pageSize = 20 } = query;
+    const { code, name, externalCode, categoryId, status, specification, page = 1, pageSize = 20 } = query;
     const tenantId = await this.getTenantId();
     const where: any = { tenantId };
 
     if (code) where.code = { contains: code };
     if (name) where.name = { contains: name };
+    if (externalCode) where.externalCode = { contains: externalCode };
     if (categoryId) where.categoryId = categoryId;
     if (status) where.status = status;
     if (specification) where.specification = { contains: specification };

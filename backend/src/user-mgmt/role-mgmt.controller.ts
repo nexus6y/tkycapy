@@ -1,5 +1,15 @@
 import { Controller, Get, Post, Put, Delete, Param, Query, Body, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { pickAllowed } from '../common/dto-normalizer';
+
+const ROLE_KEYS = ['code','name','description','sortOrder','status','tenantId'];
+
+function clean(dto: any): any {
+  const d = pickAllowed(dto, ROLE_KEYS);
+  for (const k of Object.keys(d)) { if (d[k] === '' || d[k] === null) delete d[k]; }
+  return d;
+}
+
 @Controller('roles-mgmt')
 export class RoleMgmtController {
   constructor(private prisma: PrismaService) {}
@@ -19,17 +29,22 @@ export class RoleMgmtController {
     return item;
   }
 
-  @Post() async create(@Body() body: { code: string; name: string; description?: string; sortOrder?: number; status?: string }) {
+  @Post() async create(@Body() body: any) {
     const tenantId = await this.getTenantId();
-    const existing = await this.prisma.role.findFirst({ where: { tenantId, code: body.code } });
+    const data = clean(body);
+    const existing = await this.prisma.role.findFirst({ where: { tenantId, code: data.code } });
     if (existing) throw new ConflictException('角色编码已存在');
-    return this.prisma.role.create({ data: { ...body, tenantId, sortOrder: body.sortOrder ?? 0, status: body.status ?? 'ACTIVE' } as any });
+    data.tenantId = tenantId;
+    if (data.sortOrder == null) data.sortOrder = 0;
+    if (!data.status) data.status = 'ACTIVE';
+    return this.prisma.role.create({ data: data as any });
   }
 
-  @Put(':id') async update(@Param('id') id: string, @Body() body: { code?: string; name?: string; description?: string; sortOrder?: number; status?: string }) {
+  @Put(':id') async update(@Param('id') id: string, @Body() body: any) {
     const item = await this.prisma.role.findUnique({ where: { id } });
     if (!item) throw new NotFoundException('角色不存在');
-    return this.prisma.role.update({ where: { id }, data: body as any });
+    const data = clean(body);
+    return this.prisma.role.update({ where: { id }, data: data as any });
   }
 
   @Delete(':id') async remove(@Param('id') id: string) { await this.prisma.role.delete({ where: { id } }); return { message: '删除成功' }; }

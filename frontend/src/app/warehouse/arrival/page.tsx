@@ -11,6 +11,10 @@ import { ErpTable,ErpThead,ErpTh,ErpTbody,ErpTr,ErpTd,ErpEmpty,ErpLink,ErpTools,
 
 interface Item { id:string;orderNo:string;orderName:string;supplierName:string|null;totalAmount:string|null;approvalStatus:string;businessStatus:string;createdAt:string; }
 
+const BS_LABELS:Record<string,string> = { PENDING_RECEIPT:'待收货', PARTIAL_RECEIPT:'部分收货', FULLY_RECEIVED:'已收货', CLOSED:'已关闭', INSPECTING:'质检中' };
+
+const BS_COLOR = (s:string) => s==='FULLY_RECEIVED'?'text-[#67c23a]':s==='PARTIAL_RECEIPT'?'text-[#e6a23c]':s==='INSPECTING'?'text-[#409eff]':'text-muted-foreground';
+
 export default function ArrivalPage() {
   const [items,setItems]=useState<Item[]>([]);const [total,setTotal]=useState(0);const [pg,setPg]=useState(1);const [ps,setPs]=useState(30);
   const [s,setS]=useState({code:'',name:'',status:'APPROVED'});
@@ -30,6 +34,16 @@ export default function ArrivalPage() {
     const {data}=await api.get('/purchase-orders',{params:p}); setItems(data.items); setTotal(data.total);
   },[pg,ps,s]); useEffect(()=>{fetch();},[fetch]);
 
+  // Only show button for POs that are APPROVED and waiting for direct arrival (not inspection)
+  const canConfirm = (i:Item) => i.approvalStatus==='APPROVED' && i.businessStatus==='PENDING_RECEIPT';
+
+  const opLabel = (i:Item) => {
+    if (i.businessStatus==='FULLY_RECEIVED') return '已确认';
+    if (i.businessStatus==='INSPECTING') return '质检中';
+    if (i.approvalStatus!=='APPROVED') return '待审批';
+    return null; // PENDING_RECEIPT → show button
+  };
+
   return (<TooltipProvider><div className="bg-background rounded-lg border shadow-sm">
     <div className="flex items-center justify-between px-4 h-14 border-b border-border">
       <span className="text-sm font-medium text-foreground">到货确认 — 从已审批采购订单生成入库单</span>
@@ -45,7 +59,7 @@ export default function ArrivalPage() {
     </div>
     <ErpTools onRefresh={fetch}/>
     <div className="overflow-auto"><ErpTable><ErpThead><ErpTh>采购单号</ErpTh><ErpTh>采购名称</ErpTh><ErpTh>供应商</ErpTh><ErpTh>金额</ErpTh><ErpTh>审批状态</ErpTh><ErpTh>业务状态</ErpTh><ErpTh>创建时间</ErpTh><ErpTh>操作</ErpTh></ErpThead><ErpTbody>
-    {items.map(i=>(<ErpTr key={i.id}><ErpTd><ErpLink>{i.orderNo}</ErpLink></ErpTd><ErpTd>{i.orderName}</ErpTd><ErpTd className="text-muted-foreground">{i.supplierName||'-'}</ErpTd><ErpTd>{i.totalAmount?Number(i.totalAmount).toLocaleString():'-'}</ErpTd><ErpTd>{i.approvalStatus==='APPROVED'?<span className="text-[#67c23a] font-medium">已通过</span>:i.approvalStatus}</ErpTd><ErpTd className="text-muted-foreground">{i.businessStatus||'-'}</ErpTd><ErpTd className="text-muted-foreground">{new Date(i.createdAt).toLocaleDateString('zh-CN')}</ErpTd><ErpTd>{i.approvalStatus==='APPROVED'&&<button onClick={()=>confirmArrival(i)} className="text-[#67c23a] text-[13px] hover:underline"><CheckCircle className="h-3.5 w-3.5 inline mr-0.5"/>确认到货</button>}{i.approvalStatus!=='APPROVED'&&<span className="text-[12px] text-muted-foreground">待审批</span>}</ErpTd></ErpTr>))}
+    {items.map(i=>(<ErpTr key={i.id}><ErpTd><ErpLink>{i.orderNo}</ErpLink></ErpTd><ErpTd>{i.orderName}</ErpTd><ErpTd className="text-muted-foreground">{i.supplierName||'-'}</ErpTd><ErpTd>{i.totalAmount?Number(i.totalAmount).toLocaleString():'-'}</ErpTd><ErpTd>{i.approvalStatus==='APPROVED'?<span className="text-[#67c23a] font-medium">已通过</span>:i.approvalStatus}</ErpTd><ErpTd><span className={`text-[13px] ${BS_COLOR(i.businessStatus)}`}>{BS_LABELS[i.businessStatus]||i.businessStatus||'-'}</span></ErpTd><ErpTd className="text-muted-foreground">{new Date(i.createdAt).toLocaleDateString('zh-CN')}</ErpTd><ErpTd>{canConfirm(i)?<button onClick={()=>confirmArrival(i)} className="text-[#67c23a] text-[13px] hover:underline"><CheckCircle className="h-3.5 w-3.5 inline mr-0.5"/>确认到货</button>:<span className="text-[12px] text-muted-foreground">{opLabel(i)}</span>}</ErpTd></ErpTr>))}
     {items.length===0&&<ErpEmpty colSpan={8}/>}
     </ErpTbody></ErpTable></div>
     <ErpPagination page={pg} pageSize={ps} total={total} onPage={setPg} onPageSize={v=>setPs(+v)}/>

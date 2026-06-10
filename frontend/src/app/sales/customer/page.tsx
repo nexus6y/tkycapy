@@ -93,22 +93,22 @@ export default function CustomerPage() {
           </ErpSearchField>
         </ErpSearchFields>
 
-        <div className="overflow-auto">
+        <div className="min-h-0">
           <ErpTable>
             <ErpThead>
-              <ErpTh className="w-10">
+              <ErpTh className="w-[48px]">
                 <Checkbox checked={items.length > 0 && selected.size === items.length} onCheckedChange={(v: boolean) => toggleAll(v)} />
               </ErpTh>
-              <ErpTh>状态</ErpTh>
-              <ErpTh>客户编码</ErpTh>
-              <ErpTh>客户名称</ErpTh>
-              <ErpTh>所属行业</ErpTh>
-              <ErpTh>客户价值</ErpTh>
-              <ErpTh>信用等级</ErpTh>
-              <ErpTh>联系人</ErpTh>
-              <ErpTh>联系电话</ErpTh>
-              <ErpTh>创建时间</ErpTh>
-              <ErpTh>操作</ErpTh>
+              <ErpTh className="w-[70px]">状态</ErpTh>
+              <ErpTh className="w-[160px]">客户编码</ErpTh>
+              <ErpTh className="w-[220px]">客户名称</ErpTh>
+              <ErpTh className="w-[120px]">所属行业</ErpTh>
+              <ErpTh className="w-[100px]">客户价值</ErpTh>
+              <ErpTh className="w-[100px]">信用等级</ErpTh>
+              <ErpTh className="w-[100px]">联系人</ErpTh>
+              <ErpTh className="w-[130px]">联系电话</ErpTh>
+              <ErpTh className="w-[160px]">创建时间</ErpTh>
+              <ErpTh className="w-[140px] sticky right-0 bg-[#f5f7fa] z-10">操作</ErpTh>
             </ErpThead>
             <ErpTbody>
               {items.map(i => (

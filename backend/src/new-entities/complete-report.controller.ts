@@ -1,6 +1,15 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, BadRequestException } from "@nestjs/common";
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpException, HttpStatus, BadRequestException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { CodeGeneratorService } from "../common/code-generator.service";
+import { pickAllowed } from "../common/dto-normalizer";
+
+const RPT_KEYS = ['reportNo','sourceType','productionOrderId','productionOrderNo','materialCode','materialName','spec','unit','plannedQty','actualQty','deptName','warehouseCode','approvalStatus','businessStatus','remark','tenantId'];
+
+function clean(dto: any): any {
+  const d = pickAllowed(dto, RPT_KEYS);
+  for (const k of Object.keys(d)) { if (d[k] === '' || d[k] === null) delete d[k]; }
+  return d;
+}
 
 @Controller("complete-reports")
 export class CompleteReportController {
@@ -23,30 +32,38 @@ export class CompleteReportController {
   @Post()
   async create(@Body() dto: any) {
     const tenantId = await this.tid();
-    if (!dto.reportNo) dto.reportNo = await this.codeGen.generate('RPT', 'completeReport', 'reportNo');
-    const { lines, ...orderData } = dto;
-    if (lines && Array.isArray(lines) && lines.length > 0) {
-      return this.prisma.completeReport.create({
-        data: {
-          ...orderData, tenantId,
-          lines: { create: lines.map((l: any, i: number) => ({
-            tenantId, lineNo: l.lineNo ?? i + 1,
-            materialCode: l.materialCode, materialName: l.materialName,
-            spec: l.spec, unit: l.unit,
-            plannedQty: l.plannedQty != null ? String(l.plannedQty) : null,
-            actualQty: l.actualQty != null ? String(l.actualQty) : null,
-            warehouseCode: l.warehouseCode,
-          })) },
-        } as any,
-        include: { lines: true },
-      });
+    const { lines, ...rawData } = dto;
+    const orderData = clean(rawData);
+    orderData.tenantId = tenantId;
+    if (!orderData.reportNo) orderData.reportNo = await this.codeGen.generate('RPT', 'completeReport', 'reportNo');
+    try {
+      if (lines && Array.isArray(lines) && lines.length > 0) {
+        return await this.prisma.completeReport.create({
+          data: {
+            ...orderData,
+            lines: { create: lines.map((l: any, i: number) => ({
+              tenantId, lineNo: l.lineNo ?? i + 1,
+              materialCode: l.materialCode, materialName: l.materialName,
+              spec: l.spec, unit: l.unit,
+              plannedQty: l.plannedQty != null ? String(l.plannedQty) : null,
+              actualQty: l.actualQty != null ? String(l.actualQty) : null,
+              warehouseCode: l.warehouseCode,
+            })) },
+          } as any,
+          include: { lines: true },
+        });
+      }
+      return await this.prisma.completeReport.create({ data: orderData as any });
+    } catch (e: any) {
+      if (e.code === 'P2002') throw new HttpException('完工报告号已存在', HttpStatus.BAD_REQUEST);
+      throw e;
     }
-    return this.prisma.completeReport.create({ data: { ...orderData, tenantId } as any });
   }
 
   @Put(":id")
   async update(@Param("id") id: string, @Body() dto: any) {
-    const { lines, ...orderData } = dto;
+    const { lines, ...rawData } = dto;
+    const orderData = clean(rawData);
     if (lines !== undefined) {
       await this.prisma.completeReportLine.deleteMany({ where: { reportId: id } });
       if (lines.length > 0) {
@@ -94,6 +111,48 @@ export class CompleteReportController {
       plannedQty: order.plannedQty, actualQty: order.actualQty,
       warehouseCode: null,
     } as any];
+
+    // Quantity validation: actualQty must not exceed plannedQty per line
+    for (const line of lines) {
+      const actual = Number(line.actualQty || line.plannedQty || 0);
+      const planned = Number(line.plannedQty || 0);
+      if (actual > planned) {
+        throw new BadRequestException(
+          `完工登卡失败：物料 ${line.materialCode || line.materialName} 实际完工数量(${actual})超过计划数量(${planned})`
+        );
+      }
+    }
+
+    // If linked to a production order, validate total completed qty doesn't exceed order planned qty
+    if (order.productionOrderId) {
+      const prodOrder = await this.prisma.productionOrder.findUnique({
+        where: { id: order.productionOrderId },
+        include: { lines: true },
+      });
+      if (prodOrder && prodOrder.lines && prodOrder.lines.length > 0) {
+        for (const line of lines) {
+          const matCode = (line.materialCode || '').trim();
+          const actual = Number(line.actualQty || line.plannedQty || 0);
+          const poLine = prodOrder.lines.find(l => l.materialCode === matCode);
+          if (poLine) {
+            // Sum approved complete report qty for this material (excluding current report)
+            const existingReports = await this.prisma.completeReportLine.findMany({
+              where: {
+                materialCode: matCode,
+                report: { productionOrderId: order.productionOrderId, approvalStatus: 'APPROVED', id: { not: order.id } },
+              },
+            });
+            const alreadyCompleted = existingReports.reduce((s, l) => s + Number(l.actualQty || l.plannedQty || 0), 0);
+            const totalAfterThis = alreadyCompleted + actual;
+            if (totalAfterThis > Number(poLine.plannedQty || 0)) {
+              throw new BadRequestException(
+                `完工登卡失败：物料 ${matCode} 累计完工数量(${totalAfterThis})超过生产订单计划数量(${poLine.plannedQty})`
+              );
+            }
+          }
+        }
+      }
+    }
 
     const operations: any[] = [];
 

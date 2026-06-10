@@ -1,66 +1,130 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import {
+  Controller, Get, Post, Put, Delete, Body, Param, Query,
+  HttpException, HttpStatus, UseInterceptors, UploadedFile, Res,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname, join } from 'path';
+import { existsSync, mkdirSync } from 'fs';
+import { Response } from 'express';
+import { ContractService } from './contract.service';
 
 @Controller('contracts')
 export class ContractController {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly service: ContractService) {}
 
-  private async getTenantId() {
-    return (await this.prisma.tenant.findUniqueOrThrow({ where: { code: 'default' } })).id;
-  }
+  // ========== 列表 ==========
 
   @Get()
-  async findAll(@Query('status') status?: string, @Query('code') code?: string,
-    @Query('name') name?: string, @Query('type') type?: string,
-    @Query('page') page = 1, @Query('pageSize') pageSize = 20) {
-    const tenantId = await this.getTenantId();
-    const where: any = { tenantId };
-    if (status) where.approvalStatus = status;
-    if (code) where.code = { contains: code };
-    if (name) where.name = { contains: name };
-    if (type) where.type = type;
-
-    const [items, total] = await Promise.all([
-      this.prisma.contract.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (+page - 1) * +pageSize, take: +pageSize }),
-      this.prisma.contract.count({ where }),
-    ]);
-    return { items, total, page: +page, pageSize: +pageSize };
+  async findAll(
+    @Query('code') code?: string,
+    @Query('name') name?: string,
+    @Query('type') type?: string,
+    @Query('category') category?: string,
+    @Query('counterparty') counterparty?: string,
+    @Query('organization') organization?: string,
+    @Query('status') status?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string,
+  ) {
+    return this.service.findAll({
+      code, name, type, category, counterparty, organization, status,
+      page: page ? +page : 1, pageSize: pageSize ? +pageSize : 30,
+    });
   }
+
+  // ========== 详情（含子表）==========
+
+  @Get(':id')
+  async findOne(@Param('id') id: string) {
+    return this.service.findOne(id);
+  }
+
+  // ========== 创建（含子表事务）==========
 
   @Post()
   async create(@Body() dto: any) {
-    const tenantId = await this.getTenantId();
-    const data: any = { ...dto, tenantId };
-    if (data.startDate) data.startDate = new Date(data.startDate);
-    if (data.endDate) data.endDate = new Date(data.endDate);
-    if (data.totalAmount != null && data.totalAmount !== '') data.totalAmount = String(data.totalAmount);
-    else delete data.totalAmount;
-    return this.prisma.contract.create({ data });
+    return this.service.create(dto);
   }
+
+  // ========== 更新（含子表事务）==========
 
   @Put(':id')
   async update(@Param('id') id: string, @Body() dto: any) {
-    const data: any = { ...dto };
-    if (data.startDate) data.startDate = new Date(data.startDate);
-    if (data.endDate) data.endDate = new Date(data.endDate);
-    if (data.totalAmount != null && data.totalAmount !== '') data.totalAmount = String(data.totalAmount);
-    else delete data.totalAmount;
-    return this.prisma.contract.update({ where: { id }, data });
+    return this.service.update(id, dto);
   }
+
+  // ========== 删除 ==========
 
   @Delete(':id')
   async remove(@Param('id') id: string) {
-    await this.prisma.contract.delete({ where: { id } });
-    return { message: '删除成功' };
+    return this.service.remove(id);
   }
+
+  // ========== 审批流 ==========
 
   @Put(':id/submit')
   async submit(@Param('id') id: string) {
-    return this.prisma.contract.update({ where: { id }, data: { approvalStatus: 'SUBMITTED' } as any });
+    try {
+      return await this.service.submit(id);
+    } catch (e: any) {
+      throw new HttpException(e.message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  @Put(':id/approve')
+  async approve(@Param('id') id: string) {
+    try {
+      return await this.service.approve(id);
+    } catch (e: any) {
+      throw new HttpException(e.message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  @Put(':id/reject')
+  async reject(@Param('id') id: string) {
+    try {
+      return await this.service.reject(id);
+    } catch (e: any) {
+      throw new HttpException(e.message, HttpStatus.BAD_REQUEST);
+    }
   }
 
   @Put(':id/withdraw')
   async withdraw(@Param('id') id: string) {
-    return this.prisma.contract.update({ where: { id }, data: { approvalStatus: 'WITHDRAWN' } as any });
+    try {
+      return await this.service.withdraw(id);
+    } catch (e: any) {
+      throw new HttpException(e.message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  // ========== 文件上传 ==========
+
+  @Post('upload')
+  @UseInterceptors(FileInterceptor('file', {
+    storage: diskStorage({
+      destination: (_req, _file, cb) => {
+        const dir = join(process.cwd(), 'uploads', 'contracts');
+        if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+        cb(null, dir);
+      },
+      filename: (_req, file, cb) => {
+        const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        cb(null, unique + extname(file.originalname));
+      },
+    }),
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  }))
+  async uploadFile(@UploadedFile() file: Express.Multer.File) {
+    if (!file) throw new HttpException('未选择文件', HttpStatus.BAD_REQUEST);
+    return {
+      fileId: file.filename,
+      fileName: Buffer.from(file.originalname, 'latin1').toString('utf8'),
+      fileUrl: `/uploads/contracts/${file.filename}`,
+      size: file.size,
+    };
   }
 }

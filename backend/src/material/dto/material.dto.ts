@@ -120,6 +120,7 @@ export class UpdateMaterialDto {
 export class QueryMaterialDto {
   @IsOptional() @IsString() code?: string;
   @IsOptional() @IsString() name?: string;
+  @IsOptional() @IsString() externalCode?: string;
   @IsOptional() @IsString() categoryId?: string;
   @IsOptional() @IsString() status?: string;
   @IsOptional() @IsString() specification?: string;

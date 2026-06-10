@@ -1,46 +1,122 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { Download, FileSearch, Search } from 'lucide-react';
+import { ErpTable, ErpThead, ErpTh, ErpTbody, ErpTr, ErpTd, ErpEmpty, ErpLink, ErpTools, ErpApproval, ErpPagination } from '@/components/ui/erp-table';
 
-interface Contract { id: string; code: string; name: string; type: string; customerName: string | null; supplierName: string | null; totalAmount: string | null; approvalStatus: string; createdAt: string; }
-const S: Record<string, string> = { DRAFT: '草稿', SUBMITTED: '已提交', APPROVED: '已通过', REJECTED: '已拒绝', WITHDRAWN: '已撤回' };
+interface Item {
+  id: string; code: string; name: string; type: string; category: string | null;
+  customerName: string | null; supplierName: string | null;
+  organizationName: string | null;
+  totalAmount: string | null; startDate: string | null; endDate: string | null;
+  approvalStatus: string; createdAt: string;
+}
 
 export default function ContractQueryPage() {
-  const [items, setItems] = useState<Contract[]>([]);
-  const [total, setTotal] = useState(0); const [page, setPage] = useState(1);
-  const [search, setSearch] = useState({ code: '', name: '', status: '', type: '' });
+  const router = useRouter();
+  const [items, setItems] = useState<Item[]>([]); const [total, setTotal] = useState(0);
+  const [pg, setPg] = useState(1); const [ps, setPs] = useState(30);
+  const [s, setS] = useState({ code: '', name: '', type: '', counterparty: '', status: '', startDate: '', endDate: '' });
 
-  const fetchData = useCallback(async () => {
-    const params: any = { page, pageSize: 20 };
-    if (search.code) params.code = search.code;
-    if (search.name) params.name = search.name;
-    if (search.status) params.status = search.status;
-    if (search.type) params.type = search.type;
-    const { data } = await api.get('/contracts', { params });
+  const fetch = useCallback(async () => {
+    const p: any = { page: pg, pageSize: ps };
+    if (s.code) p.code = s.code;
+    if (s.name) p.name = s.name;
+    if (s.type) p.type = s.type;
+    if (s.counterparty) p.counterparty = s.counterparty;
+    if (s.status) p.status = s.status;
+    const { data } = await api.get('/contracts', { params: p });
     setItems(data.items); setTotal(data.total);
-  }, [page, search]);
+  }, [pg, ps, s]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => { fetch(); }, [fetch]);
+
+  const resetSearch = () => setS({ code: '', name: '', type: '', counterparty: '', status: '', startDate: '', endDate: '' });
+
+  const counterpartyName = (i: Item) => i.customerName || i.supplierName || '-';
 
   return (
-    <div className="p-6 space-y-4">
-      <h1 className="text-xl font-bold">合同查询</h1>
-      <Card className="p-4"><div className="flex gap-3 flex-wrap items-end">
-        <div className="w-36"><label className="text-xs text-gray-500">合同编码</label><Input value={search.code} onChange={e => setSearch({ ...search, code: e.target.value })} /></div>
-        <div className="w-36"><label className="text-xs text-gray-500">合同名称</label><Input value={search.name} onChange={e => setSearch({ ...search, name: e.target.value })} /></div>
-        <Button onClick={fetchData}>搜索</Button><Button variant="outline" onClick={() => setSearch({ code: '', name: '', status: '', type: '' })}>重置</Button>
-      </div></Card>
-      <Card><Table><TableHeader><TableRow><TableHead>合同编码</TableHead><TableHead>合同名称</TableHead><TableHead>类型</TableHead><TableHead>客户/供应商</TableHead><TableHead>金额</TableHead><TableHead>状态</TableHead><TableHead>创建时间</TableHead></TableRow></TableHeader>
-      <TableBody>
-        {items.map(item => (<TableRow key={item.id}><TableCell className="font-mono text-sm">{item.code}</TableCell><TableCell>{item.name}</TableCell><TableCell>{item.type}</TableCell><TableCell>{item.customerName || item.supplierName || '-'}</TableCell><TableCell>{item.totalAmount ? Number(item.totalAmount).toLocaleString() : '-'}</TableCell><TableCell><span className={`px-2 py-0.5 rounded text-xs ${item.approvalStatus === 'APPROVED' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>{S[item.approvalStatus]}</span></TableCell><TableCell>{new Date(item.createdAt).toLocaleDateString('zh-CN')}</TableCell></TableRow>))}
-        {items.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-gray-400 py-8">暂无数据</TableCell></TableRow>}
-      </TableBody></Table>
-      <div className="flex items-center justify-between px-4 py-3 border-t"><span className="text-sm text-gray-500">共 {total} 条</span><div className="flex gap-2"><Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>上一页</Button><Button variant="outline" size="sm" disabled={page * 20 >= total} onClick={() => setPage(p => p + 1)}>下一页</Button></div></div></Card>
-    </div>
+    <TooltipProvider>
+      <div className="bg-background rounded-lg border border-border flex flex-col min-h-0">
+        <div className="flex items-center justify-between px-4 h-14 border-b border-border">
+          <div><Button variant="outline" size="sm"><Download className="h-3.5 w-3.5 mr-1" />导出</Button></div>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="sm" onClick={resetSearch}>重置</Button>
+            <Button variant="default" size="sm" onClick={fetch}><Search className="h-3.5 w-3.5 mr-1" />搜索</Button>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4 px-4 py-2.5 border-b border-border bg-muted/30 flex-wrap">
+          <F label="审批状态">
+            <Select value={s.status} onValueChange={(v: any) => setS({ ...s, status: v === 'ALL' ? '' : v })}>
+              <SelectTrigger className="w-[100px] h-9 rounded-md border border-border bg-background px-3 text-[13px]"><SelectValue placeholder="全部" /></SelectTrigger>
+              <SelectContent><SelectItem value="ALL">全部</SelectItem><SelectItem value="DRAFT">草稿</SelectItem><SelectItem value="SUBMITTED">已提交</SelectItem><SelectItem value="APPROVED">已通过</SelectItem><SelectItem value="REJECTED">已拒绝</SelectItem></SelectContent>
+            </Select>
+          </F>
+          <F label="合同编码"><Input className="w-[140px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.code} onChange={e => setS({ ...s, code: e.target.value })} /></F>
+          <F label="合同名称"><Input className="w-[160px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.name} onChange={e => setS({ ...s, name: e.target.value })} /></F>
+          <F label="合同类型">
+            <Select value={s.type} onValueChange={(v: any) => setS({ ...s, type: v === 'ALL' ? '' : v })}>
+              <SelectTrigger className="w-[110px] h-9 rounded-md border border-border bg-background px-3 text-[13px]"><SelectValue placeholder="全部" /></SelectTrigger>
+              <SelectContent><SelectItem value="ALL">全部</SelectItem><SelectItem value="销售合同">销售合同</SelectItem><SelectItem value="采购合同">采购合同</SelectItem></SelectContent>
+            </Select>
+          </F>
+          <F label="相对方"><Input className="w-[140px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.counterparty} onChange={e => setS({ ...s, counterparty: e.target.value })} placeholder="客户/供应商" /></F>
+        </div>
+
+        <ErpTools onRefresh={fetch} />
+
+        <div className="min-h-0">
+          <ErpTable>
+            <ErpThead>
+              <ErpTh className="w-[64px]">序号</ErpTh>
+              <ErpTh className="w-[100px]">审批状态</ErpTh>
+              <ErpTh className="w-[170px]">合同编码</ErpTh>
+              <ErpTh className="w-[220px]">合同名称</ErpTh>
+              <ErpTh className="w-[110px]">合同类型</ErpTh>
+              <ErpTh className="w-[200px]">相对方名称</ErpTh>
+              <ErpTh className="w-[140px]">合同总金额</ErpTh>
+              <ErpTh className="w-[120px]">履约开始</ErpTh>
+              <ErpTh className="w-[120px]">履约结束</ErpTh>
+              <ErpTh className="w-[160px]">创建时间</ErpTh>
+              <ErpTh className="w-[100px]">操作</ErpTh>
+            </ErpThead>
+            <ErpTbody>
+              {items.map((i, idx) => (
+                <ErpTr key={i.id}>
+                  <ErpTd className="text-[#909399]">{(pg - 1) * ps + idx + 1}</ErpTd>
+                  <ErpTd><ErpApproval status={i.approvalStatus} /></ErpTd>
+                  <ErpTd><ErpLink onClick={() => router.push(`/contract/${i.id}/edit`)}>{i.code}</ErpLink></ErpTd>
+                  <ErpTd>{i.name}</ErpTd>
+                  <ErpTd>{i.type || '-'}</ErpTd>
+                  <ErpTd>{counterpartyName(i)}</ErpTd>
+                  <ErpTd className="text-right">{i.totalAmount ? Number(i.totalAmount).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}</ErpTd>
+                  <ErpTd className="text-[#909399]">{i.startDate ? new Date(i.startDate).toLocaleDateString('zh-CN') : '-'}</ErpTd>
+                  <ErpTd className="text-[#909399]">{i.endDate ? new Date(i.endDate).toLocaleDateString('zh-CN') : '-'}</ErpTd>
+                  <ErpTd className="text-[#909399]">{new Date(i.createdAt).toLocaleDateString('zh-CN')}</ErpTd>
+                  <ErpTd>
+                    <button onClick={() => router.push(`/contract/${i.id}/edit`)} className="text-[13px] text-[#409eff] hover:underline inline-flex items-center gap-0.5">
+                      <FileSearch className="h-3.5 w-3.5" />查看
+                    </button>
+                  </ErpTd>
+                </ErpTr>
+              ))}
+              {items.length === 0 && <ErpEmpty colSpan={11} />}
+            </ErpTbody>
+          </ErpTable>
+        </div>
+
+        <ErpPagination page={pg} pageSize={ps} total={total} onPage={setPg} onPageSize={v => setPs(+v)} />
+      </div>
+    </TooltipProvider>
   );
+}
+
+function F({ label, children }: { label: string; children: React.ReactNode }) {
+  return <div className="flex items-center gap-1.5"><span className="text-[13px] text-muted-foreground w-[80px] text-right shrink-0">{label}</span>{children}</div>;
 }

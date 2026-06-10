@@ -1,1 +1,1 @@
-import { Module } from '@nestjs/common'; import { SalesReturnController } from './sales-return.controller'; @Module({ controllers: [SalesReturnController] }) export class SalesReturnModule {}
+import { Module } from '@nestjs/common'; import { SalesReturnController } from './sales-return.controller'; import { SalesParamController } from './sales-params.controller'; @Module({ controllers: [SalesReturnController, SalesParamController] }) export class SalesReturnModule {}

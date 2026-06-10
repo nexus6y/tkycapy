@@ -2,6 +2,19 @@ import { Controller, Get, Post, Put, Delete, Body, Param, Query, BadRequestExcep
 import { PrismaService } from '../prisma/prisma.service';
 import { CodeGeneratorService } from '../common/code-generator.service';
 import { guardSubmit, guardApprove } from '../common/business-rules.helper';
+import { pickAllowed } from '../common/dto-normalizer';
+
+const QT_KEYS = ['quotationNo','quotationName','customerId','customerCode','customerName',
+  'departmentId','departmentName','responsibleName','validUntil','totalAmount',
+  'markResult','approvalStatus','status','remark','tenantId'];
+
+function cleanQt(dto: any): any {
+  const data = pickAllowed(dto, QT_KEYS);
+  for (const k of Object.keys(data)) { if (data[k] === '' || data[k] === null) delete data[k]; }
+  if (data.totalAmount != null) data.totalAmount = String(data.totalAmount);
+  if (data.validUntil) data.validUntil = new Date(data.validUntil);
+  return data;
+}
 
 @Controller('quotations')
 export class QuotationController {
@@ -40,11 +53,14 @@ export class QuotationController {
   @Post()
   async create(@Body() dto: any) {
     const tenantId = await this.tid();
-    if (!dto.quotationNo) dto.quotationNo = await this.codeGen.generate('QTE', 'quotation', 'quotationNo');
-    const { lines, ...orderData } = dto;
+    const { lines, ...rest } = dto as any;
+    const data = cleanQt(rest);
+    data.tenantId = tenantId;
+    if (!data.quotationNo) data.quotationNo = await this.codeGen.generate('QTE', 'quotation', 'quotationNo');
+    // lines extracted from dto before cleanQt (lines key is not in QT_KEYS)
     if (lines && Array.isArray(lines) && lines.length > 0) {
       return this.prisma.quotation.create({
-        data: { ...orderData, tenantId,
+        data: { ...data,
           lines: { create: lines.map((l: any, i: number) => ({
             tenantId, lineNo: l.lineNo ?? i + 1,
             materialCode: l.materialCode, materialName: l.materialName,
@@ -58,12 +74,13 @@ export class QuotationController {
         } as any, include: { lines: true },
       });
     }
-    return this.prisma.quotation.create({ data: { ...orderData, tenantId } as any });
+    return this.prisma.quotation.create({ data: data as any });
   }
 
   @Put(':id')
   async update(@Param('id') id: string, @Body() dto: any) {
-    const { lines, ...orderData } = dto;
+    const { lines, ...rest } = dto as any;
+    const data = cleanQt(rest);
     if (lines !== undefined) {
       await this.prisma.quotationLine.deleteMany({ where: { quotationId: id } });
       if (lines.length > 0) {
@@ -83,7 +100,7 @@ export class QuotationController {
       }
     }
     return this.prisma.quotation.update({
-      where: { id }, data: orderData as any,
+      where: { id }, data: data as any,
       include: { lines: { orderBy: { lineNo: 'asc' } } },
     });
   }

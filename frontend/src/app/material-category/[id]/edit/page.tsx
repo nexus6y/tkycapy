@@ -7,7 +7,14 @@ const FI='h-9 rounded-md border border-border bg-background px-3 text-[13px] w-f
 export default function MCEdit(){const router=useRouter();const {id}=useParams<{id:string}>();
 const [cats,setCats]=useState<any[]>([]);const [loading,setLoading]=useState(true);const [f,setF]=useState<any>({});
 useEffect(()=>{api.get('/material-categories',{params:{pageSize:200}}).then(r=>setCats(r.data.items));api.get('/material-categories/'+id).then(r=>{setF(r.data);setLoading(false);});},[id]);
-const save=async()=>{try{await api.put('/material-categories/'+id,f);router.push('/material-category');}catch(e:any){toast(e.response?.data?.message||'保存失败','error');}};
+const save=async()=>{
+  try{
+    const payload:any={...f};
+    if(!payload.parentId)delete payload.parentId;
+    await api.put('/material-categories/'+id,payload);
+    router.push('/material-category');
+  }catch(e:any){toast(e.response?.data?.message||'保存失败','error');}
+};
 if(loading)return<div className="h-full flex items-center justify-center text-muted-foreground">加载中...</div>;
 return(<FormLayout title={'编辑物料分类：'+f.code} onSave={save} sections={[{id:'b',title:'基本信息'}]} activeSection="b"><FormSection id="b" title="基本信息"><FormGrid>
 <FormField label="分类编码"><Input className={FI} value={f.code} disabled/></FormField>

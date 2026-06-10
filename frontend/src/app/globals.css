@@ -10,6 +10,8 @@
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary-soft: var(--primary-soft);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
@@ -34,6 +36,8 @@
   --primary: oklch(0.55 0.18 260);
   --primary-foreground: oklch(1 0 0);
   --primary-soft: oklch(0.95 0.03 260);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.15 0 0);
   --muted: oklch(0.96 0 0);
   --muted-foreground: oklch(0.55 0 0);
   --border: oklch(0.90 0 0);
@@ -51,13 +55,6 @@
   body { @apply bg-canvas text-foreground text-[13px]; }
   html { @apply font-sans h-full; }
 }
-
-/* Table base — matching Element UI el-table */
-table.erp-table { @apply w-full text-[14px]; }
-table.erp-table thead th { @apply bg-[#f5f7fa] text-[#909399] font-medium text-left px-4 py-3 border-b border-border; }
-table.erp-table tbody td { @apply px-4 py-2.5 border-b border-border text-[#606266]; }
-table.erp-table tbody tr:hover { @apply bg-[#f5f7fa]; }
-table.erp-table .link { @apply text-primary cursor-pointer hover:underline; }
 
 /* Status dot helper */
 .status-dot::before {

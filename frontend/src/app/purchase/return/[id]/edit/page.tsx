@@ -7,7 +7,7 @@ return(<FormLayout title="修改退供单" onSave={save} sections={[{id:'b',titl
 <FormField label="退供单号"><Input className={FI} value={f.returnNo} disabled/></FormField>
 <FormField label="供应商"><EntitySelect entity="supplier" value={f.supplierId||''} onChange={(id,s)=>{setF({...f,...applySupplierSelection(s)});}}/></FormField>
 <FormField label="关联采购"><Input className={FI} value={f.purchaseOrderNo||''} disabled/></FormField>
-<FormField label="物料名称"><Input className={FI} value={f.materialName||''} onChange={e=>setF({...f,materialName:e.target.value})}/></FormField>
+<FormField label="物料名称"><Input className={FI} value={f.materialName||''} onChange={e=>setF({...f,materialName:e.target.value})} data-testid="pr-materialname-input"/></FormField>
 <FormField label="数量"><Input type="number" className={FI} value={f.totalQuantity||''} onChange={e=>setF({...f,totalQuantity:e.target.value})}/></FormField>
 <FormField label="金额"><Input type="number" className={FI} value={f.totalAmount||''} onChange={e=>setF({...f,totalAmount:e.target.value})}/></FormField>
 <FormField label="退货原因"><Input className={FI} value={f.returnReason||''} onChange={e=>setF({...f,returnReason:e.target.value})}/></FormField>

@@ -1,7 +1,7 @@
 'use client';import { useEffect, useState } from 'react';import { useRouter, useParams } from 'next/navigation';import api from '@/lib/api';import { Input } from '@/components/ui/input';import { toast } from '@/components/ui/toast';
 import { FormLayout,FormSection,FormGrid,FormField } from '@/components/form/form-layout';
 import { LinesEditor, LineItem } from '@/components/ui/lines-editor';
-import { EntitySelect } from '@/components/form/entity-select';
+import { EntityPickerInput } from '@/components/form/entity-picker-input';
 import { applyCustomerSelection, applyDepartmentSelection } from '@/lib/field-linkage';
 import { calcTotalFromLines } from '@/lib/calc';
 const FI='h-9 rounded-md border border-border bg-background px-3 text-[13px] w-full';
@@ -32,9 +32,9 @@ return(<FormLayout title={'编辑报价单：'+f.quotationNo} onSave={save} sect
 <FormSection id="b" title="报价单信息"><FormGrid>
 <FormField label="报价单号"><Input className={FI} value={f.quotationNo} disabled/></FormField>
 <FormField label="报价名称" required><Input className={FI} value={f.quotationName} onChange={e=>setF({...f,quotationName:e.target.value})}/></FormField>
-<FormField label="客户"><EntitySelect entity="customer" value={f.customerId||''} onChange={(id,c)=>{setF({...f,...applyCustomerSelection(c)});}}/></FormField>
+<FormField label="客户"><EntityPickerInput entity="customer" value={f.customerCode||''} displayText={f.customerCode ? `${f.customerCode} ${f.customerName||''}` : ''} onChange={(id:any,c:any)=>{setF({...f,...applyCustomerSelection(c)});}}/></FormField>
 <FormField label="客户编码">{f.customerCode&&<Input className={FI} value={f.customerCode} readOnly disabled/>}</FormField>
-<FormField label="报价部门"><EntitySelect entity="department" value={f.departmentId||''} onChange={(id,d)=>{setF({...f,...applyDepartmentSelection(d)});}}/></FormField>
+<FormField label="报价部门"><EntityPickerInput entity="department" value={f.departmentCode||''} displayText={f.departmentCode ? `${f.departmentCode} ${f.departmentName||''}` : ''} onChange={(id:any,d:any)=>{setF({...f,...applyDepartmentSelection(d)});}}/></FormField>
 <FormField label="负责人"><Input className={FI} value={f.responsibleName||''} onChange={e=>setF({...f,responsibleName:e.target.value})}/></FormField>
 <FormField label="截止日期"><Input type="date" className={FI} value={f.validUntil?.split('T')[0]||''} onChange={e=>setF({...f,validUntil:e.target.value})}/></FormField>
 <FormField label="金额"><Input className={FI} value={lines.length>0?calcTotalFromLines(lines):(f.totalAmount||'')} placeholder="自动=明细合计" readOnly disabled/></FormField>

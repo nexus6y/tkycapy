@@ -39,7 +39,7 @@ export function FormLayout({ title, onSave, sections, activeSection, children }:
     setSaving(true);
     try { await onSave(); }
     catch (e: any) {
-      if (!e?.response) toast(e?.message || '保存失败', 'error');
+      toast(e?.response?.data?.message || e?.message || '保存失败', 'error');
     }
     finally { setSaving(false); }
   };
@@ -56,7 +56,7 @@ export function FormLayout({ title, onSave, sections, activeSection, children }:
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => router.back()}>取消</Button>
-          <Button variant="default" size="sm" onClick={handleSave} disabled={saving}>{saving ? '保存中...' : '保存'}</Button>
+          <Button variant="default" size="sm" onClick={handleSave} disabled={saving} data-testid="form-save-btn">{saving ? '保存中...' : '保存'}</Button>
         </div>
       </div>
 
@@ -84,19 +84,29 @@ export function FormLayout({ title, onSave, sections, activeSection, children }:
   );
 }
 
-export function FormSection({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
+export function FormSection({ id, title, children, collapsible, defaultOpen = true, extra }: { id: string; title: string; children: React.ReactNode; collapsible?: boolean; defaultOpen?: boolean; extra?: React.ReactNode }) {
+  const [open, setOpen] = useState(defaultOpen);
   return (
     <section id={id} className="bg-background rounded-lg border shadow-sm">
-      <div className="px-5 py-3 bg-[#f5f7fa] border-b border-border rounded-t-lg">
-        <h2 className="text-[14px] font-bold text-foreground">{title}</h2>
+      <div className="px-5 py-3 bg-[#f5f7fa] border-b border-border rounded-t-lg flex items-center justify-between">
+        <h2 className="text-[14px] font-bold text-foreground flex items-center gap-2">
+          {collapsible && (
+            <button type="button" onClick={() => setOpen(!open)} className="text-muted-foreground hover:text-foreground transition-colors">
+              <svg className={`h-3.5 w-3.5 transition-transform ${open ? 'rotate-90' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>
+            </button>
+          )}
+          {title}
+        </h2>
+        {extra}
       </div>
-      <div className="p-5">{children}</div>
+      {open && <div className="p-5">{children}</div>}
     </section>
   );
 }
 
-export function FormGrid({ children }: { children: React.ReactNode }) {
-  return <div className="grid grid-cols-2 gap-x-6 gap-y-4">{children}</div>;
+export function FormGrid({ children, cols = 2 }: { children: React.ReactNode; cols?: number }) {
+  const colClass = cols === 3 ? 'grid-cols-3' : 'grid-cols-2';
+  return <div className={`grid ${colClass} gap-x-6 gap-y-4`}>{children}</div>;
 }
 
 export function FormField({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {

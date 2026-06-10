@@ -2,6 +2,25 @@ import { Controller, Get, Post, Put, Delete, Body, Param, Query, BadRequestExcep
 import { PrismaService } from "../prisma/prisma.service";
 import { CodeGeneratorService } from "../common/code-generator.service";
 import { guardSubmit, guardApprove } from "../common/business-rules.helper";
+import { pickAllowed } from "../common/dto-normalizer";
+
+const ZONE_KEYS = ['code','name','type','warehouseId','warehouseName','status','sortOrder','tenantId'];
+const PASS_KEYS = ['code','name','type','zoneId','zoneName','status','sortOrder','tenantId'];
+const SHELF_KEYS = ['code','name','machineType','spec','passageId','passageName','zoneName','warehouseName','areaName','status','sortOrder','tenantId'];
+const LOC_KEYS = ['code','name','type','usageStatus','shelfId','shelfName','layer','col','zoneName','warehouseName','status','sortOrder','tenantId'];
+const CHK_KEYS = ['orderNo','checkMethod','checkResult','locationCode','materialId','materialCode','materialName','spec','unit','batchNo','stockQty','checkQty','diffQty','areaName','warehouseId','warehouseCode','warehouseName','zoneName','inspector','checkDate','approvalStatus','businessStatus','remark','tenantId'];
+
+function clean(dto: any, keys: string[]): any {
+  const data = pickAllowed(dto, keys);
+  for (const k of Object.keys(data)) { if (data[k] === '' || data[k] === null) delete data[k]; }
+  return data;
+}
+function cleanChk(dto: any): any {
+  const data = clean(dto, CHK_KEYS);
+  if (data.checkDate) data.checkDate = new Date(data.checkDate);
+  ['stockQty','checkQty','diffQty'].forEach(f => { if (data[f] != null) data[f] = String(data[f]); });
+  return data;
+}
 
 @Controller("zones")
 export class ZoneController {
@@ -14,8 +33,8 @@ export class ZoneController {
     return { items, total, page: +page, pageSize: +pageSize };
   }
   @Get(":id") async findOne(@Param("id") id: string) { return this.prisma.zone.findUniqueOrThrow({ where: { id } }); }
-  @Post() async create(@Body() dto: any) { const tenantId = await this.tid(); if (!dto.code) dto.code = await this.codeGen.generate('ZONE', 'zone', 'code'); return this.prisma.zone.create({ data: { ...dto, tenantId } }); }
-  @Put(":id") async update(@Param("id") id: string, @Body() dto: any) { return this.prisma.zone.update({ where: { id }, data: dto }); }
+  @Post() async create(@Body() dto: any) { const tenantId = await this.tid(); const data = clean(dto, ZONE_KEYS); data.tenantId = tenantId; if (!data.code) data.code = await this.codeGen.generate('ZONE', 'zone', 'code'); return this.prisma.zone.create({ data }); }
+  @Put(":id") async update(@Param("id") id: string, @Body() dto: any) { return this.prisma.zone.update({ where: { id }, data: clean(dto, ZONE_KEYS) }); }
   @Delete(":id") async remove(@Param("id") id: string) { await this.prisma.zone.delete({ where: { id } }); return { message: "删除成功" }; }
 }
 
@@ -30,8 +49,8 @@ export class PassageController {
     return { items, total, page: +page, pageSize: +pageSize };
   }
   @Get(":id") async findOne(@Param("id") id: string) { return this.prisma.passage.findUniqueOrThrow({ where: { id } }); }
-  @Post() async create(@Body() dto: any) { const tenantId = await this.tid(); return this.prisma.passage.create({ data: { ...dto, tenantId } }); }
-  @Put(":id") async update(@Param("id") id: string, @Body() dto: any) { return this.prisma.passage.update({ where: { id }, data: dto }); }
+  @Post() async create(@Body() dto: any) { const tenantId = await this.tid(); const data = clean(dto, PASS_KEYS); data.tenantId = tenantId; return this.prisma.passage.create({ data }); }
+  @Put(":id") async update(@Param("id") id: string, @Body() dto: any) { return this.prisma.passage.update({ where: { id }, data: clean(dto, PASS_KEYS) }); }
   @Delete(":id") async remove(@Param("id") id: string) { await this.prisma.passage.delete({ where: { id } }); return { message: "删除成功" }; }
 }
 
@@ -46,8 +65,8 @@ export class ShelfController {
     return { items, total, page: +page, pageSize: +pageSize };
   }
   @Get(":id") async findOne(@Param("id") id: string) { return this.prisma.shelf.findUniqueOrThrow({ where: { id } }); }
-  @Post() async create(@Body() dto: any) { const tenantId = await this.tid(); return this.prisma.shelf.create({ data: { ...dto, tenantId } }); }
-  @Put(":id") async update(@Param("id") id: string, @Body() dto: any) { return this.prisma.shelf.update({ where: { id }, data: dto }); }
+  @Post() async create(@Body() dto: any) { const tenantId = await this.tid(); const data = clean(dto, SHELF_KEYS); data.tenantId = tenantId; return this.prisma.shelf.create({ data }); }
+  @Put(":id") async update(@Param("id") id: string, @Body() dto: any) { return this.prisma.shelf.update({ where: { id }, data: clean(dto, SHELF_KEYS) }); }
   @Delete(":id") async remove(@Param("id") id: string) { await this.prisma.shelf.delete({ where: { id } }); return { message: "删除成功" }; }
 }
 
@@ -62,8 +81,8 @@ export class LocationController {
     return { items, total, page: +page, pageSize: +pageSize };
   }
   @Get(":id") async findOne(@Param("id") id: string) { return this.prisma.location.findUniqueOrThrow({ where: { id } }); }
-  @Post() async create(@Body() dto: any) { const tenantId = await this.tid(); return this.prisma.location.create({ data: { ...dto, tenantId } }); }
-  @Put(":id") async update(@Param("id") id: string, @Body() dto: any) { return this.prisma.location.update({ where: { id }, data: dto }); }
+  @Post() async create(@Body() dto: any) { const tenantId = await this.tid(); const data = clean(dto, LOC_KEYS); data.tenantId = tenantId; return this.prisma.location.create({ data }); }
+  @Put(":id") async update(@Param("id") id: string, @Body() dto: any) { return this.prisma.location.update({ where: { id }, data: clean(dto, LOC_KEYS) }); }
   @Delete(":id") async remove(@Param("id") id: string) { await this.prisma.location.delete({ where: { id } }); return { message: "删除成功" }; }
 }
 
@@ -80,17 +99,13 @@ export class CheckOrderController {
   @Get(":id") async findOne(@Param("id") id: string) { return this.prisma.checkOrder.findUniqueOrThrow({ where: { id } }); }
   @Post() async create(@Body() dto: any) {
     const tenantId = await this.tid();
-    if (!dto.orderNo) dto.orderNo = await this.codeGen.generate('CHK', 'checkOrder', 'orderNo');
-    const data: any = { ...dto, tenantId };
-    if (data.checkDate) data.checkDate = new Date(data.checkDate);
-    if (data.stockQty != null) data.stockQty = String(data.stockQty);
-    if (data.checkQty != null) data.checkQty = String(data.checkQty);
-    if (data.diffQty != null) data.diffQty = String(data.diffQty);
+    const data = cleanChk(dto);
+    data.tenantId = tenantId;
+    if (!data.orderNo) data.orderNo = await this.codeGen.generate('CHK', 'checkOrder', 'orderNo');
     return this.prisma.checkOrder.create({ data });
   }
   @Put(":id") async update(@Param("id") id: string, @Body() dto: any) {
-    const data: any = { ...dto };
-    if (data.checkDate) data.checkDate = new Date(data.checkDate);
+    const data = cleanChk(dto);
     return this.prisma.checkOrder.update({ where: { id }, data });
   }
   @Delete(":id") async remove(@Param("id") id: string) { await this.prisma.checkOrder.delete({ where: { id } }); return { message: "删除成功" }; }
@@ -134,8 +149,8 @@ export class CheckOrderController {
           // Copy precise inventory location fields from check order
           materialCode: chk.materialCode, materialName: chk.materialName,
           spec: chk.spec, unit: chk.unit,
-          warehouseCode: chk.warehouseName, warehouseName: chk.warehouseName,
-          locationCode: chk.locationCode, batchNo: chk.batchNo,
+          warehouseCode: chk.warehouseCode || chk.warehouseName, warehouseName: chk.warehouseName,
+          locationCode: chk.locationCode || '', batchNo: chk.batchNo || '',
           adjustQty: String(adjQty), adjustReason: reason,
           approvalStatus: 'DRAFT', businessStatus: 'PENDING',
         } as any,

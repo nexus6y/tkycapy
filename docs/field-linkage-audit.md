@@ -70,6 +70,7 @@
 ### 总计已修复
 
 **38 页**，全部使用 `EntitySelect` + `field-linkage.ts` 公共工具。
+其中 **14 页**（第 1-2 批次中的创建/编辑表单）已升级为 `EntityPickerInput`（弹窗选择器），`field-linkage.ts` 保持不变。
 
 ---
 
@@ -114,7 +115,7 @@
 ### 不依赖数据库预置数据
 
 `PurchaseReturn` 模型（`purchase_return` 表）已创建，支持 `supplierId`/`supplierCode`/`supplierName`/`purchaseOrderId`/`purchaseOrderNo`。<br>
-`LendOrder` edit 页面已修复后端路由（`@Param(':id')` → `@Param('id')`），支持 EntitySelect。E2E #28 ，页面功能正常。<br>
+`LendOrder` edit 页面已修复后端路由（`@Param(':id')` → `@Param('id')`），支持 EntitySelect。E2E #28 覆盖：验证 materialId、materialCode(disabled)、spec=LEND-SPEC(disabled)、unit(disabled)、qty=12、borrower=E2E借用人、borrowDate、expectedReturn。<br>
 大部分测试在 constructor 阶段通过 API 创建夹具（`createApproved*` / `createWithLines*`），不依赖 DB 种子。
 少数使用共享 fixture：project（`GET /projects` 取首个）、department（首次运行时 API 创建 `E2E-DEPT` 后复用）。
 `DemandPlan` 模型支持 `projectId`/`projectCode`/`projectName`/`departmentId`/`departmentCode`/`departmentName`。
@@ -128,7 +129,7 @@
 | 批次 | 页面 |
 |---|---|
 | 生产子页 | `production/return/create`, `production/return/[id]/edit`, `production/bom/create`, `production/bom/[id]/edit`, `production/process/create`, `production/process/[id]/edit`, `production/route/create`, `production/route/[id]/edit`, `production/change/create`, `production/change/[id]/edit`, `production/order/[id]/edit` |
-| | |
+| EntityPicker 弹窗交互 | `contract/create`, `contract/[id]/edit`, `sales/quotation/create`, `sales/quotation/[id]/edit`, `sales/order/create`, `sales/order/[id]/edit`, `purchase/order/create`, `purchase/order/[id]/edit`, `warehouse/inbound/create`, `warehouse/inbound/[id]/edit`, `warehouse/outbound/create`, `warehouse/outbound/[id]/edit`, `quality/inspection/create`, `quality/inspection/[id]/edit` — 弹窗选择器替换 EntitySelect 后，确认选择→回填链路仍正确 |
 
 ---
 
@@ -148,7 +149,7 @@
 
 ```bash
 pnpm build                          # 前端构建
-cd backend && npx nest build        # 后端构建  
+cd backend && npx nest build        # 后端构建
 npx prisma validate                 # Prisma schema 校验
-pnpm test:e2e:field-linkage         # 浏览器 E2E (17 tests)
+pnpm test:e2e:field-linkage         # 浏览器 E2E (28 tests)
 ```

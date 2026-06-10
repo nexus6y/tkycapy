@@ -20,6 +20,11 @@ export default function CompleteAuditPage() {
     const {data}=await api.get('/complete-reports',{params:p}); setItems(data.items); setTotal(data.total);
   },[pg,ps,s]); useEffect(()=>{fetch();},[fetch]);
 
+  const doSubmit=async(id:string)=>{
+    try{await api.put(`/complete-reports/${id}/submit`); toast('已提交','success'); fetch();}
+    catch(e:any){toast(e.response?.data?.message||'提交失败','error');}
+  };
+
   const doApprove=async(id:string)=>{
     try{await api.put(`/complete-reports/${id}/approve`); toast('完工登卡成功，产品库存已更新','success'); fetch();}
     catch(e:any){toast(e.response?.data?.message||'登卡失败','error');}
@@ -46,12 +51,12 @@ export default function CompleteAuditPage() {
     </div>
     <ErpTools onRefresh={fetch}/>
     <div className="overflow-auto"><ErpTable><ErpThead><ErpTh>报告单号</ErpTh><ErpTh>来源</ErpTh><ErpTh>生产单号</ErpTh><ErpTh>物料</ErpTh><ErpTh>规格</ErpTh><ErpTh>预计产量</ErpTh><ErpTh>实际产量</ErpTh><ErpTh>部门</ErpTh><ErpTh>审批状态</ErpTh><ErpTh>操作</ErpTh></ErpThead><ErpTbody>
-    {items.map(i=>{const diff=Number(i.actualQty||0)-Number(i.plannedQty||0);
-      return(<ErpTr key={i.id}><ErpTd><ErpLink>{i.reportNo}</ErpLink></ErpTd><ErpTd className="text-muted-foreground">{i.sourceType||'-'}</ErpTd><ErpTd>{i.productionOrderNo||'-'}</ErpTd><ErpTd>{i.materialName||'-'}</ErpTd><ErpTd className="text-muted-foreground">{i.spec||'-'}</ErpTd><ErpTd>{i.plannedQty?Number(i.plannedQty).toLocaleString():'-'}</ErpTd><ErpTd className="font-medium">{i.actualQty?Number(i.actualQty).toLocaleString():'-'}</ErpTd><ErpTd className="text-muted-foreground">{i.deptName||'-'}</ErpTd><ErpTd><ErpApproval status={i.approvalStatus}/></ErpTd><ErpTd>
-    {(i.approvalStatus==='DRAFT'||i.approvalStatus==='SUBMITTED')?<button onClick={()=>doApprove(i.id)} className="text-green-600 text-[13px] hover:underline mr-2">登卡/审核</button>:null}
+    {items.map(i=>(<ErpTr key={i.id}><ErpTd><ErpLink>{i.reportNo}</ErpLink></ErpTd><ErpTd className="text-muted-foreground">{i.sourceType||'-'}</ErpTd><ErpTd>{i.productionOrderNo||'-'}</ErpTd><ErpTd>{i.materialName||'-'}</ErpTd><ErpTd className="text-muted-foreground">{i.spec||'-'}</ErpTd><ErpTd>{i.plannedQty?Number(i.plannedQty).toLocaleString():'-'}</ErpTd><ErpTd className="font-medium">{i.actualQty?Number(i.actualQty).toLocaleString():'-'}</ErpTd><ErpTd className="text-muted-foreground">{i.deptName||'-'}</ErpTd><ErpTd><ErpApproval status={i.approvalStatus}/></ErpTd><ErpTd>
+    {(i.approvalStatus==='DRAFT')?<button onClick={()=>doSubmit(i.id)} className="text-primary text-[13px] hover:underline mr-2">提交</button>:null}
+    {i.approvalStatus==='SUBMITTED'?<button onClick={()=>doApprove(i.id)} className="text-green-600 text-[13px] hover:underline mr-2">登卡/审核</button>:null}
     {i.approvalStatus==='APPROVED'?<button onClick={()=>doCancel(i.id)} className="text-orange-500 text-[13px] hover:underline">撤销登卡</button>:null}
     {i.approvalStatus==='DRAFT'||i.approvalStatus==='SUBMITTED'||i.approvalStatus==='APPROVED'?null:<span className="text-[13px] text-muted-foreground">-</span>}
-    </ErpTd></ErpTr>)})}
+    </ErpTd></ErpTr>))}
     {items.length===0&&<ErpEmpty colSpan={10}/>}
     </ErpTbody></ErpTable></div>
     <ErpPagination page={pg} pageSize={ps} total={total} onPage={setPg} onPageSize={v=>setPs(+v)}/>

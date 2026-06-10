@@ -1,7 +1,11 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, BadRequestException, HttpException, HttpStatus } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { guardSubmit, guardApprove } from '../common/business-rules.helper';
 import { CodeGeneratorService } from '../common/code-generator.service';
+import { pickAllowed } from '../common/dto-normalizer';
+
+const SHIP_KEYS = ['shipmentNo','orderId','orderNo','customerName','shipmentDate','totalQuantity','totalAmount','approvalStatus','businessStatus','remark','tenantId'];
+function cleanShip(dto: any): any { const d = pickAllowed(dto, SHIP_KEYS); for (const k of Object.keys(d)) { if (d[k] === '' || d[k] === null) delete d[k]; }; if (d.shipmentDate) d.shipmentDate = new Date(d.shipmentDate); if (d.totalQuantity != null) d.totalQuantity = String(d.totalQuantity); if (d.totalAmount != null) d.totalAmount = String(d.totalAmount); return d; }
 
 @Controller('sales-shipments')
 export class SalesShipmentController {
@@ -65,10 +69,12 @@ export class SalesShipmentController {
     }
 
     const { lines, ...shipData } = dto;
+    const clean = cleanShip(shipData);
+    clean.tenantId = tenantId;
     if (lines && Array.isArray(lines) && lines.length > 0) {
       return this.prisma.salesShipment.create({
         data: {
-          ...shipData, tenantId,
+          ...clean,
           lines: { create: lines.map((l: any, i: number) => {
             const solId = l.salesOrderLineId || l.id || null;
             const sol = solId ? soLineMap.get(solId) : null;
@@ -77,8 +83,8 @@ export class SalesShipmentController {
               salesOrderLineId: solId,
               materialCode: l.materialCode, materialName: l.materialName,
               spec: l.spec, unit: l.unit,
-              orderQty: l.orderQty != null ? String(l.orderQty) : null,
-              shippedQty: l.shippedQty != null ? String(l.shippedQty) : null,
+              orderQty: (l.orderQty != null && l.orderQty !== '') ? String(l.orderQty) : null,
+              shippedQty: (l.shippedQty != null && l.shippedQty !== '') ? String(l.shippedQty) : null,
               unitPrice: sol?.unitPrice != null ? String(sol.unitPrice) : null,
               amount: sol != null ? String((Number(sol.amount || 0) * (Number(l.shippedQty || 0) / Math.max(1, Number(sol.quantity || 0)))).toFixed(2)) : null,
               warehouseCode: l.warehouseCode,
@@ -88,12 +94,13 @@ export class SalesShipmentController {
         include: { lines: true },
       });
     }
-    return this.prisma.salesShipment.create({ data: { ...shipData, tenantId } as any });
+    return this.prisma.salesShipment.create({ data: clean });
   }
 
   @Put(':id')
   async update(@Param('id') id: string, @Body() dto: any) {
     const { lines, ...shipData } = dto;
+    const clean = cleanShip(shipData);
     if (lines !== undefined) {
       await this.prisma.salesShipmentLine.deleteMany({ where: { shipmentId: id } });
       if (lines.length > 0) {
@@ -111,7 +118,7 @@ export class SalesShipmentController {
         });
       }
     }
-    return this.prisma.salesShipment.update({ where: { id }, data: shipData as any, include: { lines: { orderBy: { lineNo: 'asc' } } } });
+    return this.prisma.salesShipment.update({ where: { id }, data: clean, include: { lines: { orderBy: { lineNo: 'asc' } } } });
   }
 
   @Delete(':id')
@@ -272,10 +279,61 @@ export class SalesShipmentController {
       throw new BadRequestException('没有可发货的物料');
     }
 
+    // Resolve missing warehouseCode from material → default warehouse → inventory
     const noWh = outboundLines.filter(l => !l.warehouseCode);
     if (noWh.length > 0) {
-      const names = noWh.map(l => l.materialName || l.materialCode).join(', ');
-      throw new BadRequestException(`以下物料未配置仓库: ${names}`);
+      const matCodes = [...new Set(noWh.map(l => l.materialCode).filter(Boolean))];
+      const matWhMap = new Map<string, string>(); // materialCode → warehouseCode
+      if (matCodes.length > 0) {
+        // ① Try material default warehouse
+        const materials = await this.prisma.material.findMany({
+          where: { tenantId, code: { in: matCodes } },
+          select: { code: true, defaultWarehouseId: true },
+        });
+        const whIds: string[] = [...new Set(materials.map(m => m.defaultWarehouseId).filter((id): id is string => !!id))];
+        const warehouseMap = new Map<string, string>(); // id → code
+        if (whIds.length > 0) {
+          const warehouses = await this.prisma.warehouse.findMany({
+            where: { tenantId, id: { in: whIds } },
+            select: { id: true, code: true },
+          });
+          for (const w of warehouses) warehouseMap.set(w.id, w.code);
+        }
+        for (const m of materials) {
+          if (m.defaultWarehouseId) {
+            const whCode = warehouseMap.get(m.defaultWarehouseId);
+            if (whCode) matWhMap.set(m.code, whCode);
+          }
+        }
+        // ② Fallback: look up inventory for materials still missing warehouse
+        const stillMissing = matCodes.filter(c => !matWhMap.has(c));
+        if (stillMissing.length > 0) {
+          const inventoryRows = await this.prisma.inventory.findMany({
+            where: { tenantId, materialCode: { in: stillMissing }, qualityStatus: 'QUALIFIED' },
+            select: { materialCode: true, warehouseCode: true },
+            orderBy: { quantity: 'desc' },
+          });
+          const seen = new Set<string>();
+          for (const inv of inventoryRows) {
+            const mc = inv.materialCode;
+            const wc = inv.warehouseCode;
+            if (mc && wc && !matWhMap.has(mc) && !seen.has(mc)) {
+              matWhMap.set(mc, wc);
+              seen.add(mc);
+            }
+          }
+        }
+      }
+      for (const line of noWh) {
+        const whCode = matWhMap.get(line.materialCode || '');
+        if (whCode) line.warehouseCode = whCode;
+      }
+      // Re-check after all fallbacks
+      const stillNoWh = outboundLines.filter(l => !l.warehouseCode);
+      if (stillNoWh.length > 0) {
+        const names = stillNoWh.map(l => l.materialName || l.materialCode).join(', ');
+        throw new BadRequestException(`以下物料未配置仓库: ${names}`);
+      }
     }
 
     const totalQty = outboundLines.reduce((s, l) => s + Number(l.quantity || 0), 0);
