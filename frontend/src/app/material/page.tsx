@@ -67,7 +67,7 @@ export default function MaterialPage() {
     responsiblePerson:'', startDate:'', endDate:'',
   });
 
-  const colSpan = 18;
+  const colSpan = 16;
 
   return (
     <TooltipProvider>

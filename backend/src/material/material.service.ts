@@ -11,7 +11,7 @@ export class MaterialService {
   }
 
   async findAll(query: QueryMaterialDto) {
-    const { code, name, externalCode, categoryId, status, specification, materialProperty, productCategory, planAttribute, defaultSupplierName, responsiblePerson, approvalStatus, page = 1, pageSize = 20 } = query;
+    const { code, name, externalCode, categoryId, status, specification, materialProperty, productCategory, planAttribute, defaultSupplierName, responsiblePerson, approvalStatus, startDate, endDate, page = 1, pageSize = 20 } = query;
     const tenantId = await this.getTenantId();
     const where: any = { tenantId };
 
@@ -27,6 +27,12 @@ export class MaterialService {
     if (defaultSupplierName) where.defaultSupplier = { contains: defaultSupplierName };
     if (responsiblePerson) where.responsiblePerson = { contains: responsiblePerson };
     if (approvalStatus) where.approvalStatus = approvalStatus;
+    if (startDate || endDate) {
+      const createdAt: any = {};
+      if (startDate) createdAt.gte = new Date(startDate);
+      if (endDate) createdAt.lte = new Date(endDate + 'T23:59:59.999Z');
+      where.createdAt = createdAt;
+    }
 
     const [items, total] = await Promise.all([
       this.prisma.material.findMany({

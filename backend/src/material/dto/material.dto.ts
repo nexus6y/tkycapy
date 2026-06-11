@@ -130,6 +130,8 @@ export class QueryMaterialDto {
   @IsOptional() @IsString() defaultSupplierName?: string;
   @IsOptional() @IsString() responsiblePerson?: string;
   @IsOptional() @IsString() approvalStatus?: string;
+  @IsOptional() @IsString() startDate?: string;
+  @IsOptional() @IsString() endDate?: string;
   @IsOptional() @Type(() => Number) @IsInt() page?: number;
   @IsOptional() @Type(() => Number) @IsInt() pageSize?: number;
 }
