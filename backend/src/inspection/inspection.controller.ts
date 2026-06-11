@@ -110,6 +110,11 @@ export class InspectionController {
           })),
         });
       }
+      // If any line has a non-PENDING result, mark inspection as COMPLETED (质检完成)
+      const hasResult = lines.some((l:any) => l.result && l.result !== 'PENDING');
+      if (hasResult && !orderData.businessStatus) {
+        orderData.businessStatus = 'COMPLETED';
+      }
     }
     return this.prisma.inspection.update({
       where: { id }, data: orderData as any,
@@ -128,7 +133,10 @@ export class InspectionController {
   async submit(@Param('id') id: string) {
     const insp = await this.prisma.inspection.findUniqueOrThrow({ where: { id } });
     if (insp.approvalStatus !== 'DRAFT') throw new BadRequestException('只能提交草稿状态的质检单');
-    return this.prisma.inspection.update({ where: { id }, data: { approvalStatus: 'SUBMITTED' } as any });
+    return this.prisma.inspection.update({
+      where: { id },
+      data: { approvalStatus: 'SUBMITTED', businessStatus: 'PENDING' } as any,
+    });
   }
 
   @Put(':id/reject')
@@ -201,7 +209,7 @@ export class InspectionController {
 
     await this.prisma.inspection.update({
       where: { id },
-      data: { approvalStatus: 'APPROVED', qualifiedQty: sumQual, unqualifiedQty: sumUnqual } as any,
+      data: { approvalStatus: 'APPROVED', businessStatus: 'COMPLETED', qualifiedQty: sumQual, unqualifiedQty: sumUnqual } as any,
     });
 
     const tenantId = await this.tid();

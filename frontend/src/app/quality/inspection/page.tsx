@@ -39,8 +39,8 @@ interface DetailRow {
 
 /* ── labels ── */
 const A_OPTS = [{v:'ALL',l:'全部'},{v:'DRAFT',l:'草稿'},{v:'SUBMITTED',l:'已提交'},{v:'APPROVED',l:'已通过'}];
-const B_OPTS = [{v:'ALL',l:'全部'},{v:'PENDING',l:'待质检'},{v:'COMPLETED',l:'质检完成'},{v:'STOCK',l:'待生成入库单'},{v:'FULL',l:'全部生成入库单'}];
-const BS_LABEL:Record<string,string>={PENDING:'待质检',COMPLETED:'质检完成',STOCK:'待生成入库单',FULL:'全部生成入库单'};
+const B_OPTS = [{v:'ALL',l:'全部'},{v:'PENDING',l:'待质检'},{v:'COMPLETED',l:'质检完成'}];
+const BS_LABEL:Record<string,string>={PENDING:'待质检',COMPLETED:'质检完成'};
 
 function fmtDt(v:string|null){return v?new Date(v).toLocaleDateString('zh-CN'):'-';}
 
