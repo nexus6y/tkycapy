@@ -59,7 +59,7 @@ export class PurchaseOrderController {
     @Query('mode') mode?: string,
   ) {
     const tenantId = await this.tid();
-    const where: any = { tenantId };
+    const where: any = { tenantId, deletedAt: null };
     if (status) where.approvalStatus = status;
     if (bizStatus) where.businessStatus = bizStatus;
     if (code) where.orderNo = { contains: code };
@@ -199,11 +199,10 @@ export class PurchaseOrderController {
       throw new BadRequestException(`采购订单已被后续单据引用（${refs.join('、')}），不可删除`);
     }
 
-    // Delete in transaction: lines first, then header
-    await this.prisma.$transaction([
-      this.prisma.purchaseOrderLine.deleteMany({ where: { purchaseOrderId: id } }),
-      this.prisma.purchaseOrder.delete({ where: { id } }),
-    ]);
+    await this.prisma.purchaseOrder.update({
+      where: { id },
+      data: { deletedAt: new Date() } as any,
+    });
 
     return { message: '删除成功' };
   }

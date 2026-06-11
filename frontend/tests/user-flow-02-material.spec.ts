@@ -355,7 +355,6 @@ test.describe('C — 物料档案', () => {
     test.setTimeout(60000);
     const fc = installFC(page);
     const ts = Date.now();
-    const matCode = `E2E_MUI_${ts}`;
     const matName = `E2E物料UI_${ts}`;
     const matName2 = `${matName}改`;
 
@@ -377,9 +376,12 @@ test.describe('C — 物料档案', () => {
     await page.waitForTimeout(500);
 
     // ── 基本信息 ──
-    await page.locator('label:has-text("物料编号") + div input').first().scrollIntoViewIfNeeded();
-    await page.waitForTimeout(300);
-    await page.locator('label:has-text("物料编号") + div input').first().fill(matCode);
+    // 物料编号由系统自动生成（disabled/readonly），读取自动生成的值
+    const codeInput = page.locator('label:has-text("物料编号") + div input').first();
+    await codeInput.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(500);
+    await expect(codeInput).not.toHaveValue('');
+    const matCode = await codeInput.inputValue();
     await page.getByTestId('material-name-input').fill(matName);
     await page.locator('label:has-text("规格型号") + div input').first().fill('E2E规格mm');
 

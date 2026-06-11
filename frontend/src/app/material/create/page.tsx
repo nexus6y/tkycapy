@@ -29,8 +29,8 @@ export default function MaterialCreatePage() {
     materialType:'PHYSICAL',materialProperty:'',productCategory:'',unifiedUnit:true,sortOrder:0,status:'ACTIVE',remark:'',
 
     defaultSupplier:'',defaultPurchaser:'',minPurchaseQty:'',plannedPrice:'',requiredManufacturer:'',excludedManufacturer:'',responsiblePerson:'',
-    needInspection:false,defectRateLimit:'',defaultSalesperson:'',minOrderQty:'',
-    defaultWarehouseId:'',safetyStockQty:'',maxStockQty:'',minStockQty:'',batchManaged:false,shelfLifeManaged:false,remainingShelfLife:'',serialManaged:false,
+    needInspection:true,defectRateLimit:'',defaultSalesperson:'',minOrderQty:'',
+    defaultWarehouseId:'',safetyStockQty:'',maxStockQty:'',minStockQty:'',batchManaged:true,shelfLifeManaged:false,remainingShelfLife:'',serialManaged:false,
     directProduction:false,planAttribute:'',economicBatch:'',batchMultiple:'',lossRate:'',defaultDeptId:'',issueMethod:'',
     prodStdQty:'',prodStdHours:'',repairStdQty:'',repairStdHours:'',maintStdQty:'',maintStdHours:'',
   });
@@ -50,16 +50,16 @@ export default function MaterialCreatePage() {
           <FormField label="1级分类" required>
             <EntitySelect entity="materialCategory" value={f.categoryId} onChange={(id:any)=>setF({...f,categoryId:id})} placeholder="选择分类"/>
           </FormField>
-          <FormField label="物料编号"><Input className={FI} value={f.code} readOnly disabled/></FormField>
+          <FormField label="物料编号"><Input className={FI} value={f.code} onChange={e=>setF({...f,code:e.target.value})} placeholder="可手动输入物料编号"/></FormField>
           <FormField label="物料名称" required><Input className={FI} value={f.name} onChange={e=>setF({...f,name:e.target.value})} data-testid="material-name-input"/></FormField>
           <FormField label="规格型号"><Input className={FI} value={f.specification} onChange={e=>setF({...f,specification:e.target.value})}/></FormField>
           <FormField label="外部编码"><Input className={FI} value={f.externalCode} onChange={e=>setF({...f,externalCode:e.target.value})}/></FormField>
           <FormField label="排序"><Input type="number" className={FI} value={f.sortOrder} onChange={e=>setF({...f,sortOrder:+e.target.value})}/></FormField>
           <FormField label="状态">
-            <RadioGroup value={f.status} onValueChange={(v:any)=>setF({...f,status:v})} className="flex items-center gap-4 pt-1.5">
-              <div className="flex items-center gap-1.5"><RadioGroupItem value="ACTIVE" id="s-active"/><label htmlFor="s-active" className="text-[13px]">启用</label></div>
-              <div className="flex items-center gap-1.5"><RadioGroupItem value="INACTIVE" id="s-inactive"/><label htmlFor="s-inactive" className="text-[13px]">停用</label></div>
-            </RadioGroup>
+            <div className="flex items-center gap-2 pt-1.5">
+              <Switch checked={f.status === 'ACTIVE'} onCheckedChange={v => setF({...f, status: v ? 'ACTIVE' : 'INACTIVE'})} />
+              <span className="text-[13px]">{f.status === 'ACTIVE' ? '启用' : '停用'}</span>
+            </div>
           </FormField>
           <div className="col-span-2"><FormField label="备注"><Textarea className={`${FI} h-20`} value={f.remark} onChange={e=>setF({...f,remark:e.target.value})}/></FormField></div>
         </FormGrid>
@@ -70,8 +70,8 @@ export default function MaterialCreatePage() {
         <FormGrid>
           <FormField label="物料性质" required>
             <RadioGroup value={f.materialType} onValueChange={(v:any)=>setF({...f,materialType:v})} className="flex items-center gap-4 pt-1.5">
-              <div className="flex items-center gap-1.5"><RadioGroupItem value="PHYSICAL" id="mt-phys"/><label htmlFor="mt-phys" className="text-[13px]">实物</label></div>
-              <div className="flex items-center gap-1.5"><RadioGroupItem value="VIRTUAL" id="mt-virt"/><label htmlFor="mt-virt" className="text-[13px]">虚拟</label></div>
+              <div className="flex items-center gap-1.5"><RadioGroupItem value="PHYSICAL" id="mt-phys"/><label htmlFor="mt-phys" className="text-[13px]">实物物料</label></div>
+              <div className="flex items-center gap-1.5"><RadioGroupItem value="VIRTUAL" id="mt-virt"/><label htmlFor="mt-virt" className="text-[13px]">虚拟物料</label></div>
             </RadioGroup>
           </FormField>
           <FormField label="物料属性"><Input className={FI} value={f.materialProperty} onChange={e=>setF({...f,materialProperty:e.target.value})}/></FormField>
@@ -82,7 +82,7 @@ export default function MaterialCreatePage() {
       {/* 计量单位 */}
       <FormSection id="unit" title="计量单位">
         <FormGrid>
-          <FormField label="统一计量单位">
+          <FormField label="是否统一计量单位">
             <RadioGroup value={f.unifiedUnit?'true':'false'} onValueChange={(v:any)=>setF({...f,unifiedUnit:v==='true'})} className="flex items-center gap-4 pt-1.5">
               <div className="flex items-center gap-1.5"><RadioGroupItem value="true" id="uu-yes"/><label htmlFor="uu-yes" className="text-[13px]">是</label></div>
               <div className="flex items-center gap-1.5"><RadioGroupItem value="false" id="uu-no"/><label htmlFor="uu-no" className="text-[13px]">否</label></div>
@@ -126,17 +126,17 @@ export default function MaterialCreatePage() {
           <FormField label="安全库存数量"><Input type="number" className={FI} value={f.safetyStockQty} onChange={e=>setF({...f,safetyStockQty:e.target.value})}/></FormField>
           <FormField label="最高库存数量"><Input type="number" className={FI} value={f.maxStockQty} onChange={e=>setF({...f,maxStockQty:e.target.value})}/></FormField>
           <FormField label="最低库存数量"><Input type="number" className={FI} value={f.minStockQty} onChange={e=>setF({...f,minStockQty:e.target.value})}/></FormField>
-          <FormField label="批次管理"><Switch checked={f.batchManaged} onCheckedChange={v=>setF({...f,batchManaged:v})} className="mt-1.5"/></FormField>
-          <FormField label="效期管理"><Switch checked={f.shelfLifeManaged} onCheckedChange={v=>setF({...f,shelfLifeManaged:v})} className="mt-1.5"/></FormField>
-          <FormField label="剩余有效期(天)"><Input type="number" className={FI} value={f.remainingShelfLife} onChange={e=>setF({...f,remainingShelfLife:e.target.value})}/></FormField>
-          <FormField label="序列号管理"><Switch checked={f.serialManaged} onCheckedChange={v=>setF({...f,serialManaged:v})} className="mt-1.5"/></FormField>
+          <FormField label="是否批次管理"><Switch checked={f.batchManaged} onCheckedChange={v=>setF({...f,batchManaged:v})} className="mt-1.5"/></FormField>
+          <FormField label="是否效期管理"><Switch checked={f.shelfLifeManaged} onCheckedChange={v=>setF({...f,shelfLifeManaged:v})} className="mt-1.5"/></FormField>
+          <FormField label="剩余有效期"><Input type="number" className={FI} value={f.remainingShelfLife} onChange={e=>setF({...f,remainingShelfLife:e.target.value})}/></FormField>
+          <FormField label="是否序列号/单品码管理"><Switch checked={f.serialManaged} onCheckedChange={v=>setF({...f,serialManaged:v})} className="mt-1.5"/></FormField>
         </FormGrid>
       </FormSection>
 
       {/* 生产与工时 */}
       <FormSection id="prod" title="生产与工时">
         <FormGrid>
-          <FormField label="直接生产"><Switch checked={f.directProduction} onCheckedChange={v=>setF({...f,directProduction:v})} className="mt-1.5"/></FormField>
+          <FormField label="是否直接生产"><Switch checked={f.directProduction} onCheckedChange={v=>setF({...f,directProduction:v})} className="mt-1.5"/></FormField>
           <FormField label="计划属性" required><Input className={FI} value={f.planAttribute} onChange={e=>setF({...f,planAttribute:e.target.value})}/></FormField>
           <FormField label="经济批量"><Input type="number" className={FI} value={f.economicBatch} onChange={e=>setF({...f,economicBatch:e.target.value})}/></FormField>
           <FormField label="批量倍量"><Input type="number" className={FI} value={f.batchMultiple} onChange={e=>setF({...f,batchMultiple:e.target.value})}/></FormField>

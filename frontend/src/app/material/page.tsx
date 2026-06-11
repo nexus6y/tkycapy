@@ -1,4 +1,5 @@
 'use client';
+import type { ReactNode } from 'react';
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
@@ -8,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { ChevronDown, Download, Pencil, Trash2, Upload } from 'lucide-react';
+import { ChevronDown, Download, Filter, Pencil, Trash2, Upload } from 'lucide-react';
 import { toast } from '@/components/ui/toast';
 import { ErpTable, ErpThead, ErpTh, ErpTbody, ErpTr, ErpTd, ErpEmpty, ErpLink, ErpAction, ErpActionBtn, ErpTools, ErpStatus, ErpApproval, ErpPagination, ErpListPage } from '@/components/ui/erp-table';
 import { ErpToolbar } from '@/components/ui/erp-toolbar';
@@ -68,6 +69,48 @@ export default function MaterialPage() {
   });
 
   const colSpan = 16;
+  const filterIconClass = (active?: boolean) =>
+    `ml-1 inline-flex h-5 w-5 items-center justify-center rounded hover:bg-white ${active ? 'text-[#409eff]' : 'text-[#c0c4cc]'}`;
+  const TextColumnFilter = ({ field, placeholder }: { field: keyof typeof s; placeholder: string }) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger className={filterIconClass(Boolean(s[field]))} onClick={e => e.stopPropagation()}>
+        <Filter className="h-3.5 w-3.5" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-[220px] p-3">
+        <Input
+          className="h-8 text-[13px]"
+          value={s[field]}
+          onChange={e => setS({ ...s, [field]: e.target.value })}
+          placeholder={placeholder}
+        />
+        <div className="mt-2 flex justify-end gap-2">
+          <button className="text-[12px] text-[#909399] hover:text-[#409eff]" onClick={() => setS({ ...s, [field]: '' })}>重置</button>
+          <button className="text-[12px] text-[#409eff]" onClick={fetch}>搜索</button>
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+  const StatusColumnFilter = ({ field, items }: { field: 'status' | 'approvalStatus'; items: { label: string; value: string }[] }) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger className={filterIconClass(Boolean(s[field]))} onClick={e => e.stopPropagation()}>
+        <Filter className="h-3.5 w-3.5" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start">
+        <DropdownMenuItem onClick={() => setS({ ...s, [field]: '' })}>全部</DropdownMenuItem>
+        {items.map(item => (
+          <DropdownMenuItem key={item.value} onClick={() => setS({ ...s, [field]: item.value })}>{item.label}</DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+  const PendingColumnFilter = ({ active }: { active?: boolean }) => (
+    <button className={filterIconClass(active)} onClick={() => toast('物料分类筛选待接入', 'info')}>
+      <Filter className="h-3.5 w-3.5" />
+    </button>
+  );
+  const FilterableTh = ({ children, filter, className }: { children: ReactNode; filter: ReactNode; className?: string }) => (
+    <ErpTh className={className}><span className="inline-flex items-center">{children}{filter}</span></ErpTh>
+  );
 
   return (
     <TooltipProvider>
@@ -80,12 +123,9 @@ export default function MaterialPage() {
             if (item) router.push(`/material/${item.id}/edit`);
             else toast('请先勾选一条数据', 'info');
           }}
+          deleteLabel="批改"
           deleteDisabled={sel.size === 0}
-          onDelete={() => {
-            if (sel.size !== 1) return toast('请先勾选一条数据', 'info');
-            const item = items.find(i => sel.has(i.id));
-            if (item) setDel(item.id);
-          }}
+          onDelete={() => toast('批改功能待接入', 'info')}
           showImport
           importItems={[
             { label: '下载模板', icon: <Download className="h-3.5 w-3.5 mr-2" />, onClick: () => toast('导入模板下载待接入', 'info') },
@@ -179,20 +219,20 @@ export default function MaterialPage() {
           <ErpTable>
             <ErpThead>
               <ErpTh className="w-[48px]"><Checkbox checked={items.length > 0 && sel.size === items.length} onCheckedChange={(v: boolean) => setSel(v ? new Set(items.map(i => i.id)) : new Set())} /></ErpTh>
-              <ErpTh className="w-[80px]">启用状态</ErpTh>
-              <ErpTh className="w-[90px]">审批状态</ErpTh>
-              <ErpTh className="w-[150px]">物料编码</ErpTh>
-              <ErpTh className="w-[160px]">物料名称</ErpTh>
-              <ErpTh className="w-[120px]">规格型号</ErpTh>
+              <FilterableTh className="w-[80px]" filter={<StatusColumnFilter field="status" items={[{ label: '启用', value: 'ACTIVE' }, { label: '停用', value: 'INACTIVE' }]} />}>启用状态</FilterableTh>
+              <FilterableTh className="w-[90px]" filter={<StatusColumnFilter field="approvalStatus" items={[{ label: '草稿', value: 'DRAFT' }, { label: '已提交', value: 'SUBMITTED' }, { label: '已通过', value: 'APPROVED' }]} />}>审批状态</FilterableTh>
+              <FilterableTh className="w-[150px]" filter={<TextColumnFilter field="code" placeholder="物料编码" />}>物料编码</FilterableTh>
+              <FilterableTh className="w-[160px]" filter={<TextColumnFilter field="name" placeholder="物料名称" />}>物料名称</FilterableTh>
+              <FilterableTh className="w-[120px]" filter={<TextColumnFilter field="specification" placeholder="规格型号" />}>规格型号</FilterableTh>
               <ErpTh className="w-[80px]">计量单位</ErpTh>
-              <ErpTh className="w-[100px]">物料分类</ErpTh>
-              <ErpTh className="w-[80px]">物料属性</ErpTh>
-              <ErpTh className="w-[80px]">产品分类</ErpTh>
-              <ErpTh className="w-[80px]">计划属性</ErpTh>
-              <ErpTh className="w-[120px]">默认供应商</ErpTh>
+              <FilterableTh className="w-[100px]" filter={<PendingColumnFilter />}>物料分类</FilterableTh>
+              <FilterableTh className="w-[80px]" filter={<TextColumnFilter field="materialProperty" placeholder="物料属性" />}>物料属性</FilterableTh>
+              <FilterableTh className="w-[80px]" filter={<TextColumnFilter field="productCategory" placeholder="产品分类" />}>产品分类</FilterableTh>
+              <FilterableTh className="w-[80px]" filter={<TextColumnFilter field="planAttribute" placeholder="计划属性" />}>计划属性</FilterableTh>
+              <FilterableTh className="w-[120px]" filter={<TextColumnFilter field="defaultSupplierName" placeholder="默认供应商" />}>默认供应商</FilterableTh>
               <ErpTh className="w-[120px]">创建时间</ErpTh>
               <ErpTh className="w-[120px]">修改时间</ErpTh>
-              <ErpTh className="w-[80px]">主办人</ErpTh>
+              <FilterableTh className="w-[80px]" filter={<TextColumnFilter field="responsiblePerson" placeholder="主办人" />}>主办人</FilterableTh>
               <ErpTh className="w-[140px] sticky right-0 bg-[#f5f7fa] z-10">操作</ErpTh>
             </ErpThead>
             <ErpTbody>

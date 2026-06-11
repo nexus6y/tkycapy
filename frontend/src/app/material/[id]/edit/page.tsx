@@ -37,16 +37,16 @@ export default function MaterialEditPage() {
         <FormField label="规格型号"><Input className={FI} value={f.specification||''} onChange={e=>setF({...f,specification:e.target.value})}/></FormField>
         <FormField label="外部编码"><Input className={FI} value={f.externalCode||''} onChange={e=>setF({...f,externalCode:e.target.value})}/></FormField>
         <FormField label="排序"><Input type="number" className={FI} value={f.sortOrder ?? ''} onChange={e=>setF({...f,sortOrder:+e.target.value})}/></FormField>
-        <FormField label="状态"><RadioGroup value={f.status} onValueChange={(v:any)=>setF({...f,status:v})} className="flex gap-4 pt-1.5"><div className="flex items-center gap-1.5"><RadioGroupItem value="ACTIVE" id="es-a"/><label htmlFor="es-a" className="text-[13px]">启用</label></div><div className="flex items-center gap-1.5"><RadioGroupItem value="INACTIVE" id="es-i"/><label htmlFor="es-i" className="text-[13px]">停用</label></div></RadioGroup></FormField>
+        <FormField label="状态"><div className="flex items-center gap-2 pt-1.5"><Switch checked={f.status === 'ACTIVE'} onCheckedChange={v => setF({...f, status: v ? 'ACTIVE' : 'INACTIVE'})} /><span className="text-[13px]">{f.status === 'ACTIVE' ? '启用' : '停用'}</span></div></FormField>
         <div className="col-span-2"><FormField label="备注"><Textarea className={`${FI} h-20`} value={f.remark||''} onChange={e=>setF({...f,remark:e.target.value})}/></FormField></div>
       </FormGrid></FormSection>
       <FormSection id="nature" title="物料性质"><FormGrid>
-        <FormField label="物料性质" required><RadioGroup value={f.materialType} onValueChange={(v:any)=>setF({...f,materialType:v})} className="flex gap-4 pt-1.5"><div className="flex items-center gap-1.5"><RadioGroupItem value="PHYSICAL" id="em-p"/><label htmlFor="em-p" className="text-[13px]">实物</label></div><div className="flex items-center gap-1.5"><RadioGroupItem value="VIRTUAL" id="em-v"/><label htmlFor="em-v" className="text-[13px]">虚拟</label></div></RadioGroup></FormField>
+        <FormField label="物料性质" required><RadioGroup value={f.materialType} onValueChange={(v:any)=>setF({...f,materialType:v})} className="flex gap-4 pt-1.5"><div className="flex items-center gap-1.5"><RadioGroupItem value="PHYSICAL" id="em-p"/><label htmlFor="em-p" className="text-[13px]">实物物料</label></div><div className="flex items-center gap-1.5"><RadioGroupItem value="VIRTUAL" id="em-v"/><label htmlFor="em-v" className="text-[13px]">虚拟物料</label></div></RadioGroup></FormField>
         <FormField label="物料属性"><Input className={FI} value={f.materialProperty||''} onChange={e=>setF({...f,materialProperty:e.target.value})}/></FormField>
         <FormField label="产品分类" required><Input className={FI} value={f.productCategory||''} onChange={e=>setF({...f,productCategory:e.target.value})}/></FormField>
       </FormGrid></FormSection>
       <FormSection id="unit" title="计量单位"><FormGrid>
-        <FormField label="统一计量单位"><RadioGroup value={f.unifiedUnit?'true':'false'} onValueChange={(v:any)=>setF({...f,unifiedUnit:v==='true'})} className="flex gap-4 pt-1.5"><div className="flex items-center gap-1.5"><RadioGroupItem value="true" id="eu-y"/><label htmlFor="eu-y" className="text-[13px]">是</label></div><div className="flex items-center gap-1.5"><RadioGroupItem value="false" id="eu-n"/><label htmlFor="eu-n" className="text-[13px]">否</label></div></RadioGroup></FormField>
+        <FormField label="是否统一计量单位"><RadioGroup value={f.unifiedUnit?'true':'false'} onValueChange={(v:any)=>setF({...f,unifiedUnit:v==='true'})} className="flex gap-4 pt-1.5"><div className="flex items-center gap-1.5"><RadioGroupItem value="true" id="eu-y"/><label htmlFor="eu-y" className="text-[13px]">是</label></div><div className="flex items-center gap-1.5"><RadioGroupItem value="false" id="eu-n"/><label htmlFor="eu-n" className="text-[13px]">否</label></div></RadioGroup></FormField>
         <FormField label="计量单位" required><EntitySelect entity="measurementUnit" value={f.unitId||''} onChange={(id:any)=>setF({...f,unitId:id})} placeholder="选择单位"/></FormField>
       </FormGrid></FormSection>
       <FormSection id="purchase" title="采购信息"><FormGrid>
@@ -69,13 +69,13 @@ export default function MaterialEditPage() {
         <FormField label="安全库存数量"><Input type="number" className={FI} value={f.safetyStockQty||''} onChange={e=>setF({...f,safetyStockQty:e.target.value})}/></FormField>
         <FormField label="最高库存数量"><Input type="number" className={FI} value={f.maxStockQty||''} onChange={e=>setF({...f,maxStockQty:e.target.value})}/></FormField>
         <FormField label="最低库存数量"><Input type="number" className={FI} value={f.minStockQty||''} onChange={e=>setF({...f,minStockQty:e.target.value})}/></FormField>
-        <FormField label="批次管理"><Switch checked={f.batchManaged||false} onCheckedChange={v=>setF({...f,batchManaged:v})} className="mt-1.5"/></FormField>
-        <FormField label="效期管理"><Switch checked={f.shelfLifeManaged||false} onCheckedChange={v=>setF({...f,shelfLifeManaged:v})} className="mt-1.5"/></FormField>
-        <FormField label="剩余有效期(天)"><Input type="number" className={FI} value={f.remainingShelfLife||''} onChange={e=>setF({...f,remainingShelfLife:e.target.value})}/></FormField>
-        <FormField label="序列号管理"><Switch checked={f.serialManaged||false} onCheckedChange={v=>setF({...f,serialManaged:v})} className="mt-1.5"/></FormField>
+        <FormField label="是否批次管理"><Switch checked={f.batchManaged||false} onCheckedChange={v=>setF({...f,batchManaged:v})} className="mt-1.5"/></FormField>
+        <FormField label="是否效期管理"><Switch checked={f.shelfLifeManaged||false} onCheckedChange={v=>setF({...f,shelfLifeManaged:v})} className="mt-1.5"/></FormField>
+        <FormField label="剩余有效期"><Input type="number" className={FI} value={f.remainingShelfLife||''} onChange={e=>setF({...f,remainingShelfLife:e.target.value})}/></FormField>
+        <FormField label="是否序列号/单品码管理"><Switch checked={f.serialManaged||false} onCheckedChange={v=>setF({...f,serialManaged:v})} className="mt-1.5"/></FormField>
       </FormGrid></FormSection>
       <FormSection id="prod" title="生产与工时"><FormGrid>
-        <FormField label="直接生产"><Switch checked={f.directProduction||false} onCheckedChange={v=>setF({...f,directProduction:v})} className="mt-1.5"/></FormField>
+        <FormField label="是否直接生产"><Switch checked={f.directProduction||false} onCheckedChange={v=>setF({...f,directProduction:v})} className="mt-1.5"/></FormField>
         <FormField label="计划属性" required><Input className={FI} value={f.planAttribute||''} onChange={e=>setF({...f,planAttribute:e.target.value})}/></FormField>
         <FormField label="经济批量"><Input type="number" className={FI} value={f.economicBatch||''} onChange={e=>setF({...f,economicBatch:e.target.value})}/></FormField>
         <FormField label="批量倍量"><Input type="number" className={FI} value={f.batchMultiple||''} onChange={e=>setF({...f,batchMultiple:e.target.value})}/></FormField>

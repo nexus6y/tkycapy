@@ -13,7 +13,7 @@ export class MaterialService {
   async findAll(query: QueryMaterialDto) {
     const { code, name, externalCode, categoryId, status, specification, materialProperty, productCategory, planAttribute, defaultSupplierName, responsiblePerson, approvalStatus, startDate, endDate, page = 1, pageSize = 20 } = query;
     const tenantId = await this.getTenantId();
-    const where: any = { tenantId };
+    const where: any = { tenantId, deletedAt: null };
 
     if (code) where.code = { contains: code };
     if (name) where.name = { contains: name };
@@ -60,8 +60,8 @@ export class MaterialService {
   }
 
   async findOne(id: string) {
-    const item = await this.prisma.material.findUnique({
-      where: { id },
+    const item = await this.prisma.material.findFirst({
+      where: { id, deletedAt: null },
       include: { category: { select: { code: true, name: true } }, unit: { select: { code: true, name: true } } },
     });
     if (!item) throw new NotFoundException('物料不存在');
@@ -88,7 +88,10 @@ export class MaterialService {
 
   async remove(id: string) {
     await this.findOne(id);
-    await this.prisma.material.delete({ where: { id } });
+    await this.prisma.material.update({
+      where: { id },
+      data: { deletedAt: new Date(), status: 'INACTIVE' },
+    });
     return { message: '删除成功' };
   }
 }

@@ -7,9 +7,11 @@ import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/toast';
 import { EntityPickerInput } from '@/components/form/entity-picker-input';
 import { applyMaterialSelection } from '@/lib/field-linkage';
@@ -51,6 +53,14 @@ export default function BomCreatePage() {
   const [saving, setSaving] = useState(false);
   const [hideOptional, setHideOptional] = useState(false);
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
+  const [batchOpen, setBatchOpen] = useState(false);
+  const [batchForm, setBatchForm] = useState({
+    planAttribute: '',
+    quantity: '',
+    denominator: '',
+    issueMethod: '',
+    remark: '',
+  });
   const [form, setForm] = useState({
     code: '',
     name: '',
@@ -100,6 +110,30 @@ export default function BomCreatePage() {
 
   const toggleAll = (checked: boolean) => {
     setSelectedRows(checked ? new Set(items.map((_, idx) => idx)) : new Set());
+  };
+
+  const openBatchEdit = () => {
+    if (selectedRows.size === 0) {
+      toast('请选择需要批改的子件行', 'info');
+      return;
+    }
+    setBatchForm({ planAttribute: '', quantity: '', denominator: '', issueMethod: '', remark: '' });
+    setBatchOpen(true);
+  };
+
+  const applyBatchEdit = () => {
+    const patch = Object.fromEntries(
+      Object.entries(batchForm).filter(([, value]) => value !== ''),
+    ) as Partial<BomItemRow>;
+
+    if (Object.keys(patch).length === 0) {
+      toast('请至少填写一个批改字段', 'info');
+      return;
+    }
+
+    setItems(prev => prev.map((row, idx) => selectedRows.has(idx) ? { ...row, ...patch } : row));
+    setBatchOpen(false);
+    toast(`已批改 ${selectedRows.size} 行`, 'success');
   };
 
   const onProductSelect = (_id: string, material: any) => {
@@ -334,7 +368,7 @@ export default function BomCreatePage() {
               <Button variant="outline" className="h-10 w-[146px] gap-1 text-[#606266]" onClick={() => toast('按编码导入待接入', 'info')}>
                 按编码导入 <ChevronDown className="h-4 w-4" />
               </Button>
-              <Button variant="outline" className="h-10 w-[132px] text-[#909399]" onClick={() => toast('请选择需要批改的子件行', 'info')}>批改</Button>
+              <Button variant="outline" className="h-10 w-[132px] text-[#606266]" onClick={openBatchEdit}>批改</Button>
               <Button variant="outline" className="h-10 w-[132px] text-[#909399]" onClick={deleteRows}>删除</Button>
             </div>
             <div className="overflow-auto border border-[#dcdfe6] bg-white">
@@ -406,6 +440,46 @@ export default function BomCreatePage() {
           </div>
         </Panel>
       </div>
+
+      <Dialog open={batchOpen} onOpenChange={setBatchOpen}>
+        <DialogContent className="sm:max-w-[520px]">
+          <DialogHeader>
+            <DialogTitle>批改子件信息</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4 py-2">
+            <div className="space-y-1.5">
+              <Label>计划属性</Label>
+              <Select value={batchForm.planAttribute || '不修改'} onValueChange={v => setBatchForm({ ...batchForm, planAttribute: String(v) === '不修改' ? '' : String(v) })}>
+                <SelectTrigger className={inputClass}><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="不修改">不修改</SelectItem>
+                  {PLAN_ATTRIBUTE_OPTIONS.map(option => <SelectItem key={option} value={option}>{option}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>发料方式</Label>
+              <Input className={inputClass} value={batchForm.issueMethod} onChange={e => setBatchForm({ ...batchForm, issueMethod: e.target.value })} placeholder="留空不修改" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>子件用量</Label>
+              <Input type="number" className={inputClass} value={batchForm.quantity} onChange={e => setBatchForm({ ...batchForm, quantity: e.target.value })} placeholder="留空不修改" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>母件底数</Label>
+              <Input type="number" className={inputClass} value={batchForm.denominator} onChange={e => setBatchForm({ ...batchForm, denominator: e.target.value })} placeholder="留空不修改" />
+            </div>
+            <div className="col-span-2 space-y-1.5">
+              <Label>备注</Label>
+              <Textarea className="min-h-20 resize-none rounded-md border border-[#dcdfe6] bg-white px-3 py-2 text-[14px]" value={batchForm.remark} onChange={e => setBatchForm({ ...batchForm, remark: e.target.value })} placeholder="留空不修改" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBatchOpen(false)}>取消</Button>
+            <Button onClick={applyBatchEdit}>确定</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
