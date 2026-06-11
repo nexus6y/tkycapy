@@ -184,7 +184,8 @@ export default function ProductionOrderWorkbenchPage() {
               </> : <>
                 <DropdownMenuItem onClick={()=>batchAction('start','批量开工')}>批量开工</DropdownMenuItem>
                 <DropdownMenuItem onClick={()=>batchAction('complete','批量完工')}>批量完工</DropdownMenuItem>
-                <DropdownMenuItem onClick={()=>toast('部分完工待接入','info')}>部分完工</DropdownMenuItem>
+                <DropdownMenuItem onClick={()=>{if(sel.size!==1)return toast('请勾选一条数据','info');batchAction('partial-complete','部分完工');}}>部分完工</DropdownMenuItem>
+                <DropdownMenuItem onClick={()=>{if(sel.size===0)return toast('请先勾选数据','info');if(!confirm('确定下推入库？'))return;batchAction('complete','下推入库');}}>下推入库</DropdownMenuItem>
               </>}
             </DropdownMenuContent>
           </DropdownMenu>

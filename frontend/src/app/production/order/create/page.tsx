@@ -37,6 +37,7 @@ const MAT_COLS = [
 
 const SECTIONS = [
   { id:'basic', title:'基本信息' },
+  { id:'bom', title:'BOM关联' },
   { id:'product', title:'产品信息' },
   { id:'material', title:'材料信息' },
 ];
@@ -46,10 +47,34 @@ export default function ProductionOrderCreate() {
   const [f,setF]=useState<any>({
     orderNo:'', orderName:'', businessType:'', orgName:'默认企业',
     departmentId:'', departmentCode:'', departmentName:'',
+    bomId:'', bomCode:'', bomName:'', quantity:'1',
     createdBy:'测试用户', orderDate:new Date().toISOString().split('T')[0], remark:'',
   });
   const [prodLines,setProdLines]=useState<LineItem[]>([]);
   const [matLines,setMatLines]=useState<LineItem[]>([]);
+  const [bomLoading,setBomLoading]=useState(false);
+
+  const onBomSelect = async (id:string) => {
+    setBomLoading(true);
+    try {
+      const qty = Number(f.quantity||1);
+      const {data} = await api.get(`/boms/${id}/explode`,{params:{qty}});
+      const bom = data.bom;
+      setF((prev:any)=>({...prev,bomId:id,bomCode:bom.code,bomName:bom.name,
+        orderName:prev.orderName||`生产-${bom.productMaterialName||bom.code}`}));
+      // Product line
+      setProdLines([{lineNo:1,materialCode:bom.productMaterialCode||'',materialName:bom.productMaterialName||'',
+        spec:bom.productSpec||'',unit:bom.productUnit||'',plannedQty:String(qty),warehouseCode:'',remark:''}]);
+      // Material lines
+      if (data.items&&data.items.length>0) {
+        setMatLines(data.items.map((item:any)=>({lineNo:item.lineNo,materialCode:item.materialCode,
+          materialName:item.materialName,spec:item.spec,unit:item.unit,
+          quantity:String(item.requiredQty||item.quantity),warehouseCode:item.warehouseCode||'',remark:''})));
+      }
+      toast('已从BOM加载产品和材料明细','success');
+    } catch(e:any) { toast(e.response?.data?.message||'加载BOM失败','error'); }
+    finally { setBomLoading(false); }
+  };
 
   useEffect(()=>{
     api.get('/common/next-code',{params:{entity:'productionOrder'}})
@@ -62,6 +87,7 @@ export default function ProductionOrderCreate() {
     try {
       const payload:any = {
         orderNo:f.orderNo, orderName:f.orderName,
+        bomId:f.bomId||undefined,
         departmentId:f.departmentId, departmentName:f.departmentName,
         quantity:String(prodLines.reduce((s,l)=>s+Number(l.plannedQty||0),0)),
         startDate:f.orderDate, remark:f.remark,
@@ -102,6 +128,10 @@ export default function ProductionOrderCreate() {
               displayText={f.departmentCode?`${f.departmentCode} ${f.departmentName}`:''}
               onChange={(id:any,d:any)=>{setF({...f,...applyDepartmentSelection(d)});}}/>
           </FormField>
+          <FormField label="计划数量">
+            <Input type="number" className={FI} value={f.quantity||'1'}
+              onChange={e=>setF({...f,quantity:e.target.value})} placeholder="生产数量"/>
+          </FormField>
           <FormField label="制单人">
             <Input className={FI} value={f.createdBy||''} readOnly disabled/>
           </FormField>
@@ -113,6 +143,20 @@ export default function ProductionOrderCreate() {
               <Textarea className={`${FI} h-20`} value={f.remark} onChange={e=>setF({...f,remark:e.target.value})} placeholder=""/>
             </FormField>
           </div>
+        </FormGrid>
+      </FormSection>
+
+      <FormSection id="bom" title="BOM关联">
+        <FormGrid>
+          <FormField label="选择BOM">
+            <EntityPickerInput entity="bom" value={f.bomCode}
+              displayText={f.bomCode?`${f.bomCode} ${f.bomName}`:''}
+              status="APPROVED"
+              onChange={(id:any)=>{setF({...f,bomId:id});onBomSelect(id);}}/>
+          </FormField>
+          <FormField label="BOM编码"><Input className={FI} value={f.bomCode} readOnly disabled/></FormField>
+          <FormField label="BOM名称"><Input className={FI} value={f.bomName} readOnly disabled/></FormField>
+          {bomLoading && <div className="col-span-2 py-2 text-center text-[13px] text-muted-foreground">正在从BOM加载产品和材料明细...</div>}
         </FormGrid>
       </FormSection>
 
