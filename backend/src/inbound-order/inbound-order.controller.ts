@@ -166,6 +166,66 @@ export class InboundOrderController {
       locationCode: null, batchNo: null,
     } as any];
 
+    // Inspection check: ARRIVAL_CONFIRM / PURCHASE with needInspection materials → create Inspection
+    if (order.sourceType === 'ARRIVAL_CONFIRM' || order.sourceType === 'PURCHASE') {
+      const matCodes = [...new Set(
+        (order.lines || []).map((l: any) => (l.materialCode || '').trim()).filter(Boolean)
+      )] as string[];
+      if (matCodes.length > 0) {
+        const materials = await this.prisma.material.findMany({
+          where: { tenantId, code: { in: matCodes } },
+          select: { code: true, needInspection: true },
+        });
+        if (materials.some(m => m.needInspection)) {
+          const inspectionNo = await this.codeGen.generate('INS', 'inspection', 'inspectionNo');
+          await this.prisma.$transaction(async (tx) => {
+            const existingInspection = await tx.inspection.findFirst({
+              where: { tenantId, sourceType: 'INBOUND_ORDER', sourceNo: order.orderNo },
+            });
+            if (existingInspection) {
+              throw new BadRequestException(
+                `该入库单已生成质检单 ${existingInspection.inspectionNo}，不能重复生成`
+              );
+            }
+            await tx.inspection.create({
+              data: {
+                tenantId,
+                inspectionNo,
+                sourceType: 'INBOUND_ORDER',
+                sourceNo: order.orderNo,
+                materialName: order.materialName,
+                quantity: order.quantity,
+                qualifiedQty: '0',
+                unqualifiedQty: '0',
+                approvalStatus: 'DRAFT',
+                businessStatus: 'PENDING',
+                lines: {
+                  create: (order.lines || []).map((l: any) => ({
+                    tenantId,
+                    lineNo: l.lineNo,
+                    materialCode: l.materialCode,
+                    materialName: l.materialName,
+                    spec: l.spec,
+                    unit: l.unit,
+                    inspectQty: l.quantity,
+                    qualifiedQty: '0',
+                    unqualifiedQty: '0',
+                    result: 'PENDING',
+                    warehouseCode: l.warehouseCode,
+                  })),
+                },
+              },
+            });
+            await tx.inboundOrder.update({
+              where: { id },
+              data: { approvalStatus: 'APPROVED', businessStatus: 'INSP_IN_PROGRESS' } as any,
+            });
+          });
+          return this.prisma.inboundOrder.findUniqueOrThrow({ where: { id } });
+        }
+      }
+    }
+
     // Phase 0: resolve missing warehouseCodes from material default or existing inventory
     const noWhLines = lines.filter((l: any) => !(l.warehouseCode || order.warehouseCode || order.warehouseName));
     if (noWhLines.length > 0) {
@@ -261,11 +321,54 @@ export class InboundOrderController {
     }
 
     operations.push(
-      this.prisma.inboundOrder.update({ where: { id }, data: { approvalStatus: 'APPROVED', businessStatus: 'RECEIVED' } as any }),
+      this.prisma.inboundOrder.update({ where: { id }, data: { approvalStatus: 'APPROVED', businessStatus: 'CLOSED' } as any }),
     );
 
     // Phase 2: execute in single transaction — all or nothing
     await this.prisma.$transaction(operations);
+
+    // Phase 3: if this is an inspection-result inbound, close the quality loop
+    if (order.sourceType === 'INSPECTION' && order.sourceNo) {
+      const inspection = await this.prisma.inspection.findFirst({
+        where: { tenantId, inspectionNo: order.sourceNo },
+      });
+      if (inspection && inspection.sourceType === 'INBOUND_ORDER' && inspection.sourceNo) {
+        // Mark inspection as closed
+        await this.prisma.inspection.update({
+          where: { id: inspection.id },
+          data: { businessStatus: 'CLOSED' } as any,
+        });
+        // Mark original arrival-confirm inbound as inspected (not CLOSED, to avoid undo button)
+        const origInbound = await this.prisma.inboundOrder.findFirst({
+          where: { tenantId, orderNo: inspection.sourceNo },
+        });
+        if (origInbound) {
+          await this.prisma.inboundOrder.update({
+            where: { id: origInbound.id },
+            data: { businessStatus: 'INSPECTED' } as any,
+          });
+          // If original inbound sources a purchase order, evaluate received status
+          if (
+            (origInbound.sourceType === 'ARRIVAL_CONFIRM' || origInbound.sourceType === 'PURCHASE') &&
+            origInbound.sourceNo
+          ) {
+            const po = await this.prisma.purchaseOrder.findFirst({
+              where: { tenantId, orderNo: origInbound.sourceNo },
+              include: { lines: { orderBy: { lineNo: 'asc' } } },
+            });
+            if (po && po.lines) {
+              const allFullyReceived = po.lines.every(
+                (pl: any) => Number(pl.receivedQty || 0) >= Number(pl.quantity || 0),
+              );
+              await this.prisma.purchaseOrder.update({
+                where: { id: po.id },
+                data: { businessStatus: allFullyReceived ? 'FULLY_RECEIVED' : 'PARTIAL_RECEIPT' } as any,
+              });
+            }
+          }
+        }
+      }
+    }
 
     return this.prisma.inboundOrder.findUniqueOrThrow({ where: { id } });
   }
@@ -277,7 +380,7 @@ export class InboundOrderController {
       include: { lines: { orderBy: { lineNo: 'asc' } } },
     });
 
-    if (order.approvalStatus !== 'APPROVED' && order.businessStatus !== 'RECEIVED') {
+    if (order.businessStatus !== 'CLOSED' && order.businessStatus !== 'RECEIVED') {
       throw new BadRequestException('只能撤销已登卡的入库单');
     }
 

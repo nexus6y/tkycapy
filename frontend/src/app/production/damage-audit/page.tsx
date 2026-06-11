@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from '@/components/ui/toast';
 import { ErpAction, ErpActionBtn, ErpApproval, ErpEmpty, ErpLink, ErpPagination, ErpTable, ErpTbody, ErpTd, ErpTh, ErpThead, ErpTr } from '@/components/ui/erp-table';
-import { ChevronDown, MoreHorizontal, RefreshCw, Search } from 'lucide-react';
+import { ChevronDown, Search } from 'lucide-react';
 import api from '@/lib/api';
 
 interface Item {
@@ -16,6 +16,7 @@ interface Item {
   issueOutNo:string|null; returnOrderNo:string|null; returnLineNo:string|null;
   inspectionNo:string|null; inspectionLineNo:string|null;
   projectCode:string|null; projectName:string|null; createdAt:string;
+  purchasePlanId:string|null; purchasePlanNo:string|null;
 }
 
 function fmtDt(v:string|null){return v?new Date(v).toLocaleDateString('zh-CN'):'-';}
@@ -26,7 +27,6 @@ export default function DamageAuditPage() {
   const [s,setS]=useState({status:'',code:'',name:''});
 
   const fetch=useCallback(async()=>{
-    // Use scrap-orders as the data source (closest match for damage audit)
     const p:any={page:pg,pageSize:ps};
     if(s.status)p.status=s.status; if(s.code)p.code=s.code; if(s.name)p.name=s.name;
     try {
@@ -35,10 +35,11 @@ export default function DamageAuditPage() {
         id:so.id, damageNo:so.orderNo, approvalStatus:so.approvalStatus,
         opinion:so.disposalMethod, materialCode:so.materialCode,
         materialName:so.materialName, spec:so.spec, unit:so.unit,
-        orgName:'默认企业', prodOrderNo:'', issueOrderNo:'',
-        issueOutNo:'', returnOrderNo:'', returnLineNo:'',
-        inspectionNo:'', inspectionLineNo:'', projectCode:'', projectName:'',
+        orgName:so.orgName??so.tenantName??null, prodOrderNo:null,
+        issueOrderNo:null, issueOutNo:null, returnOrderNo:null, returnLineNo:null,
+        inspectionNo:null, inspectionLineNo:null, projectCode:null, projectName:null,
         createdAt:so.createdAt,
+        purchasePlanId:so.purchasePlanId??null, purchasePlanNo:so.purchasePlanNo??null,
       }));
       setItems(mapped); setTotal(data.total||0);
     } catch { setItems([]); setTotal(0); }
@@ -49,22 +50,23 @@ export default function DamageAuditPage() {
     catch(e:any){toast(e.response?.data?.message||'操作失败','error');}
   };
 
+  const pushPlan=async(id:string)=>{
+    try{
+      const {data}=await api.post(`/scrap-orders/${id}/push-to-purchase-plan`);
+      toast(`采购计划已生成: ${data.purchasePlanNo}`,'success');
+      fetch();
+    }catch(e:any){toast(e.response?.data?.message||'下推失败','error');}
+  };
+
   return (
     <div className="flex h-full min-h-0 flex-col rounded-lg border border-[#dcdfe6] bg-white">
-      {/* Toolbar: 业务引导|提交|撤回|更多操作 */}
+      {/* Toolbar: 业务引导|下推采购计划|流程查看|导出 — per docs/business-flows.md §7.7 */}
       <div className="flex shrink-0 items-center justify-between gap-2 border-b border-[#ebeef5] bg-white px-4 py-3">
         <div className="flex items-center gap-1.5">
           <span className="text-sm font-medium">制损单审核</span>
-          <DropdownMenu>
-            <DropdownMenuTrigger className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-3 h-9 text-[13px] font-medium shadow-sm hover:bg-accent">
-              <MoreHorizontal className="h-3.5 w-3.5"/>更多操作<ChevronDown className="h-3.5 w-3.5"/>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuItem onClick={()=>toast('业务引导待接入','info')}>业务引导</DropdownMenuItem>
-              <DropdownMenuItem onClick={()=>toast('流程查看待接入','info')}>流程查看</DropdownMenuItem>
-              <DropdownMenuItem onClick={()=>toast('导出待接入','info')}>导出</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button variant="outline" size="sm" onClick={()=>toast('业务引导待接入','info')}>业务引导</Button>
+          <Button variant="outline" size="sm" onClick={()=>toast('流程查看待接入','info')}>流程查看</Button>
+          <Button variant="outline" size="sm" onClick={()=>toast('导出待接入','info')}>导出</Button>
         </div>
         <div className="flex items-center gap-1">
           <Button variant="ghost" size="sm" onClick={()=>setS({status:'',code:'',name:''})}>重置</Button>
@@ -84,7 +86,7 @@ export default function DamageAuditPage() {
           <FI label="物料名称" v={s.name} onChange={v=>setS({...s,name:v})} ph="物料名称"/>
         </div>
       </div>
-      {/* Table: 19 cols matching original system */}
+      {/* Table */}
       <div className="min-h-0 flex-1 overflow-auto">
         <ErpTable>
           <ErpThead>
@@ -135,6 +137,7 @@ export default function DamageAuditPage() {
                     {st==='DRAFT'&&<ErpActionBtn onClick={()=>wf(i.id,'submit')}>提交</ErpActionBtn>}
                     {st==='SUBMITTED'&&<ErpActionBtn onClick={()=>wf(i.id,'withdraw')}>撤回</ErpActionBtn>}
                     {st==='SUBMITTED'&&<ErpActionBtn onClick={()=>wf(i.id,'approve')}>审核通过</ErpActionBtn>}
+                    {st==='APPROVED'&&<ErpActionBtn onClick={()=>pushPlan(i.id)}>下推采购计划</ErpActionBtn>}
                   </ErpAction>
                 </ErpTd>
               </ErpTr>);

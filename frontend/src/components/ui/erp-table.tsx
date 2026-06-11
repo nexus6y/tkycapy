@@ -72,11 +72,12 @@ export function ErpAction({ children }: { children: React.ReactNode }) {
 }
 
 /* ===== ErpActionBtn ===== */
-export function ErpActionBtn({ children, onClick, danger }: { children: React.ReactNode; onClick?: () => void; danger?: boolean }) {
+export function ErpActionBtn({ children, onClick, danger, disabled }: { children: React.ReactNode; onClick?: () => void; danger?: boolean; disabled?: boolean }) {
   return (
     <button
       onClick={onClick}
-      className={`text-[13px] inline-flex items-center gap-0.5 hover:opacity-80 whitespace-nowrap ${danger ? 'text-[#f56c6c]' : 'text-[#409eff]'}`}
+      disabled={disabled}
+      className={`text-[13px] inline-flex items-center gap-0.5 whitespace-nowrap ${disabled ? 'text-muted-foreground cursor-not-allowed opacity-50' : danger ? 'text-[#f56c6c] hover:opacity-80' : 'text-[#409eff] hover:opacity-80'}`}
     >
       {children}
     </button>

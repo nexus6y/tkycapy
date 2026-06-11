@@ -82,10 +82,10 @@ export function LinesEditor({ lines, onChange, columns = DEFAULT_COLUMNS, materi
       if (i !== pickerRowIdx) return l;
       return {
         ...l,
-        materialCode: item.code || '',
-        materialName: item.name || '',
-        spec: item.specification || '',
-        unit: item.unitSymbol || item.unitName || '',
+        materialCode: item.code || item.materialCode || '',
+        materialName: item.name || item.materialName || '',
+        spec: item.specification || item.spec || '',
+        unit: item.unit || item.unitSymbol || item.unitName || '',
       };
     });
     onChange(updated);

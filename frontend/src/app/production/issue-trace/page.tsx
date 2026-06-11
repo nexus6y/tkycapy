@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { ErpAction, ErpActionBtn, ErpApproval, ErpEmpty, ErpLink, ErpPagination, ErpTable, ErpTbody, ErpTd, ErpTh, ErpThead, ErpTr } from '@/components/ui/erp-table';
-import { ChevronDown, RefreshCw, Search } from 'lucide-react';
+import { ErpApproval, ErpEmpty, ErpLink, ErpPagination, ErpTable, ErpTbody, ErpTd, ErpTh, ErpThead, ErpTr } from '@/components/ui/erp-table';
+import { ChevronDown, Search } from 'lucide-react';
 import { toast } from '@/components/ui/toast';
 import api from '@/lib/api';
 
@@ -21,12 +21,12 @@ const BS_LABEL:Record<string,string>={PENDING_ISSUE:'待领料',ISSUING:'领料�
 function fmtDt(v:string|null){return v?new Date(v).toLocaleDateString('zh-CN'):'-';}
 
 export default function IssueTracePage() {
-  const [items,setItems]=useState<TraceItem[]>([]);const [total,setTotal]=useState(0);
+  const [allTraces,setAllTraces]=useState<TraceItem[]>([]);
   const [pg,setPg]=useState(1);const [ps,setPs]=useState(30);
   const [s,setS]=useState({status:'',code:'',name:''});
 
   const fetch=useCallback(async()=>{
-    const p:any={page:pg,pageSize:ps,mode:'detail'};
+    const p:any={page:1,pageSize:1000,mode:'detail'};
     if(s.status)p.status=s.status; if(s.code)p.code=s.code; if(s.name)p.name=s.name;
     try {
       const {data}=await api.get('/production-orders',{params:p});
@@ -37,7 +37,8 @@ export default function IssueTracePage() {
         if(mats.length>0){
           for(const m of mats) traces.push({
             id:m.id||`${po.id}-${m.lineNo}`, orderNo:po.orderNo, orderName:po.orderName,
-            orgName:'默认企业', prodOrderNo:po.orderNo, businessStatus:po.businessStatus,
+            orgName:po.orgName??po.tenantName??null, prodOrderNo:po.orderNo,
+            businessStatus:po.businessStatus,
             productCode:lines[0]?.materialCode||'', productName:lines[0]?.materialName||'',
             isProduct:false, level:1, materialCode:m.materialCode, materialName:m.materialName,
             spec:m.spec, unit:m.unit, requiredDate:null, shortage:false,
@@ -45,16 +46,20 @@ export default function IssueTracePage() {
         }else{
           traces.push({
             id:po.id, orderNo:po.orderNo, orderName:po.orderName,
-            orgName:'默认企业', prodOrderNo:po.orderNo, businessStatus:po.businessStatus,
+            orgName:po.orgName??po.tenantName??null, prodOrderNo:po.orderNo,
+            businessStatus:po.businessStatus,
             productCode:lines[0]?.materialCode||'', productName:lines[0]?.materialName||'',
             isProduct:true, level:0, materialCode:po.materialName, materialName:po.materialName,
             spec:'', unit:'', requiredDate:null, shortage:false,
           });
         }
       }
-      setItems(traces); setTotal(traces.length);
-    }catch{setItems([]);setTotal(0);}
-  },[pg,ps,s]); useEffect(()=>{fetch();},[fetch]);
+      setAllTraces(traces); setPg(1);
+    }catch{setAllTraces([]);}
+  },[s]); useEffect(()=>{fetch();},[fetch]);
+
+  const total = allTraces.length;
+  const items = allTraces.slice((pg-1)*ps, pg*ps);
 
   return (
     <div className="flex h-full min-h-0 flex-col rounded-lg border border-[#dcdfe6] bg-white">

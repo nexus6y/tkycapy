@@ -1384,6 +1384,8 @@ model ScrapOrder {
   quantity        Decimal?       @db.Decimal(18,6)
   scrapReason     String?
   disposalMethod  String?
+  purchasePlanId  String?
+  purchasePlanNo  String?
   approvalStatus  ApprovalStatus @default(DRAFT)
   businessStatus  String         @default("PENDING")
   scrapDate       DateTime       @default(now())

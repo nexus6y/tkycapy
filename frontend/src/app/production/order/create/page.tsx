@@ -37,7 +37,7 @@ const MAT_COLS = [
 
 const SECTIONS = [
   { id:'basic', title:'基本信息' },
-  { id:'bom', title:'BOM关联' },
+  { id:'source', title:'产品来源选择' },
   { id:'product', title:'产品信息' },
   { id:'material', title:'材料信息' },
 ];
@@ -47,25 +47,60 @@ export default function ProductionOrderCreate() {
   const [f,setF]=useState<any>({
     orderNo:'', orderName:'', businessType:'', orgName:'默认企业',
     departmentId:'', departmentCode:'', departmentName:'',
-    bomId:'', bomCode:'', bomName:'', quantity:'1',
+    sourceId:'', sourceType:'', sourceCode:'', sourceName:'', quantity:'1',
     createdBy:'测试用户', orderDate:new Date().toISOString().split('T')[0], remark:'',
   });
   const [prodLines,setProdLines]=useState<LineItem[]>([]);
   const [matLines,setMatLines]=useState<LineItem[]>([]);
-  const [bomLoading,setBomLoading]=useState(false);
+  const [sourceLoading,setSourceLoading]=useState(false);
 
+  /* ── 选择计划：需求计划单 ── */
+  const onPlanSelect = async (id:string) => {
+    setSourceLoading(true);
+    try {
+      const {data} = await api.get(`/demand-plans/${id}`,{});
+      const plan = data;
+      setF((prev:any)=>({...prev,sourceId:id,sourceType:'demandPlan',sourceCode:plan.planNo,sourceName:plan.planName,
+        orderName:prev.orderName||`生产-${plan.planName||plan.planNo}`,quantity:plan.totalQuantity||'1'}));
+      if (data.lines&&data.lines.length>0) {
+        setProdLines(data.lines.map((l:any,i:number)=>({lineNo:l.lineNo??i+1,
+          materialCode:l.materialCode||'',materialName:l.materialName||'',
+          spec:l.spec||'',unit:l.unit||'',plannedQty:l.quantity||'0',warehouseCode:'',remark:''})));
+      }
+      toast('已加载需求计划产品明细','success');
+    } catch(e:any) { toast(e.response?.data?.message||'加载需求计划失败','error'); }
+    finally { setSourceLoading(false); }
+  };
+
+  /* ── 选择需求：销售需求单（销售订单） ── */
+  const onOrderSelect = async (id:string) => {
+    setSourceLoading(true);
+    try {
+      const {data} = await api.get(`/sales-orders/${id}`);
+      const so = data;
+      setF((prev:any)=>({...prev,sourceId:id,sourceType:'salesOrder',sourceCode:so.orderNo,sourceName:so.orderName,
+        orderName:prev.orderName||`生产-${so.orderName||so.orderNo}`,quantity:String(so.lines?.reduce((s:number,l:any)=>s+Number(l.quantity||0),0)||1)}));
+      if (so.lines&&so.lines.length>0) {
+        setProdLines(so.lines.map((l:any,i:number)=>({lineNo:l.lineNo??i+1,
+          materialCode:l.materialCode||'',materialName:l.materialName||'',
+          spec:l.spec||'',unit:l.unit||'',plannedQty:l.quantity||'0',warehouseCode:'',remark:''})));
+      }
+      toast('已加载销售订单产品明细','success');
+    } catch(e:any) { toast(e.response?.data?.message||'加载销售订单失败','error'); }
+    finally { setSourceLoading(false); }
+  };
+
+  /* ── 选择BOM：物料BOM ── */
   const onBomSelect = async (id:string) => {
-    setBomLoading(true);
+    setSourceLoading(true);
     try {
       const qty = Number(f.quantity||1);
       const {data} = await api.get(`/boms/${id}/explode`,{params:{qty}});
       const bom = data.bom;
-      setF((prev:any)=>({...prev,bomId:id,bomCode:bom.code,bomName:bom.name,
+      setF((prev:any)=>({...prev,sourceId:id,sourceType:'bom',sourceCode:bom.code,sourceName:bom.name,
         orderName:prev.orderName||`生产-${bom.productMaterialName||bom.code}`}));
-      // Product line
       setProdLines([{lineNo:1,materialCode:bom.productMaterialCode||'',materialName:bom.productMaterialName||'',
         spec:bom.productSpec||'',unit:bom.productUnit||'',plannedQty:String(qty),warehouseCode:'',remark:''}]);
-      // Material lines
       if (data.items&&data.items.length>0) {
         setMatLines(data.items.map((item:any)=>({lineNo:item.lineNo,materialCode:item.materialCode,
           materialName:item.materialName,spec:item.spec,unit:item.unit,
@@ -73,7 +108,7 @@ export default function ProductionOrderCreate() {
       }
       toast('已从BOM加载产品和材料明细','success');
     } catch(e:any) { toast(e.response?.data?.message||'加载BOM失败','error'); }
-    finally { setBomLoading(false); }
+    finally { setSourceLoading(false); }
   };
 
   useEffect(()=>{
@@ -87,8 +122,19 @@ export default function ProductionOrderCreate() {
     try {
       const payload:any = {
         orderNo:f.orderNo, orderName:f.orderName,
-        bomId:f.bomId||undefined,
         departmentId:f.departmentId, departmentName:f.departmentName,
+        quantity:String(prodLines.reduce((s,l)=>s+Number(l.plannedQty||0),0)),
+        startDate:f.orderDate, remark:f.remark,
+      };
+      // Map source type to correct payload fields
+      if (f.sourceType==='demandPlan') {
+        payload.demandPlanId = f.sourceId; payload.demandPlanNo = f.sourceCode;
+      } else if (f.sourceType==='salesOrder') {
+        // sales order source — no direct field, stored in remark for traceability
+        payload.remark = (payload.remark||'') + ` [来源:销售订单${f.sourceCode}]`;
+      } else if (f.sourceType==='bom') {
+        payload.bomId = f.sourceId;
+      }
         quantity:String(prodLines.reduce((s,l)=>s+Number(l.plannedQty||0),0)),
         startDate:f.orderDate, remark:f.remark,
       };
@@ -146,17 +192,39 @@ export default function ProductionOrderCreate() {
         </FormGrid>
       </FormSection>
 
-      <FormSection id="bom" title="BOM关联">
+      {/* 产品来源选择 — 三个互斥来源按钮 */}
+      <FormSection id="source" title="产品来源选择">
         <FormGrid>
-          <FormField label="选择BOM">
-            <EntityPickerInput entity="bom" value={f.bomCode}
-              displayText={f.bomCode?`${f.bomCode} ${f.bomName}`:''}
-              status="APPROVED"
-              onChange={(id:any)=>{setF({...f,bomId:id});onBomSelect(id);}}/>
+          <FormField label="选择来源">
+            <div className="flex flex-wrap gap-2 pt-1">
+              {/* 1) 选择计划：需求计划单 */}
+              <EntityPickerInput entity="demandPlan" value={f.sourceType==='demandPlan'?f.sourceCode:''}
+                displayText={f.sourceType==='demandPlan'?`${f.sourceCode} ${f.sourceName}`:''}
+                status="APPROVED"
+                onChange={(id:any)=>{setF({...f,sourceType:''});onPlanSelect(id);}}
+                placeholder="选择计划：需求计划单"/>
+              {/* 2) 选择需求：销售需求单 */}
+              <EntityPickerInput entity="salesOrder" value={f.sourceType==='salesOrder'?f.sourceCode:''}
+                displayText={f.sourceType==='salesOrder'?`${f.sourceCode} ${f.sourceName}`:''}
+                status="APPROVED"
+                onChange={(id:any)=>{setF({...f,sourceType:''});onOrderSelect(id);}}
+                placeholder="选择需求：销售需求单"/>
+              {/* 3) 选择BOM：物料BOM */}
+              <EntityPickerInput entity="bom" value={f.sourceType==='bom'?f.sourceCode:''}
+                displayText={f.sourceType==='bom'?`${f.sourceCode} ${f.sourceName}`:''}
+                status="APPROVED"
+                onChange={(id:any)=>{setF({...f,sourceType:''});onBomSelect(id);}}
+                placeholder="选择BOM：物料BOM"/>
+            </div>
           </FormField>
-          <FormField label="BOM编码"><Input className={FI} value={f.bomCode} readOnly disabled/></FormField>
-          <FormField label="BOM名称"><Input className={FI} value={f.bomName} readOnly disabled/></FormField>
-          {bomLoading && <div className="col-span-2 py-2 text-center text-[13px] text-muted-foreground">正在从BOM加载产品和材料明细...</div>}
+          {f.sourceCode && (
+            <FormField label="来源单号">
+              <Input className={FI} value={`${f.sourceType==='demandPlan'?'需求计划':f.sourceType==='salesOrder'?'销售订单':'BOM'}：${f.sourceCode} ${f.sourceName||''}`} readOnly disabled/>
+            </FormField>
+          )}
+          {sourceLoading && (
+            <div className="col-span-2 py-2 text-center text-[13px] text-muted-foreground">正在加载产品明细...</div>
+          )}
         </FormGrid>
       </FormSection>
 

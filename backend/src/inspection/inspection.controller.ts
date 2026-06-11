@@ -239,42 +239,6 @@ export class InspectionController {
         } as any,
       });
 
-      // Update source PO businessStatus & line receivedQty
-      if (updated.sourceType === 'PURCHASE_ORDER' && updated.sourceNo) {
-        const po = await tx.purchaseOrder.findFirst({
-          where: { tenantId, orderNo: updated.sourceNo },
-          include: { lines: { orderBy: { lineNo: 'asc' } } },
-        });
-        if (po) {
-          const qtyByLine = new Map<string, number>();
-          for (const il of qualifiedLines) {
-            const poLine = po.lines.find(pl =>
-              (pl.materialCode || '') === (il.materialCode || '') ||
-              pl.lineNo === il.lineNo
-            );
-            if (poLine) {
-              const prev = qtyByLine.get(poLine.id) || 0;
-              qtyByLine.set(poLine.id, prev + Number(il.qualifiedQty || 0));
-            }
-          }
-          let allFullyReceived = true;
-          for (const pl of po.lines) {
-            const prevRcvd = Number(pl.receivedQty || 0);
-            const newRcvd = prevRcvd + (qtyByLine.get(pl.id) || 0);
-            const ordered = Number(pl.quantity || 0);
-            await tx.purchaseOrderLine.update({
-              where: { id: pl.id },
-              data: { receivedQty: String(newRcvd) },
-            });
-            if (newRcvd < ordered) allFullyReceived = false;
-          }
-          await tx.purchaseOrder.update({
-            where: { id: po.id },
-            data: { businessStatus: allFullyReceived ? 'FULLY_RECEIVED' : 'PARTIAL_RECEIPT' } as any,
-          });
-        }
-      }
-
       return inbound;
     });
 

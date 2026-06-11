@@ -1,0 +1,3 @@
+ALTER TABLE "scrap_order"
+ADD COLUMN IF NOT EXISTS "purchasePlanId" TEXT,
+ADD COLUMN IF NOT EXISTS "purchasePlanNo" TEXT;

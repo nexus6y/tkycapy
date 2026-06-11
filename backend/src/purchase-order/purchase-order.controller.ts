@@ -218,77 +218,16 @@ export class PurchaseOrderController {
 
   @Put(':id/approve')
   async approve(@Param('id') id: string) {
+    // 完整的质检/登卡闭环在 inbound/inspection 阶段处理，审批阶段不创建 Inspection
     const order = await guardApprove(this.prisma, 'purchaseOrder', id);
     await this.prisma.purchaseOrder.update({
       where: { id },
       data: { approvalStatus: 'APPROVED' } as any,
     });
-
-    const tenantId = await this.tid();
-    const orderWithLines = await this.prisma.purchaseOrder.findUniqueOrThrow({
-      where: { id },
-      include: { lines: { orderBy: { lineNo: 'asc' } } },
-    });
-
-    // Determine whether materials need inspection
-    const materialCodes = [...new Set(
-      (orderWithLines.lines || []).map(l => l.materialCode).filter(Boolean)
-    )];
-    let needsInspection = false;
-    if (materialCodes.length > 0) {
-      const materials = await this.prisma.material.findMany({
-        where: { code: { in: materialCodes as string[] }, tenantId },
-      });
-      needsInspection = materials.some(m => m.needInspection);
-    }
-
-    // Only create Inspection when at least one material needs inspection
-    if (needsInspection && orderWithLines.lines && orderWithLines.lines.length > 0) {
-      const insNo = await this.codeGen.generate('INS', 'inspection', 'inspectionNo');
-      const totalQty = orderWithLines.lines.reduce((s, l) => s + Number(l.quantity || 0), 0);
-
-      await this.prisma.inspection.create({
-        data: {
-          tenantId,
-          inspectionNo: insNo,
-          sourceType: 'PURCHASE_ORDER',
-          sourceNo: order.orderNo,
-          materialName: order.orderName,
-          quantity: String(totalQty),
-          qualifiedQty: '0',
-          unqualifiedQty: '0',
-          approvalStatus: 'DRAFT',
-          businessStatus: 'PENDING',
-          lines: {
-            create: orderWithLines.lines.map((l, i) => ({
-              tenantId,
-              lineNo: l.lineNo ?? i + 1,
-              materialCode: l.materialCode,
-              materialName: l.materialName,
-              spec: l.spec,
-              unit: l.unit,
-              inspectQty: l.quantity != null ? String(l.quantity) : null,
-              qualifiedQty: '0',
-              unqualifiedQty: '0',
-              result: 'PENDING',
-              warehouseCode: l.warehouseCode,
-            })),
-          },
-        } as any,
-      });
-
-      // Mark PO as in inspection pipeline — blocks direct arrival confirm
-      await this.prisma.purchaseOrder.update({
-        where: { id },
-        data: { businessStatus: 'INSPECTING' } as any,
-      });
-    }
-
     return order;
   }
 
-  // Push-down: confirm arrival → generate inbound order (idempotent)
-  // Only allowed when no Inspection was created (materials don't need inspection)
+  // Push-down: 到货确认 → 生成入库单(DRAFT, 待质检)，幂等
   @Post(':id/confirm-arrival')
   async confirmArrival(@Param('id') id: string) {
     const tenantId = await this.tid();
@@ -301,17 +240,17 @@ export class PurchaseOrderController {
       if (po.approvalStatus !== 'APPROVED') throw new BadRequestException('只能从已审批的采购订单确认到货');
       if (!po.lines || po.lines.length === 0) throw new BadRequestException('采购订单没有明细行');
 
-      // Check material needInspection — if any material needs inspection, block direct arrival
+      // 完整质检/登卡闭环在 inbound/inspection 阶段处理，此处不阻断需质检物料的到货确认
+      // Determine if any material needs inspection — used for businessStatus below
       const materialCodes = [...new Set(
         po.lines.map(l => l.materialCode).filter(Boolean)
       )];
+      let needsInspection = false;
       if (materialCodes.length > 0) {
         const materials = await tx.material.findMany({
           where: { code: { in: materialCodes as string[] }, tenantId },
         });
-        if (materials.some(m => m.needInspection)) {
-          throw new BadRequestException('采购订单包含需质检物料，请通过质检流程入库');
-        }
+        needsInspection = materials.some(m => m.needInspection);
       }
 
       // Idempotency guard: reject if any inbound already exists for this PO (manual, inspection, etc)
@@ -350,9 +289,10 @@ export class PurchaseOrderController {
       });
 
       // Update PO businessStatus & line receivedQty
+      // 库存生效点不在到货确认，需质检物料进入 INSPECTING，否则 PENDING_RECEIPT
       await tx.purchaseOrder.update({
         where: { id },
-        data: { businessStatus: 'FULLY_RECEIVED' } as any,
+        data: { businessStatus: needsInspection ? 'INSPECTING' : 'PENDING_RECEIPT' } as any,
       });
       for (const l of po.lines) {
         await tx.purchaseOrderLine.update({

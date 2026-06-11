@@ -10,7 +10,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from '@/components/ui/toast';
 import { ErpAction, ErpActionBtn, ErpApproval, ErpEmpty, ErpLink, ErpPagination, ErpTable, ErpTbody, ErpTd, ErpTh, ErpThead, ErpTr } from '@/components/ui/erp-table';
-import { ChevronDown, MoreHorizontal, Pencil, Plus, RefreshCw, Search, Trash2 } from 'lucide-react';
+import { ChevronDown, MoreHorizontal, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 
 interface Item {
   id:string; orderNo:string; orderName:string; materialName:string|null;
@@ -21,6 +21,8 @@ interface Item {
 function fmtDt(v:string|null){return v?new Date(v).toLocaleDateString('zh-CN'):'-';}
 
 export default function ProductionChangePage() {
+  // NOTE: 当前页面暂以 production-orders 数据占位，并非真实生产变更业务。
+  // 生产变更 (ProductionChange) 尚无独立数据模型和接口，待后续创建 schema 后替换数据源。
   const router = useRouter();
   const [items,setItems]=useState<Item[]>([]);const [total,setTotal]=useState(0);
   const [pg,setPg]=useState(1);const [ps,setPs]=useState(30);
