@@ -124,6 +124,12 @@ export class QueryMaterialDto {
   @IsOptional() @IsString() categoryId?: string;
   @IsOptional() @IsString() status?: string;
   @IsOptional() @IsString() specification?: string;
+  @IsOptional() @IsString() materialProperty?: string;
+  @IsOptional() @IsString() productCategory?: string;
+  @IsOptional() @IsString() planAttribute?: string;
+  @IsOptional() @IsString() defaultSupplierName?: string;
+  @IsOptional() @IsString() responsiblePerson?: string;
+  @IsOptional() @IsString() approvalStatus?: string;
   @IsOptional() @Type(() => Number) @IsInt() page?: number;
   @IsOptional() @Type(() => Number) @IsInt() pageSize?: number;
 }

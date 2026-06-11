@@ -14,7 +14,14 @@ import { ErpTable, ErpThead, ErpTh, ErpTbody, ErpTr, ErpTd, ErpEmpty, ErpLink, E
 import { ErpToolbar } from '@/components/ui/erp-toolbar';
 import { ErpSearchFields, ErpSearchField } from '@/components/ui/erp-search-fields';
 
-interface Item { id:string;code:string;name:string;specification:string|null;categoryName:string;materialType:string;unitName:string;unitSymbol:string|null;status:string;approvalStatus:string;createdAt:string; }
+interface Item {
+  id:string; code:string; name:string; specification:string|null;
+  categoryName:string; materialType:string; materialProperty:string|null;
+  productCategory:string|null; unitName:string; unitSymbol:string|null;
+  planAttribute:string|null; defaultSupplier:string|null;
+  responsiblePerson:string|null; status:string; approvalStatus:string;
+  createdAt:string; updatedAt:string;
+}
 
 export default function MaterialPage() {
   const router = useRouter();
@@ -23,16 +30,18 @@ export default function MaterialPage() {
   const [pg, setPg] = useState(1);
   const [ps, setPs] = useState(30);
   const [sel, setSel] = useState<Set<string>>(new Set());
-  const [s, setS] = useState({ status: '', approvalStatus: '', code: '', name: '', externalCode: '', startDate: '', endDate: '' });
+  const [s, setS] = useState({
+    status:'', approvalStatus:'', code:'', name:'',
+    externalCode:'', specification:'', materialProperty:'',
+    productCategory:'', planAttribute:'', defaultSupplierName:'',
+    responsiblePerson:'', startDate:'', endDate:'',
+  });
   const [del, setDel] = useState<string | null>(null);
   const [advanced, setAdvanced] = useState(false);
 
   const fetch = useCallback(async () => {
     const p: any = { page: pg, pageSize: ps };
-    if (s.code) p.code = s.code;
-    if (s.name) p.name = s.name;
-    if (s.externalCode) p.externalCode = s.externalCode;
-    if (s.status) p.status = s.status;
+    Object.entries(s).forEach(([k, v]) => { if (v) p[k] = v; });
     const { data } = await api.get('/materials', { params: p });
     setItems(data.items);
     setTotal(data.total);
@@ -51,26 +60,37 @@ export default function MaterialPage() {
     }
   };
 
-  const resetSearch = () => setS({ status: '', approvalStatus: '', code: '', name: '', externalCode: '', startDate: '', endDate: '' });
+  const resetSearch = () => setS({
+    status:'', approvalStatus:'', code:'', name:'',
+    externalCode:'', specification:'', materialProperty:'',
+    productCategory:'', planAttribute:'', defaultSupplierName:'',
+    responsiblePerson:'', startDate:'', endDate:'',
+  });
 
-  const colSpan = 11;
+  const colSpan = 18;
 
   return (
     <TooltipProvider>
       <ErpListPage>
         <ErpToolbar
           addHref="/material/create"
-          editDisabled={sel.size === 0}
-          onEdit={() => toast('请先勾选数据', 'info')}
+          editDisabled={sel.size !== 1}
+          onEdit={() => {
+            const item = items.find(i => sel.has(i.id));
+            if (item) router.push(`/material/${item.id}/edit`);
+            else toast('请先勾选一条数据', 'info');
+          }}
           deleteDisabled={sel.size === 0}
-          onDelete={() => toast('请先勾选数据', 'info')}
+          onDelete={() => {
+            if (sel.size !== 1) return toast('请先勾选一条数据', 'info');
+            const item = items.find(i => sel.has(i.id));
+            if (item) setDel(item.id);
+          }}
           showImport
           importItems={[
-            { label: '导入数据', icon: <Upload className="h-3.5 w-3.5 mr-2" />, onClick: () => {} },
-            { label: '下载模板', icon: <Download className="h-3.5 w-3.5 mr-2" />, onClick: () => {} },
+            { label: '下载模板', icon: <Download className="h-3.5 w-3.5 mr-2" />, onClick: () => toast('导入模板下载待接入', 'info') },
+            { label: '导入数据', icon: <Upload className="h-3.5 w-3.5 mr-2" />, onClick: () => toast('导入功能待接入', 'info') },
           ]}
-          showExport
-          onExport={() => {}}
           onReset={resetSearch}
           onSearch={fetch}
           extraRight={
@@ -79,7 +99,7 @@ export default function MaterialPage() {
                 常用搜索方案 <ChevronDown className="h-3 w-3" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem>保存当前搜索</DropdownMenuItem>
+                <DropdownMenuItem disabled>保存当前搜索</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           }
@@ -89,21 +109,41 @@ export default function MaterialPage() {
         />
 
         <ErpSearchFields advancedOpen={advanced} advancedChildren={
+          /* ── 高级搜索：与原系统18个搜索条件对齐 ── */
           <>
-          <ErpSearchField label="外部编码">
-            <Input className="w-[140px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.externalCode} onChange={e => setS({ ...s, externalCode: e.target.value })} placeholder="外部编码" />
-          </ErpSearchField>
           <ErpSearchField label="创建时间">
             <Input type="date" className="w-[130px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.startDate} onChange={e => setS({ ...s, startDate: e.target.value })} />
             <span className="text-muted-foreground mx-1">-</span>
             <Input type="date" className="w-[130px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.endDate} onChange={e => setS({ ...s, endDate: e.target.value })} />
           </ErpSearchField>
+          <ErpSearchField label="规格型号">
+            <Input className="w-[140px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.specification} onChange={e => setS({ ...s, specification: e.target.value })} placeholder="规格型号" />
+          </ErpSearchField>
+          <ErpSearchField label="物料属性">
+            <Input className="w-[140px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.materialProperty} onChange={e => setS({ ...s, materialProperty: e.target.value })} placeholder="物料属性" />
+          </ErpSearchField>
+          <ErpSearchField label="产品分类">
+            <Input className="w-[140px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.productCategory} onChange={e => setS({ ...s, productCategory: e.target.value })} placeholder="产品分类" />
+          </ErpSearchField>
+          <ErpSearchField label="计划属性">
+            <Input className="w-[140px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.planAttribute} onChange={e => setS({ ...s, planAttribute: e.target.value })} placeholder="计划属性" />
+          </ErpSearchField>
+          <ErpSearchField label="默认供应商">
+            <Input className="w-[140px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.defaultSupplierName} onChange={e => setS({ ...s, defaultSupplierName: e.target.value })} placeholder="供应商名称" />
+          </ErpSearchField>
+          <ErpSearchField label="外部编码">
+            <Input className="w-[140px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.externalCode} onChange={e => setS({ ...s, externalCode: e.target.value })} placeholder="外部编码" />
+          </ErpSearchField>
+          <ErpSearchField label="主办人">
+            <Input className="w-[140px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.responsiblePerson} onChange={e => setS({ ...s, responsiblePerson: e.target.value })} placeholder="主办人" />
+          </ErpSearchField>
           </>
         }>
-          <ErpSearchField label="状态">
+          {/* ── 默认搜索 ── */}
+          <ErpSearchField label="启用状态">
             <Select value={s.status} onValueChange={(v: any) => setS({ ...s, status: v === 'ALL' ? '' : v })}>
-              <SelectTrigger className="w-[100px] h-9 rounded-md border border-border bg-background px-3 text-[13px]">
-                <SelectValue placeholder="全部" />
+              <SelectTrigger className="w-[110px] h-9 rounded-md border border-border bg-background px-3 text-[13px]">
+                <SelectValue placeholder="请选择" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="ALL">全部</SelectItem>
@@ -112,10 +152,10 @@ export default function MaterialPage() {
               </SelectContent>
             </Select>
           </ErpSearchField>
-          <ErpSearchField label="审批">
+          <ErpSearchField label="审批状态">
             <Select value={s.approvalStatus} onValueChange={(v: any) => setS({ ...s, approvalStatus: v === 'ALL' ? '' : v })}>
-              <SelectTrigger className="w-[100px] h-9 rounded-md border border-border bg-background px-3 text-[13px]">
-                <SelectValue placeholder="全部" />
+              <SelectTrigger className="w-[110px] h-9 rounded-md border border-border bg-background px-3 text-[13px]">
+                <SelectValue placeholder="请选择" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="ALL">全部</SelectItem>
@@ -126,10 +166,10 @@ export default function MaterialPage() {
             </Select>
           </ErpSearchField>
           <ErpSearchField label="物料编码">
-            <Input className="w-[140px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.code} onChange={e => setS({ ...s, code: e.target.value })} placeholder="编码" />
+            <Input className="w-[140px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.code} onChange={e => setS({ ...s, code: e.target.value })} placeholder="物料编码" />
           </ErpSearchField>
           <ErpSearchField label="物料名称">
-            <Input className="w-[140px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.name} onChange={e => setS({ ...s, name: e.target.value })} placeholder="名称" />
+            <Input className="w-[140px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.name} onChange={e => setS({ ...s, name: e.target.value })} placeholder="物料名称" />
           </ErpSearchField>
         </ErpSearchFields>
 
@@ -140,14 +180,19 @@ export default function MaterialPage() {
             <ErpThead>
               <ErpTh className="w-[48px]"><Checkbox checked={items.length > 0 && sel.size === items.length} onCheckedChange={(v: boolean) => setSel(v ? new Set(items.map(i => i.id)) : new Set())} /></ErpTh>
               <ErpTh className="w-[80px]">启用状态</ErpTh>
-              <ErpTh className="w-[100px]">审批状态</ErpTh>
-              <ErpTh className="w-[160px]">物料编码</ErpTh>
-              <ErpTh className="w-[220px]">物料名称</ErpTh>
-              <ErpTh className="w-[140px]">规格型号</ErpTh>
-              <ErpTh className="w-[130px]">物料分类</ErpTh>
-              <ErpTh className="w-[90px]">物料性质</ErpTh>
-              <ErpTh className="w-[90px]">计量单位</ErpTh>
-              <ErpTh className="w-[160px]">创建时间</ErpTh>
+              <ErpTh className="w-[90px]">审批状态</ErpTh>
+              <ErpTh className="w-[150px]">物料编码</ErpTh>
+              <ErpTh className="w-[160px]">物料名称</ErpTh>
+              <ErpTh className="w-[120px]">规格型号</ErpTh>
+              <ErpTh className="w-[80px]">计量单位</ErpTh>
+              <ErpTh className="w-[100px]">物料分类</ErpTh>
+              <ErpTh className="w-[80px]">物料属性</ErpTh>
+              <ErpTh className="w-[80px]">产品分类</ErpTh>
+              <ErpTh className="w-[80px]">计划属性</ErpTh>
+              <ErpTh className="w-[120px]">默认供应商</ErpTh>
+              <ErpTh className="w-[120px]">创建时间</ErpTh>
+              <ErpTh className="w-[120px]">修改时间</ErpTh>
+              <ErpTh className="w-[80px]">主办人</ErpTh>
               <ErpTh className="w-[140px] sticky right-0 bg-[#f5f7fa] z-10">操作</ErpTh>
             </ErpThead>
             <ErpTbody>
@@ -159,10 +204,15 @@ export default function MaterialPage() {
                   <ErpTd><ErpLink onClick={() => router.push(`/material/${i.id}/edit`)}>{i.code}</ErpLink></ErpTd>
                   <ErpTd>{i.name}</ErpTd>
                   <ErpTd className="text-[#909399]">{i.specification || '-'}</ErpTd>
-                  <ErpTd>{i.categoryName}</ErpTd>
-                  <ErpTd>{i.materialType === 'PHYSICAL' ? '实物' : '虚拟'}</ErpTd>
                   <ErpTd>{i.unitName}{i.unitSymbol ? `(${i.unitSymbol})` : ''}</ErpTd>
+                  <ErpTd>{i.categoryName || '-'}</ErpTd>
+                  <ErpTd>{i.materialProperty || '-'}</ErpTd>
+                  <ErpTd>{i.productCategory || '-'}</ErpTd>
+                  <ErpTd>{i.planAttribute || '-'}</ErpTd>
+                  <ErpTd className="text-[#909399]">{i.defaultSupplier || '-'}</ErpTd>
                   <ErpTd className="text-[#909399]">{new Date(i.createdAt).toLocaleDateString('zh-CN')}</ErpTd>
+                  <ErpTd className="text-[#909399]">{i.updatedAt ? new Date(i.updatedAt).toLocaleDateString('zh-CN') : '-'}</ErpTd>
+                  <ErpTd>{i.responsiblePerson || '-'}</ErpTd>
                   <ErpTd className="sticky right-0 bg-white z-10">
                     <ErpAction>
                       <ErpActionBtn onClick={() => router.push(`/material/${i.id}/edit`)}>
