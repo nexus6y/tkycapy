@@ -13,19 +13,16 @@ import { toast } from '@/components/ui/toast';
 import { ErpAction, ErpActionBtn, ErpApproval, ErpEmpty, ErpLink, ErpPagination, ErpTable, ErpTbody, ErpTd, ErpTh, ErpThead, ErpTr } from '@/components/ui/erp-table';
 import { ChevronDown, MoreHorizontal, Pencil, Plus, RefreshCw, Search, Trash2 } from 'lucide-react';
 
-/* ── types ── */
 interface ProdOrder {
   id:string; orderNo:string; orderName:string;
   materialName:string|null; quantity:string|null;
   departmentName:string|null; startDate:string|null; endDate:string|null;
   approvalStatus:string; businessStatus:string;
   remark:string|null; createdAt:string; createdBy?:string|null;
-  // detail mode fields — from lines[0] if available
   productCode?:string; productName?:string; productSpec?:string;
   productUnit?:string; plannedQty?:string; actualQty?:string;
   qualifiedQty?:string; defectQty?:string; reworkQty?:string;
   completionRate?:string; stockInQty?:string;
-  // material fields from materials
   materialLines?:{lineNo:number;materialCode:string|null;materialName:string|null;spec:string|null;unit:string|null;quantity:string|null;warehouseCode:string|null;}[];
   productLines?:{lineNo:number;materialCode:string|null;materialName:string|null;spec:string|null;unit:string|null;plannedQty:string|null;actualQty:string|null;}[];
 }
@@ -41,7 +38,7 @@ export default function ProductionOrderWorkbenchPage() {
   const router = useRouter();
   const [items,setItems]=useState<ProdOrder[]>([]); const [total,setTotal]=useState(0);
   const [pg,setPg]=useState(1); const [ps,setPs]=useState(30);
-  const [detail,setDetail]=useState(false); // false=主单, true=主单+明细
+  const [detail,setDetail]=useState(false);
   const [sel,setSel]=useState<Set<string>>(new Set());
   const [delId,setDelId]=useState<string|null>(null);
   const [s,setS]=useState({status:'',code:'',name:'',deptName:'',orgName:'',createdBy:''});
@@ -54,7 +51,6 @@ export default function ProductionOrderWorkbenchPage() {
     if (s.name) p.name = s.name;
     if (s.deptName) p.departmentName = s.deptName;
     const { data } = await api.get('/production-orders',{params:p});
-    // For detail mode, flatten product lines into items
     const raw = data.items||[];
     if (detail && raw.length > 0) {
       const flattened:ProdOrder[] = [];
@@ -89,6 +85,16 @@ export default function ProductionOrderWorkbenchPage() {
     try { await api.put(`/production-orders/${id}/${a}`); fetch(); }
     catch(e:any){ toast(e.response?.data?.message||'操作失败','error'); }
   };
+  const batchAction = async (action:string, label:string) => {
+    if (sel.size===0) return toast('请先勾选数据','info');
+    let ok=0; const errs:string[]=[];
+    for (const id of sel) {
+      try { await api.put(`/production-orders/${id}/${action}`); ok++; }
+      catch(e:any){ errs.push(e.response?.data?.message||'失败'); }
+    }
+    toast(`${label}: 成功${ok}`+(errs.length?`, 失败${errs.length}`:''), ok>0?'success':'error');
+    setSel(new Set()); fetch();
+  };
   const pushIssue = async (id:string) => {
     if (!confirm('确定下推领料单？')) return;
     try { await api.post(`/production-orders/${id}/generate-issue`); toast('领料单已生成','success'); fetch(); }
@@ -112,17 +118,16 @@ export default function ProductionOrderWorkbenchPage() {
 
   const selItem = items.find(i=>sel.has(i.id));
   const single = sel.size===1;
+  const multi = sel.size>0;
 
-  /* ── Row actions per order ── */
-  const rowActions = (item:ProdOrder) => {
+  /* ── 主单 行操作 ── */
+  const mainActions = (item:ProdOrder) => {
     const st = item.approvalStatus; const biz = item.businessStatus;
-    const showIssue = st==='APPROVED' && (biz==='PENDING_ISSUE'||biz==='ISSUING');
-    const showComplete = st==='APPROVED' && biz==='IN_PRODUCTION';
     return (
       <ErpAction>
         <ErpActionBtn onClick={()=>router.push(`/production/order/${item.id}/edit`)}><Pencil className="h-3.5 w-3.5"/>修改</ErpActionBtn>
         <ErpActionBtn danger onClick={()=>tryDel(item)}><Trash2 className="h-3.5 w-3.5"/>删除</ErpActionBtn>
-        {!detail && <DropdownMenu>
+        <DropdownMenu>
           <DropdownMenuTrigger className="inline-flex items-center gap-0.5 px-1 text-[13px] text-[#409eff] hover:opacity-80">明细<ChevronDown className="h-3 w-3"/></DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-[132px]">
             <DropdownMenuItem onClick={()=>toast('齐套分析待接入','info')}>齐套分析</DropdownMenuItem>
@@ -131,11 +136,32 @@ export default function ProductionOrderWorkbenchPage() {
             <DropdownMenuItem onClick={()=>pushComplete(item.id)}>完工报告</DropdownMenuItem>
             <DropdownMenuItem onClick={()=>toast('历史版本待接入','info')}>历史版本</DropdownMenuItem>
           </DropdownMenuContent>
-        </DropdownMenu>}
-        {showIssue && <ErpActionBtn onClick={()=>pushIssue(item.id)}>下推领料</ErpActionBtn>}
+        </DropdownMenu>
         {st==='DRAFT' && <ErpActionBtn onClick={()=>wf(item.id,'submit')}>提交</ErpActionBtn>}
         {st==='SUBMITTED' && <ErpActionBtn onClick={()=>wf(item.id,'withdraw')}>撤回</ErpActionBtn>}
-        {showComplete && <ErpActionBtn onClick={()=>pushComplete(item.id)}>下推完工</ErpActionBtn>}
+        {st==='APPROVED' && (biz==='PENDING_ISSUE'||biz==='ISSUING') && <ErpActionBtn onClick={()=>pushIssue(item.id)}>下推领料</ErpActionBtn>}
+        {st==='APPROVED' && biz==='IN_PRODUCTION' && <ErpActionBtn onClick={()=>pushComplete(item.id)}>下推完工</ErpActionBtn>}
+      </ErpAction>
+    );
+  };
+
+  /* ── 主单+明细 行操作 (document: 只有 修改/删除 且 APPROVED 时 disabled) ── */
+  const detailActions = (item:ProdOrder) => {
+    const approved = item.approvalStatus==='APPROVED';
+    return (
+      <ErpAction>
+        <ErpActionBtn disabled={approved} onClick={()=>router.push(`/production/order/${item.id}/edit`)}><Pencil className="h-3.5 w-3.5"/>修改</ErpActionBtn>
+        <ErpActionBtn danger disabled={approved} onClick={()=>tryDel(item)}><Trash2 className="h-3.5 w-3.5"/>删除</ErpActionBtn>
+        <DropdownMenu>
+          <DropdownMenuTrigger className="inline-flex items-center gap-0.5 px-1 text-[13px] text-[#409eff] hover:opacity-80">更多<ChevronDown className="h-3 w-3"/></DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-[132px]">
+            <DropdownMenuItem onClick={()=>toast('齐套分析待接入','info')}>齐套分析</DropdownMenuItem>
+            <DropdownMenuItem onClick={()=>{setDetail(true);setPg(1);}}>领料追溯</DropdownMenuItem>
+            <DropdownMenuItem onClick={()=>toast('全局联查待接入','info')}>全局联查</DropdownMenuItem>
+            <DropdownMenuItem onClick={()=>pushComplete(item.id)}>完工报告</DropdownMenuItem>
+            <DropdownMenuItem onClick={()=>toast('历史版本待接入','info')}>历史版本</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </ErpAction>
     );
   };
@@ -147,9 +173,21 @@ export default function ProductionOrderWorkbenchPage() {
         <div className="flex items-center gap-1.5">
           <Button variant="outline" size="sm" className="gap-1" onClick={()=>router.push('/production/order/create')}>
             <Pencil className="h-3.5 w-3.5"/>业务引导</Button>
-          <Button variant="outline" size="sm" className="gap-1" disabled={sel.size===0}
-            onClick={()=>toast('批量操作待接入','info')}>
-            批量操作<ChevronDown className="h-3.5 w-3.5"/></Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-3 h-9 text-[13px] font-medium shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors" disabled={!multi}>
+              批量操作<ChevronDown className="h-3.5 w-3.5"/>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              {!detail ? <>
+                <DropdownMenuItem onClick={()=>batchAction('submit','批量提交')}>批量提交</DropdownMenuItem>
+                <DropdownMenuItem onClick={()=>batchAction('approve','批量审批')}>批量审批</DropdownMenuItem>
+              </> : <>
+                <DropdownMenuItem onClick={()=>batchAction('start','批量开工')}>批量开工</DropdownMenuItem>
+                <DropdownMenuItem onClick={()=>batchAction('complete','批量完工')}>批量完工</DropdownMenuItem>
+                <DropdownMenuItem onClick={()=>toast('部分完工待接入','info')}>部分完工</DropdownMenuItem>
+              </>}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button variant="secondary" size="sm" className="gap-1" onClick={()=>router.push('/production/order/create')}>
             <Plus className="h-3.5 w-3.5"/>新增</Button>
           <Button variant="outline" size="sm" className="gap-1 text-[#67c23a]" disabled={!single}
@@ -197,9 +235,9 @@ export default function ProductionOrderWorkbenchPage() {
       <div className="flex shrink-0 items-center justify-between border-b border-[#ebeef5] bg-white px-4 py-2.5">
         <div className="flex items-center gap-6">
           <label className={`inline-flex items-center gap-2 text-[14px] cursor-pointer ${!detail?'text-[#409eff]':'text-[#303133]'}`}>
-            <input type="radio" checked={!detail} onChange={()=>{setDetail(false);setPg(1);}} className="accent-[#409eff]"/>主单</label>
+            <input type="radio" checked={!detail} onChange={()=>{setDetail(false);setSel(new Set());setPg(1);}} className="accent-[#409eff]"/>主单</label>
           <label className={`inline-flex items-center gap-2 text-[14px] cursor-pointer ${detail?'text-[#409eff]':'text-[#303133]'}`}>
-            <input type="radio" checked={detail} onChange={()=>{setDetail(true);setPg(1);}} className="accent-[#409eff]"/>主单+明细</label>
+            <input type="radio" checked={detail} onChange={()=>{setDetail(true);setSel(new Set());setPg(1);}} className="accent-[#409eff]"/>主单+明细</label>
           <span className="text-[13px] text-[#606266]">共 {total} 条</span>
         </div>
         <button onClick={fetch} title="刷新" className="rounded border border-[#dcdfe6] p-1.5 text-[#606266] hover:bg-[#f5f7fa]"><RefreshCw className="h-4 w-4"/></button>
@@ -208,7 +246,7 @@ export default function ProductionOrderWorkbenchPage() {
       {/* ──── Table ──── */}
       <div className="min-h-0 flex-1 overflow-auto">
       {!detail ? (
-        /* ═══ 主单 table (12 cols) ═══ */
+        /* ═══ 主单 (12 cols) ═══ */
         <ErpTable>
           <ErpThead>
             <ErpTh className="w-[48px]"><Checkbox checked={items.length>0&&sel.size===items.length} onCheckedChange={toggleAll}/></ErpTh>
@@ -236,14 +274,14 @@ export default function ProductionOrderWorkbenchPage() {
                 <ErpTd className="text-[#909399]">{fmtDt(item.createdAt)}</ErpTd>
                 <ErpTd className="text-[#909399] max-w-[160px] truncate" title={item.remark||''}>{item.remark||'-'}</ErpTd>
                 <ErpTd><span className="text-[#409eff] text-[13px] cursor-pointer hover:underline">📎</span></ErpTd>
-                <ErpTd className="sticky right-0 z-10 bg-white">{rowActions(item)}</ErpTd>
+                <ErpTd className="sticky right-0 z-10 bg-white">{mainActions(item)}</ErpTd>
               </ErpTr>
             ))}
             {items.length===0 && <ErpEmpty colSpan={12}/>}
           </ErpTbody>
         </ErpTable>
       ) : (
-        /* ═══ 主单+明细 table (product-level rows) ═══ */
+        /* ═══ 主单+明细 (16 cols, product-level) ═══ */
         <ErpTable>
           <ErpThead>
             <ErpTh className="w-[48px]"><Checkbox/></ErpTh>
@@ -281,7 +319,7 @@ export default function ProductionOrderWorkbenchPage() {
                 <ErpTd>{item.plannedQty?Number(item.plannedQty).toLocaleString():'-'}</ErpTd>
                 <ErpTd>{item.actualQty?Number(item.actualQty).toLocaleString():'-'}</ErpTd>
                 <ErpTd className="text-[#909399]">{fmtDt(item.createdAt)}</ErpTd>
-                <ErpTd className="sticky right-0 z-10 bg-white">{rowActions(item)}</ErpTd>
+                <ErpTd className="sticky right-0 z-10 bg-white">{detailActions(item)}</ErpTd>
               </ErpTr>
             ))}
             {items.length===0 && <ErpEmpty colSpan={16}/>}
