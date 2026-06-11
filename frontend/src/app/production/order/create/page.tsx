@@ -135,9 +135,6 @@ export default function ProductionOrderCreate() {
       } else if (f.sourceType==='bom') {
         payload.bomId = f.sourceId;
       }
-        quantity:String(prodLines.reduce((s,l)=>s+Number(l.plannedQty||0),0)),
-        startDate:f.orderDate, remark:f.remark,
-      };
       if (prodLines.length>0) payload.lines = prodLines;
       if (matLines.length>0) payload.materials = matLines;
       await api.post('/production-orders',payload);
