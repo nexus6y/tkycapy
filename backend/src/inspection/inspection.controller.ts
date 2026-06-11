@@ -207,11 +207,6 @@ export class InspectionController {
     const sumQual = String(updated.lines.reduce((s: number, l: any) => s + Number(l.qualifiedQty || 0), 0));
     const sumUnqual = String(updated.lines.reduce((s: number, l: any) => s + Number(l.unqualifiedQty || 0), 0));
 
-    await this.prisma.inspection.update({
-      where: { id },
-      data: { approvalStatus: 'APPROVED', businessStatus: 'COMPLETED', qualifiedQty: sumQual, unqualifiedQty: sumUnqual } as any,
-    });
-
     const tenantId = await this.tid();
     const inNo = await this.codeGen.generate('IN', 'inboundOrder', 'orderNo');
     const qualifiedLines = updated.lines && updated.lines.length > 0
@@ -222,14 +217,21 @@ export class InspectionController {
       materialCode: l.materialCode, materialName: l.materialName,
       spec: l.spec, unit: l.unit,
       quantity: String(l.qualifiedQty || 0),
-      warehouseCode: (l as any).warehouseCode,
+      warehouseCode: (l as any).warehouseCode || '',
       lineNo: l.lineNo,
     }));
 
     const totalQty = String(qualifiedLines.reduce((s, l) => s + Number(l.qualifiedQty || 0), 0));
 
-    // Create inbound + update PO status in a transaction
+    // Create inbound + update inspection status + update PO status ALL in ONE transaction
     const result = await this.prisma.$transaction(async (tx) => {
+      // ① Update inspection → APPROVED
+      await tx.inspection.update({
+        where: { id },
+        data: { approvalStatus: 'APPROVED', businessStatus: 'COMPLETED', qualifiedQty: sumQual, unqualifiedQty: sumUnqual } as any,
+      });
+
+      // ② Create inbound order for qualified lines
       const inbound = await tx.inboundOrder.create({
         data: {
           tenantId, orderNo: inNo,
@@ -242,7 +244,7 @@ export class InspectionController {
             materialCode: l.materialCode, materialName: l.materialName || updated.materialName,
             spec: l.spec, unit: l.unit,
             quantity: l.quantity != null ? String(l.quantity) : null,
-            warehouseCode: l.warehouseCode,
+            warehouseCode: l.warehouseCode || '',
           })) } : undefined,
         } as any,
       });
