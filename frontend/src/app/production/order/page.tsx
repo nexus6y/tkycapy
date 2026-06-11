@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -13,15 +13,21 @@ import { toast } from '@/components/ui/toast';
 import { ErpAction, ErpActionBtn, ErpApproval, ErpEmpty, ErpLink, ErpPagination, ErpTable, ErpTbody, ErpTd, ErpTh, ErpThead, ErpTr } from '@/components/ui/erp-table';
 import { ChevronDown, MoreHorizontal, Pencil, Plus, RefreshCw, Search, Trash2 } from 'lucide-react';
 
-interface ProdLine { id:string; lineNo:number; materialCode:string|null; materialName:string|null; spec:string|null; unit:string|null; plannedQty:string|null; actualQty:string|null; }
-interface MatLine  { id:string; lineNo:number; materialCode:string|null; materialName:string|null; spec:string|null; unit:string|null; quantity:string|null; issuedQty:string|null; }
+/* ── types ── */
 interface ProdOrder {
   id:string; orderNo:string; orderName:string;
   materialName:string|null; quantity:string|null;
   departmentName:string|null; startDate:string|null; endDate:string|null;
   approvalStatus:string; businessStatus:string;
   remark:string|null; createdAt:string; createdBy?:string|null;
-  lines?: ProdLine[]; materials?: MatLine[];
+  // detail mode fields — from lines[0] if available
+  productCode?:string; productName?:string; productSpec?:string;
+  productUnit?:string; plannedQty?:string; actualQty?:string;
+  qualifiedQty?:string; defectQty?:string; reworkQty?:string;
+  completionRate?:string; stockInQty?:string;
+  // material fields from materials
+  materialLines?:{lineNo:number;materialCode:string|null;materialName:string|null;spec:string|null;unit:string|null;quantity:string|null;warehouseCode:string|null;}[];
+  productLines?:{lineNo:number;materialCode:string|null;materialName:string|null;spec:string|null;unit:string|null;plannedQty:string|null;actualQty:string|null;}[];
 }
 
 const STATUS_OPTS = [
@@ -35,7 +41,7 @@ export default function ProductionOrderWorkbenchPage() {
   const router = useRouter();
   const [items,setItems]=useState<ProdOrder[]>([]); const [total,setTotal]=useState(0);
   const [pg,setPg]=useState(1); const [ps,setPs]=useState(30);
-  const [detail,setDetail]=useState(false);
+  const [detail,setDetail]=useState(false); // false=主单, true=主单+明细
   const [sel,setSel]=useState<Set<string>>(new Set());
   const [delId,setDelId]=useState<string|null>(null);
   const [s,setS]=useState({status:'',code:'',name:'',deptName:'',orgName:'',createdBy:''});
@@ -48,7 +54,30 @@ export default function ProductionOrderWorkbenchPage() {
     if (s.name) p.name = s.name;
     if (s.deptName) p.departmentName = s.deptName;
     const { data } = await api.get('/production-orders',{params:p});
-    setItems(data.items||[]); setTotal(data.total||0);
+    // For detail mode, flatten product lines into items
+    const raw = data.items||[];
+    if (detail && raw.length > 0) {
+      const flattened:ProdOrder[] = [];
+      for (const order of raw) {
+        const lines = order.lines||[];
+        const materials = order.materials||[];
+        if (lines.length > 0) {
+          for (const line of lines) {
+            flattened.push({...order,
+              productCode:line.materialCode, productName:line.materialName,
+              productSpec:line.spec, productUnit:line.unit,
+              plannedQty:line.plannedQty, actualQty:line.actualQty,
+              productLines:lines, materialLines:materials,
+            });
+          }
+        } else {
+          flattened.push({...order, productLines:[], materialLines:materials});
+        }
+      }
+      setItems(flattened); setTotal(flattened.length);
+    } else {
+      setItems(raw); setTotal(data.total||0);
+    }
   },[detail,pg,ps,s]);
   useEffect(()=>{fetch();},[fetch]);
 
@@ -59,6 +88,16 @@ export default function ProductionOrderWorkbenchPage() {
   const wf = async (id:string, a:'submit'|'withdraw') => {
     try { await api.put(`/production-orders/${id}/${a}`); fetch(); }
     catch(e:any){ toast(e.response?.data?.message||'操作失败','error'); }
+  };
+  const pushIssue = async (id:string) => {
+    if (!confirm('确定下推领料单？')) return;
+    try { await api.post(`/production-orders/${id}/generate-issue`); toast('领料单已生成','success'); fetch(); }
+    catch(e:any){ toast(e.response?.data?.message||'下推失败','error'); }
+  };
+  const pushComplete = async (id:string) => {
+    if (!confirm('确定下推完工报告？')) return;
+    try { await api.post(`/production-orders/${id}/generate-complete-report`); toast('完工报告已生成','success'); fetch(); }
+    catch(e:any){ toast(e.response?.data?.message||'下推失败','error'); }
   };
 
   const tryDel = (item:ProdOrder) => {
@@ -74,13 +113,43 @@ export default function ProductionOrderWorkbenchPage() {
   const selItem = items.find(i=>sel.has(i.id));
   const single = sel.size===1;
 
+  /* ── Row actions per order ── */
+  const rowActions = (item:ProdOrder) => {
+    const st = item.approvalStatus; const biz = item.businessStatus;
+    const showIssue = st==='APPROVED' && (biz==='PENDING_ISSUE'||biz==='ISSUING');
+    const showComplete = st==='APPROVED' && biz==='IN_PRODUCTION';
+    return (
+      <ErpAction>
+        <ErpActionBtn onClick={()=>router.push(`/production/order/${item.id}/edit`)}><Pencil className="h-3.5 w-3.5"/>修改</ErpActionBtn>
+        <ErpActionBtn danger onClick={()=>tryDel(item)}><Trash2 className="h-3.5 w-3.5"/>删除</ErpActionBtn>
+        {!detail && <DropdownMenu>
+          <DropdownMenuTrigger className="inline-flex items-center gap-0.5 px-1 text-[13px] text-[#409eff] hover:opacity-80">明细<ChevronDown className="h-3 w-3"/></DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-[132px]">
+            <DropdownMenuItem onClick={()=>toast('齐套分析待接入','info')}>齐套分析</DropdownMenuItem>
+            <DropdownMenuItem onClick={()=>{setDetail(true);setPg(1);}}>领料追溯</DropdownMenuItem>
+            <DropdownMenuItem onClick={()=>toast('全局联查待接入','info')}>全局联查</DropdownMenuItem>
+            <DropdownMenuItem onClick={()=>pushComplete(item.id)}>完工报告</DropdownMenuItem>
+            <DropdownMenuItem onClick={()=>toast('历史版本待接入','info')}>历史版本</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>}
+        {showIssue && <ErpActionBtn onClick={()=>pushIssue(item.id)}>下推领料</ErpActionBtn>}
+        {st==='DRAFT' && <ErpActionBtn onClick={()=>wf(item.id,'submit')}>提交</ErpActionBtn>}
+        {st==='SUBMITTED' && <ErpActionBtn onClick={()=>wf(item.id,'withdraw')}>撤回</ErpActionBtn>}
+        {showComplete && <ErpActionBtn onClick={()=>pushComplete(item.id)}>下推完工</ErpActionBtn>}
+      </ErpAction>
+    );
+  };
+
   return (
     <div className="flex h-full min-h-0 flex-col rounded-lg border border-[#dcdfe6] bg-white">
-      {/* ──── Toolbar — matches original: 业务引导 | 新增 | 修改 | 删除 | 更多操作 ──── */}
+      {/* ──── Toolbar ──── */}
       <div className="flex shrink-0 items-center justify-between gap-2 border-b border-[#ebeef5] bg-white px-4 py-3">
         <div className="flex items-center gap-1.5">
-          <Button variant="secondary" size="sm" className="gap-1" onClick={()=>router.push('/production/order/create')}>
+          <Button variant="outline" size="sm" className="gap-1" onClick={()=>router.push('/production/order/create')}>
             <Pencil className="h-3.5 w-3.5"/>业务引导</Button>
+          <Button variant="outline" size="sm" className="gap-1" disabled={sel.size===0}
+            onClick={()=>toast('批量操作待接入','info')}>
+            批量操作<ChevronDown className="h-3.5 w-3.5"/></Button>
           <Button variant="secondary" size="sm" className="gap-1" onClick={()=>router.push('/production/order/create')}>
             <Plus className="h-3.5 w-3.5"/>新增</Button>
           <Button variant="outline" size="sm" className="gap-1 text-[#67c23a]" disabled={!single}
@@ -102,12 +171,17 @@ export default function ProductionOrderWorkbenchPage() {
         </div>
         <div className="flex items-center gap-1">
           <Button variant="ghost" size="sm" onClick={reset}>重置</Button>
-          <Button variant="default" size="sm" className="gap-1" onClick={()=>{setPg(1);fetch();}}>
-            <Search className="h-4 w-4"/>搜索</Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger className="inline-flex items-center gap-1 rounded-md px-2.5 h-7 text-[13px] font-medium hover:bg-accent">
+              常用搜索方案<ChevronDown className="h-3.5 w-3.5"/></DropdownMenuTrigger>
+            <DropdownMenuContent align="end"><DropdownMenuItem disabled>保存当前搜索</DropdownMenuItem></DropdownMenuContent>
+          </DropdownMenu>
+          <Button variant="default" size="sm" className="gap-1" onClick={()=>{setPg(1);fetch();}}><Search className="h-4 w-4"/>搜索</Button>
+          <Button variant="outline" size="sm" onClick={()=>toast('高级搜索待接入','info')}>高级搜索</Button>
         </div>
       </div>
 
-      {/* ──── Search area — original: 状态,生产编号,生产名称,生产部门,所属组织,创建人,创建日期 ──── */}
+      {/* ──── Search ──── */}
       <div className="shrink-0 border-b border-[#ebeef5] bg-[#fafafa] px-4 py-3">
         <div className="flex items-center gap-4 flex-wrap">
           <S label="状态" v={s.status} opts={STATUS_OPTS} onChange={v=>setS({...s,status:v})}/>
@@ -119,94 +193,101 @@ export default function ProductionOrderWorkbenchPage() {
         </div>
       </div>
 
-      {/* ──── Sub-toolbar: 主单/主单+明细 + 刷新 ──── */}
+      {/* ──── Sub-toolbar: 主单/主单+明细 toggle ──── */}
       <div className="flex shrink-0 items-center justify-between border-b border-[#ebeef5] bg-white px-4 py-2.5">
         <div className="flex items-center gap-6">
-          <label className="inline-flex items-center gap-2 text-[14px] text-[#303133]">
+          <label className={`inline-flex items-center gap-2 text-[14px] cursor-pointer ${!detail?'text-[#409eff]':'text-[#303133]'}`}>
             <input type="radio" checked={!detail} onChange={()=>{setDetail(false);setPg(1);}} className="accent-[#409eff]"/>主单</label>
-          <label className="inline-flex items-center gap-2 text-[14px] text-[#409eff]">
+          <label className={`inline-flex items-center gap-2 text-[14px] cursor-pointer ${detail?'text-[#409eff]':'text-[#303133]'}`}>
             <input type="radio" checked={detail} onChange={()=>{setDetail(true);setPg(1);}} className="accent-[#409eff]"/>主单+明细</label>
           <span className="text-[13px] text-[#606266]">共 {total} 条</span>
         </div>
-        <button onClick={fetch} title="刷新" className="rounded border border-[#dcdfe6] p-1.5 text-[#606266] hover:bg-[#f5f7fa]">
-          <RefreshCw className="h-4 w-4"/>
-        </button>
+        <button onClick={fetch} title="刷新" className="rounded border border-[#dcdfe6] p-1.5 text-[#606266] hover:bg-[#f5f7fa]"><RefreshCw className="h-4 w-4"/></button>
       </div>
 
-      {/* ──── Table — original 12 columns: 状态,生产编号,生产名称,所属组织,生产部门,创建人,创建日期,备注,附件,操作 ──── */}
+      {/* ──── Table ──── */}
       <div className="min-h-0 flex-1 overflow-auto">
+      {!detail ? (
+        /* ═══ 主单 table (12 cols) ═══ */
         <ErpTable>
           <ErpThead>
             <ErpTh className="w-[48px]"><Checkbox checked={items.length>0&&sel.size===items.length} onCheckedChange={toggleAll}/></ErpTh>
             <ErpTh className="w-[100px]">状态</ErpTh>
-            <ErpTh className="w-[170px]">生产编号</ErpTh>
+            <ErpTh className="w-[180px]">生产编号</ErpTh>
             <ErpTh className="w-[220px]">生产名称</ErpTh>
             <ErpTh className="w-[150px]">所属组织</ErpTh>
             <ErpTh className="w-[150px]">生产部门</ErpTh>
             <ErpTh className="w-[100px]">创建人</ErpTh>
-            <ErpTh className="w-[120px]">创建日期</ErpTh>
-            <ErpTh className="w-[150px]">备注</ErpTh>
+            <ErpTh className="w-[130px]">创建日期</ErpTh>
+            <ErpTh className="w-[160px]">备注</ErpTh>
             <ErpTh className="w-[80px]">附件</ErpTh>
-            <ErpTh className="w-[180px] sticky right-0 z-10 bg-[#f5f7fa]">操作</ErpTh>
+            <ErpTh className="w-[220px] sticky right-0 z-10 bg-[#f5f7fa]">操作</ErpTh>
           </ErpThead>
           <ErpTbody>
-            {items.map(item => {
-              const hasSub = detail && ((item.lines&&item.lines.length>0)||(item.materials&&item.materials.length>0));
-              return (<Fragment key={item.id}>
-                {/* ── 主单行 ── */}
-                <ErpTr className={hasSub?'border-b-0':''}>
-                  <ErpTd><Checkbox checked={sel.has(item.id)} onCheckedChange={()=>toggleSel(item.id)}/></ErpTd>
-                  <ErpTd><ErpApproval status={item.approvalStatus}/></ErpTd>
-                  <ErpTd><ErpLink onClick={()=>{if(detail)setDetail(false);else router.push(`/production/order/${item.id}/edit`)}}>{item.orderNo}</ErpLink></ErpTd>
-                  <ErpTd>{item.orderName||'-'}</ErpTd>
-                  <ErpTd className="text-[#606266]">默认企业</ErpTd>
-                  <ErpTd className="text-[#606266]">{item.departmentName||'-'}</ErpTd>
-                  <ErpTd>{item.createdBy||'测试用户'}</ErpTd>
-                  <ErpTd className="text-[#909399]">{fmtDt(item.createdAt)}</ErpTd>
-                  <ErpTd className="text-[#909399] max-w-[150px] truncate">{item.remark||'-'}</ErpTd>
-                  <ErpTd><span className="text-[#409eff] text-[13px] cursor-pointer hover:underline">📎</span></ErpTd>
-                  <ErpTd className="sticky right-0 z-10 bg-white">
-                    <ErpAction>
-                      <ErpActionBtn onClick={()=>router.push(`/production/order/${item.id}/edit`)}><Pencil className="h-3.5 w-3.5"/>修改</ErpActionBtn>
-                      <ErpActionBtn danger onClick={()=>tryDel(item)}><Trash2 className="h-3.5 w-3.5"/>删除</ErpActionBtn>
-                      <ErpActionBtn onClick={()=>setDetail(!detail)}>明细</ErpActionBtn>
-                    </ErpAction>
-                  </ErpTd>
-                </ErpTr>
-
-                {/* ── 主单+明细: 产品子行 ── */}
-                {detail && item.lines?.map(ln=>(
-                  <ErpTr key={`p-${ln.id||ln.lineNo}`} className="bg-[#f8fffb]">
-                    <ErpTd/><ErpTd className="text-[12px] text-[#67c23a]">成品{ln.lineNo}</ErpTd>
-                    <ErpTd className="text-[12px]">{ln.materialCode||'-'}</ErpTd>
-                    <ErpTd className="text-[12px]">{ln.materialName||'-'}</ErpTd>
-                    <ErpTd/><ErpTd/>
-                    <ErpTd/>
-                    <ErpTd/>
-                    <ErpTd className="text-[12px] text-[#909399]">{ln.spec||'-'}</ErpTd>
-                    <ErpTd/>
-                    <ErpTd className="sticky right-0 z-10 bg-[#f8fffb]"/>
-                  </ErpTr>
-                ))}
-                {/* ── 主单+明细: 材料子行 ── */}
-                {detail && item.materials?.map(ln=>(
-                  <ErpTr key={`m-${ln.id||ln.lineNo}`} className="bg-[#f8f9ff]">
-                    <ErpTd/><ErpTd className="text-[12px] text-[#409eff]">材料{ln.lineNo}</ErpTd>
-                    <ErpTd className="text-[12px]">{ln.materialCode||'-'}</ErpTd>
-                    <ErpTd className="text-[12px]">{ln.materialName||'-'}</ErpTd>
-                    <ErpTd/><ErpTd/>
-                    <ErpTd/>
-                    <ErpTd/>
-                    <ErpTd className="text-[12px] text-[#909399]">{ln.spec||'-'}</ErpTd>
-                    <ErpTd/>
-                    <ErpTd className="sticky right-0 z-10 bg-[#f8f9ff]"/>
-                  </ErpTr>
-                ))}
-              </Fragment>);
-            })}
+            {items.map(item => (
+              <ErpTr key={item.id}>
+                <ErpTd><Checkbox checked={sel.has(item.id)} onCheckedChange={()=>toggleSel(item.id)}/></ErpTd>
+                <ErpTd><ErpApproval status={item.approvalStatus}/></ErpTd>
+                <ErpTd><ErpLink onClick={()=>router.push(`/production/order/${item.id}/edit`)}>{item.orderNo}</ErpLink></ErpTd>
+                <ErpTd>{item.orderName||'-'}</ErpTd>
+                <ErpTd className="text-[#606266]">默认企业</ErpTd>
+                <ErpTd className="text-[#606266]">{item.departmentName||'-'}</ErpTd>
+                <ErpTd>{item.createdBy||'测试用户'}</ErpTd>
+                <ErpTd className="text-[#909399]">{fmtDt(item.createdAt)}</ErpTd>
+                <ErpTd className="text-[#909399] max-w-[160px] truncate" title={item.remark||''}>{item.remark||'-'}</ErpTd>
+                <ErpTd><span className="text-[#409eff] text-[13px] cursor-pointer hover:underline">📎</span></ErpTd>
+                <ErpTd className="sticky right-0 z-10 bg-white">{rowActions(item)}</ErpTd>
+              </ErpTr>
+            ))}
             {items.length===0 && <ErpEmpty colSpan={12}/>}
           </ErpTbody>
         </ErpTable>
+      ) : (
+        /* ═══ 主单+明细 table (product-level rows) ═══ */
+        <ErpTable>
+          <ErpThead>
+            <ErpTh className="w-[48px]"><Checkbox/></ErpTh>
+            <ErpTh className="w-[80px]">阶层</ErpTh>
+            <ErpTh className="w-[100px]">审批状态</ErpTh>
+            <ErpTh className="w-[100px]">产品入库状态</ErpTh>
+            <ErpTh className="w-[90px]">生产状态</ErpTh>
+            <ErpTh className="w-[150px]">生产编码</ErpTh>
+            <ErpTh className="w-[150px]">生产名称</ErpTh>
+            <ErpTh className="w-[120px]">所属组织</ErpTh>
+            <ErpTh className="w-[160px]">产品编码</ErpTh>
+            <ErpTh className="w-[150px]">产品名称</ErpTh>
+            <ErpTh className="w-[120px]">规格型号</ErpTh>
+            <ErpTh className="w-[80px]">计量单位</ErpTh>
+            <ErpTh className="w-[100px]">预计生产数量</ErpTh>
+            <ErpTh className="w-[100px]">实际生产数量</ErpTh>
+            <ErpTh className="w-[160px]">创建时间</ErpTh>
+            <ErpTh className="w-[180px] sticky right-0 z-10 bg-[#f5f7fa]">操作</ErpTh>
+          </ErpThead>
+          <ErpTbody>
+            {items.map((item,idx) => (
+              <ErpTr key={`${item.id}-${idx}`}>
+                <ErpTd><Checkbox/></ErpTd>
+                <ErpTd className="text-[#909399]">{idx+1}</ErpTd>
+                <ErpTd><ErpApproval status={item.approvalStatus}/></ErpTd>
+                <ErpTd><span className="text-[13px] text-[#909399]">-</span></ErpTd>
+                <ErpTd><span className="text-[13px] text-[#909399]">-</span></ErpTd>
+                <ErpTd><ErpLink onClick={()=>router.push(`/production/order/${item.id}/edit`)}>{item.orderNo}</ErpLink></ErpTd>
+                <ErpTd>{item.orderName||'-'}</ErpTd>
+                <ErpTd className="text-[#606266]">默认企业</ErpTd>
+                <ErpTd className="text-[#409eff]">{item.productCode||'-'}</ErpTd>
+                <ErpTd>{item.productName||item.materialName||'-'}</ErpTd>
+                <ErpTd className="text-[#909399]">{item.productSpec||'-'}</ErpTd>
+                <ErpTd>{item.productUnit||'-'}</ErpTd>
+                <ErpTd>{item.plannedQty?Number(item.plannedQty).toLocaleString():'-'}</ErpTd>
+                <ErpTd>{item.actualQty?Number(item.actualQty).toLocaleString():'-'}</ErpTd>
+                <ErpTd className="text-[#909399]">{fmtDt(item.createdAt)}</ErpTd>
+                <ErpTd className="sticky right-0 z-10 bg-white">{rowActions(item)}</ErpTd>
+              </ErpTr>
+            ))}
+            {items.length===0 && <ErpEmpty colSpan={16}/>}
+          </ErpTbody>
+        </ErpTable>
+      )}
       </div>
 
       <ErpPagination page={pg} pageSize={ps} total={total} onPage={setPg} onPageSize={v=>setPs(+v)}/>
