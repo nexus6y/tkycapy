@@ -1,67 +1,243 @@
 'use client';
-import { Fragment, useEffect, useState, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { TooltipProvider } from '@/components/ui/tooltip';
-import { Download, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from '@/components/ui/toast';
-import { exportCSV } from '@/lib/export';
-import { ErpTable,ErpThead,ErpTh,ErpTbody,ErpTr,ErpTd,ErpEmpty,ErpLink,ErpAction,ErpActionBtn,ErpTools,ErpApproval,ErpPagination } from '@/components/ui/erp-table';
+import { ErpAction, ErpActionBtn, ErpApproval, ErpEmpty, ErpLink, ErpPagination, ErpTable, ErpTbody, ErpTd, ErpTh, ErpThead, ErpTr } from '@/components/ui/erp-table';
+import { ChevronDown, Download, MoreHorizontal, Pencil, Plus, RefreshCw, Search, Trash2 } from 'lucide-react';
 
-interface LineItem { id:string;lineNo:number;materialCode:string|null;materialName:string|null;spec:string|null;unit:string|null;quantity:string|null;warehouseCode:string|null;locationCode:string|null;batchNo:string|null; }
-interface Item { id:string;orderNo:string;materialName:string|null;specification:string|null;quantity:string;qualifiedQty:string;unqualifiedQty:string;warehouseName:string|null;totalAmount:string|null;approvalStatus:string;businessStatus:string;receiptDate:string;createdAt:string;sourceType?:string;sourceNo?:string;lines?:LineItem[] }
-const AP:Record<string,string>={DRAFT:'草稿',SUBMITTED:'已提交',APPROVED:'已通过',REJECTED:'已拒绝'};
-const BS:Record<string,string>={PENDING:'待收货',INSP_IN_PROGRESS:'质检中',INSPECTED:'已质检',RECEIVED:'已收货',CLOSED:'已关闭'};
+/* ── flatten lines into table rows ── */
+interface InbRow {
+  id:string; orderNo:string; businessStatus:string; approvalStatus:string;
+  materialCode:string; materialName:string; spec:string; unit:string;
+  supplierName:string; sourceQty:string; sourceType:string; sourceNo:string;
+  sourceName:string; sourceLineNo:string; inspectionNo:string;
+  orgName:string; projectCode:string; projectName:string;
+  inspector:string; receiptDate:string; prodDate:string; expiryDate:string;
+}
+
+const BIZ_OPTS = [{v:'ALL',l:'全部'},{v:'PENDING',l:'待收货'},{v:'RECEIVED',l:'已收货'},{v:'CLOSED',l:'已关闭'}];
+const SRC_OPTS = [{v:'ALL',l:'全部'},{v:'PURCHASE',l:'采购入库'},{v:'INSPECTION',l:'质检入库'},{v:'OTHER',l:'其他'},{v:'ARRIVAL_CONFIRM',l:'到货确认'}];
+const BS_LABEL:Record<string,string>={PENDING:'待收货',RECEIVED:'已收货',CLOSED:'已关闭'};
+
+function fmtDt(v:string|null){return v?new Date(v).toLocaleDateString('zh-CN'):'-';}
 
 export default function InboundPage() {
-  const router=useRouter();
-  const [items,setItems]=useState<Item[]>([]);const [total,setTotal]=useState(0);const [pg,setPg]=useState(1);const [ps,setPs]=useState(30);
-  const [sel,setSel]=useState<Set<string>>(new Set());const [s,setS]=useState({code:'',name:'',status:'',biz:''});
+  const router = useRouter();
+  const [rows,setRows]=useState<InbRow[]>([]);
+  const [total,setTotal]=useState(0);
+  const [pg,setPg]=useState(1);const [ps,setPs]=useState(30);
+  const [sel,setSel]=useState<Set<string>>(new Set());
   const [del,setDel]=useState<string|null>(null);
-  const [detailMode,setDetailMode]=useState(false);
+  const [adv,setAdv]=useState(false);
+  const [s,setS]=useState({biz:'',code:'',matCode:'',matName:'',spec:'',supplier:'',whQual:'',whDefect:'',sourceType:'',sourceNo:'',sourceName:'',inspNo:'',orgName:'',inspector:'',prodDate:'',expiryDate:''});
 
-  const fetch=useCallback(async()=>{
-    const p:any={page:pg,pageSize:ps}; if(s.code)p.code=s.code; if(s.name)p.name=s.name; if(s.status)p.status=s.status; if(s.biz)p.biz=s.biz;
-    if(detailMode)p.mode='detail';
-    const {data}=await api.get('/inbound-orders',{params:p}); setItems(data.items); setTotal(data.total);
-  },[pg,ps,s,detailMode]); useEffect(()=>{fetch();},[fetch]);
+  const fetch = useCallback(async()=>{
+    const p:any={page:pg,pageSize:ps,mode:'detail'};
+    if(s.code)p.code=s.code;
+    // Map biz filter
+    if(s.biz) p.biz = s.biz;
+    const {data}=await api.get('/inbound-orders',{params:p});
+    const raw=data.items||[];
+    // Flatten each order's lines into individual rows
+    const flat:InbRow[]=[];
+    for(const o of raw){
+      const lns=o.lines||[];
+      if(lns.length>0){
+        for(const ln of lns){
+          flat.push({
+            id:o.id, orderNo:o.orderNo, businessStatus:o.businessStatus, approvalStatus:o.approvalStatus,
+            materialCode:ln.materialCode||'', materialName:ln.materialName||'', spec:ln.spec||'', unit:ln.unit||'',
+            supplierName:o.supplierName||'',
+            sourceQty:ln.quantity||'0',
+            sourceType:o.sourceType||'', sourceNo:o.sourceNo||'',
+            sourceName:'', sourceLineNo:'', inspectionNo:o.inspectionNo||'',
+            orgName:'默认企业', projectCode:'', projectName:'',
+            inspector:'测试用户', receiptDate:o.receiptDate||o.createdAt,
+            prodDate:'', expiryDate:'',
+          });
+        }
+      }else{
+        flat.push({
+          id:o.id, orderNo:o.orderNo, businessStatus:o.businessStatus, approvalStatus:o.approvalStatus,
+          materialCode:'', materialName:o.materialName||'', spec:o.specification||'', unit:'',
+          supplierName:o.supplierName||'',
+          sourceQty:o.quantity||'0',
+          sourceType:o.sourceType||'', sourceNo:o.sourceNo||'',
+          sourceName:'', sourceLineNo:'', inspectionNo:o.inspectionNo||'',
+          orgName:'默认企业', projectCode:'', projectName:'',
+          inspector:'测试用户', receiptDate:o.receiptDate||o.createdAt,
+          prodDate:'', expiryDate:'',
+        });
+      }
+    }
+    setRows(flat);setTotal(data.total||0);
+  },[pg,ps,s]);
+  useEffect(()=>{fetch();},[fetch]);
 
+  const reset=()=>{setS({biz:'',code:'',matCode:'',matName:'',spec:'',supplier:'',whQual:'',whDefect:'',sourceType:'',sourceNo:'',sourceName:'',inspNo:'',orgName:'',inspector:'',prodDate:'',expiryDate:''});setAdv(false);setPg(1);};
+  const toggleSel=(id:string)=>setSel(p=>{const n=new Set(p);n.has(id)?n.delete(id):n.add(id);return n;});
+  const toggleAll=()=>setSel(p=>p.size===rows.length?new Set():new Set(rows.map(r=>r.id)));
+
+  const wf=async(id:string,action:'submit'|'approve'|'cancel-approve')=>{
+    try{
+      if(action==='cancel-approve'&&!confirm('确认撤销登卡？库存将回退。'))return;
+      await api.put(`/inbound-orders/${id}/${action}`);fetch();
+    }catch(e:any){toast(e.response?.data?.message||'操作失败','error');}
+  };
   const doDel=async()=>{if(!del)return;try{await api.delete(`/inbound-orders/${del}`);setDel(null);fetch();}catch(e:any){toast(e.response?.data?.message||'删除失败','error');}};
-  const toggleAll=(v:boolean)=>setSel(v?new Set(items.map(i=>i.id)):new Set());
 
-  return (<TooltipProvider><div className="bg-background rounded-lg border shadow-sm">
-    <div className="flex items-center justify-between px-4 h-14 border-b border-border">
-      <div className="flex items-center gap-1">
-        <Button variant="secondary" size="sm" onClick={()=>router.push('/warehouse/inbound/create')}><Plus className="h-3.5 w-3.5"/>新增</Button>
-        <Button variant="outline" size="sm" disabled={sel.size===0} onClick={()=>toast('请先勾选数据','info')}>修改</Button>
-        <Button variant="outline" size="sm" disabled={sel.size===0} onClick={()=>toast('请先勾选数据','info')}>删除</Button>
-        <Button variant="outline" size="sm" onClick={()=>exportCSV(items,'入库单')}><Download className="h-3.5 w-3.5 mr-1"/>导出</Button>
+  const selItem=rows.find(r=>sel.has(r.id));
+  const single=sel.size===1;
+
+  return (
+    <div className="flex h-full min-h-0 flex-col rounded-lg border border-[#dcdfe6] bg-white">
+      {/* ═══ TOOLBAR: 新增|修改|删除|登卡|更多操作 ═══ */}
+      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-[#ebeef5] bg-white px-4 py-3">
+        <div className="flex items-center gap-1.5">
+          <Button variant="secondary" size="sm" className="gap-1" onClick={()=>router.push('/warehouse/inbound/create')}><Plus className="h-3.5 w-3.5"/>新增</Button>
+          <Button variant="outline" size="sm" className="gap-1 text-[#67c23a]" disabled={!single}
+            onClick={()=>selItem&&router.push(`/warehouse/inbound/${selItem.id}/edit`)}><Pencil className="h-3.5 w-3.5"/>修改</Button>
+          <Button variant="outline" size="sm" className="gap-1 text-[#f56c6c]" disabled={!single}
+            onClick={()=>{if(selItem&&selItem.approvalStatus==='DRAFT')setDel(selItem.id);else toast('只有草稿可删除','error');}}><Trash2 className="h-3.5 w-3.5"/>删除</Button>
+          <Button variant="outline" size="sm" className="gap-1" disabled={!single}
+            onClick={()=>{if(selItem&&selItem.approvalStatus==='SUBMITTED')wf(selItem.id,'approve');else toast('请选择已提交的单','info');}}>
+            <Download className="h-3.5 w-3.5 mr-0.5"/>登卡</Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-3 h-9 text-[13px] font-medium shadow-sm hover:bg-accent disabled:opacity-50">
+              <MoreHorizontal className="h-3.5 w-3.5"/>更多操作<ChevronDown className="h-3.5 w-3.5"/></DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              {selItem?.approvalStatus==='DRAFT'&&<DropdownMenuItem onClick={()=>{if(selItem)wf(selItem.id,'submit');}}>提交</DropdownMenuItem>}
+              {selItem?.approvalStatus==='APPROVED'&&<DropdownMenuItem onClick={()=>{if(selItem)wf(selItem.id,'cancel-approve');}}>撤销登卡</DropdownMenuItem>}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" onClick={reset}>重置</Button>
+          <Button variant="outline" size="sm" onClick={()=>setAdv(!adv)}>{adv?'收起':'展开'}</Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger className="inline-flex items-center gap-1 rounded-md px-2.5 h-7 text-[13px] font-medium hover:bg-accent">常用搜索方案<ChevronDown className="h-3.5 w-3.5"/></DropdownMenuTrigger>
+            <DropdownMenuContent align="end"><DropdownMenuItem disabled>保存当前搜索</DropdownMenuItem></DropdownMenuContent>
+          </DropdownMenu>
+          <Button variant="default" size="sm" className="gap-1" onClick={()=>{setPg(1);fetch();}}><Search className="h-4 w-4"/>搜索</Button>
+        </div>
       </div>
-      <div className="flex items-center gap-1">
-        <Button variant="ghost" size="sm" onClick={()=>setS({code:'',name:'',status:'',biz:''})}>重置</Button>
-        <Button variant={detailMode?"secondary":"outline"} size="sm" onClick={()=>setDetailMode(!detailMode)}>主单+明细</Button>
-        <Button variant="default" size="sm" onClick={fetch}><Search className="h-3.5 w-3.5 mr-1"/>搜索</Button>
+
+      {/* ═══ SEARCH: 16 conditions (default 4 + advanced 12) ═══ */}
+      <div className="shrink-0 border-b border-[#ebeef5] bg-[#fafafa] px-4 py-3">
+        <div className="space-y-3">
+          <div className="flex items-center gap-4 flex-wrap">
+            <FS label="业务状态" v={s.biz} opts={BIZ_OPTS} onChange={v=>setS({...s,biz:v})}/>
+            <FI label="入库单号" v={s.code} onChange={v=>setS({...s,code:v})} ph="入库单号"/>
+            <FI label="物料编码" v={s.matCode} onChange={v=>setS({...s,matCode:v})} ph="物料编码"/>
+            <FI label="物料名称" v={s.matName} onChange={v=>setS({...s,matName:v})} ph="物料名称"/>
+          </div>
+          {adv && (<div className="flex items-center gap-4 flex-wrap">
+            <FI label="规格型号" v={s.spec} onChange={v=>setS({...s,spec:v})} ph="规格型号"/>
+            <FI label="供应商名称" v={s.supplier} onChange={v=>setS({...s,supplier:v})} ph="供应商名称"/>
+            <FS label="入库来源" v={s.sourceType} opts={SRC_OPTS} onChange={v=>setS({...s,sourceType:v})}/>
+            <FI label="来源单号" v={s.sourceNo} onChange={v=>setS({...s,sourceNo:v})} ph="来源单号"/>
+            <FI label="质检单号" v={s.inspNo} onChange={v=>setS({...s,inspNo:v})} ph="质检单号"/>
+            <FI label="入库负责人" v={s.inspector} onChange={v=>setS({...s,inspector:v})} ph="入库负责人"/>
+            <FI label="生产日期" v={s.prodDate} onChange={v=>setS({...s,prodDate:v})} ph="生产日期"/>
+            <FI label="失效日期" v={s.expiryDate} onChange={v=>setS({...s,expiryDate:v})} ph="失效日期"/>
+          </div>)}
+        </div>
       </div>
+
+      {/* ═══ Sub-header with refresh ═══ */}
+      <div className="flex shrink-0 items-center justify-between border-b border-[#ebeef5] bg-white px-4 py-2.5">
+        <span className="text-[13px] text-[#606266]">共 {total} 条</span>
+        <button onClick={fetch} title="刷新" className="rounded border border-[#dcdfe6] p-1.5 text-[#606266] hover:bg-[#f5f7fa]"><RefreshCw className="h-4 w-4"/></button>
+      </div>
+
+      {/* ═══ TABLE: 20 cols single view (no toggle — per original system) ═══ */}
+      <div className="min-h-0 flex-1 overflow-auto">
+        <ErpTable>
+          <ErpThead>
+            <ErpTh className="w-[48px]"><Checkbox checked={rows.length>0&&sel.size===rows.length} onCheckedChange={toggleAll}/></ErpTh>
+            <ErpTh className="w-[90px]">业务状态</ErpTh>
+            <ErpTh className="w-[170px]">入库单号</ErpTh>
+            <ErpTh className="w-[130px]">物料编码</ErpTh>
+            <ErpTh className="w-[140px]">物料名称</ErpTh>
+            <ErpTh className="w-[120px]">规格型号</ErpTh>
+            <ErpTh className="w-[80px]">计量单位</ErpTh>
+            <ErpTh className="w-[130px]">供应商名称</ErpTh>
+            <ErpTh className="w-[90px]">单据原量</ErpTh>
+            <ErpTh className="w-[100px]">入库来源</ErpTh>
+            <ErpTh className="w-[140px]">来源单号</ErpTh>
+            <ErpTh className="w-[80px]">来源行号</ErpTh>
+            <ErpTh className="w-[130px]">质检单号</ErpTh>
+            <ErpTh className="w-[110px]">所属组织</ErpTh>
+            <ErpTh className="w-[130px]">项目编码</ErpTh>
+            <ErpTh className="w-[130px]">项目名称</ErpTh>
+            <ErpTh className="w-[90px]">入库负责人</ErpTh>
+            <ErpTh className="w-[120px]">入库日期</ErpTh>
+            <ErpTh className="w-[110px]">生产日期</ErpTh>
+            <ErpTh className="w-[110px]">失效日期</ErpTh>
+            <ErpTh className="w-[200px] sticky right-0 z-10 bg-[#f5f7fa]">操作</ErpTh>
+          </ErpThead>
+          <ErpTbody>
+            {rows.map(r=>{
+              const st=r.approvalStatus;
+              return (<ErpTr key={`${r.id}-${r.materialCode}-${r.sourceLineNo}`}>
+                <ErpTd><Checkbox checked={sel.has(r.id)} onCheckedChange={()=>toggleSel(r.id)}/></ErpTd>
+                <ErpTd><span className="text-[12px] text-muted-foreground">{BS_LABEL[r.businessStatus]||r.businessStatus||'-'}</span></ErpTd>
+                <ErpTd><ErpLink onClick={()=>router.push(`/warehouse/inbound/${r.id}/edit`)}>{r.orderNo}</ErpLink></ErpTd>
+                <ErpTd className="text-[#409eff]">{r.materialCode||'-'}</ErpTd>
+                <ErpTd>{r.materialName||'-'}</ErpTd>
+                <ErpTd className="text-[#909399]">{r.spec||'-'}</ErpTd>
+                <ErpTd>{r.unit||'-'}</ErpTd>
+                <ErpTd>{r.supplierName||'-'}</ErpTd>
+                <ErpTd>{Number(r.sourceQty)>0?Number(r.sourceQty).toLocaleString():'-'}</ErpTd>
+                <ErpTd className="text-[#909399]">{r.sourceType||'-'}</ErpTd>
+                <ErpTd className="text-[#409eff]">{r.sourceNo||'-'}</ErpTd>
+                <ErpTd className="text-[#909399]">{r.sourceLineNo||'-'}</ErpTd>
+                <ErpTd className="text-[#409eff]">{r.inspectionNo||'-'}</ErpTd>
+                <ErpTd className="text-[#606266]">{r.orgName||'-'}</ErpTd>
+                <ErpTd className="text-[#409eff]">{r.projectCode||'-'}</ErpTd>
+                <ErpTd>{r.projectName||'-'}</ErpTd>
+                <ErpTd>{r.inspector||'-'}</ErpTd>
+                <ErpTd className="text-[#909399]">{fmtDt(r.receiptDate)}</ErpTd>
+                <ErpTd className="text-[#909399]">{r.prodDate||'-'}</ErpTd>
+                <ErpTd className="text-[#909399]">{r.expiryDate||'-'}</ErpTd>
+                <ErpTd className="sticky right-0 z-10 bg-white">
+                  <ErpAction>
+                    <ErpActionBtn onClick={()=>router.push(`/warehouse/inbound/${r.id}/edit`)}><Pencil className="h-3.5 w-3.5"/>修改</ErpActionBtn>
+                    {st==='DRAFT'&&<ErpActionBtn danger onClick={()=>setDel(r.id)}><Trash2 className="h-3.5 w-3.5"/>删除</ErpActionBtn>}
+                    {st==='APPROVED'&&<ErpActionBtn onClick={()=>wf(r.id,'cancel-approve')}>撤销登卡</ErpActionBtn>}
+                  </ErpAction>
+                </ErpTd>
+              </ErpTr>);
+            })}
+            {rows.length===0&&<ErpEmpty colSpan={21}/>}
+          </ErpTbody>
+        </ErpTable>
+      </div>
+
+      <ErpPagination page={pg} pageSize={ps} total={total} onPage={setPg} onPageSize={v=>setPs(+v)}/>
+      <AlertDialog open={!!del} onOpenChange={()=>setDel(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader><AlertDialogTitle>确认删除？</AlertDialogTitle></AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction onClick={doDel} className="bg-[#f56c6c] text-white hover:bg-[#f56c6c]/90">删除</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
-    <div className="flex items-center gap-4 px-4 py-2.5 border-b border-border bg-muted/30 flex-wrap">
-      <F label="审批状态"><Select value={s.status} onValueChange={(v:any)=>setS({...s,status:v==='ALL'?'':v})}><SelectTrigger className="w-[100px] h-9 rounded-md border border-border bg-background px-3 text-[13px]"><SelectValue placeholder="全部"/></SelectTrigger><SelectContent><SelectItem value="ALL">全部</SelectItem><SelectItem value="DRAFT">草稿</SelectItem><SelectItem value="SUBMITTED">已提交</SelectItem><SelectItem value="APPROVED">已通过</SelectItem></SelectContent></Select></F>
-      <F label="单号"><Input className="w-[140px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.code} onChange={e=>setS({...s,code:e.target.value})}/></F>
-      <F label="物料"><Input className="w-[140px] h-9 rounded-md border border-border bg-background px-3 text-[13px]" value={s.name} onChange={e=>setS({...s,name:e.target.value})}/></F>
-    </div>
-    <ErpTools onRefresh={fetch}/>
-    <div className="min-h-0"><ErpTable><ErpThead><ErpTh className="w-[48px]"><Checkbox checked={items.length>0&&sel.size===items.length} onCheckedChange={(v:boolean)=>toggleAll(v)}/></ErpTh><ErpTh className="w-[100px]">审批状态</ErpTh><ErpTh className="w-[100px]">业务状态</ErpTh><ErpTh className="w-[160px]">入库单号</ErpTh><ErpTh className="w-[100px]">来源</ErpTh><ErpTh className="w-[160px]">来源单号</ErpTh><ErpTh className="w-[180px]">物料</ErpTh><ErpTh className="w-[130px]">规格</ErpTh><ErpTh className="w-[100px]">数量</ErpTh><ErpTh className="w-[140px]">仓库</ErpTh><ErpTh className="w-[140px]">金额</ErpTh><ErpTh className="w-[120px]">收货日期</ErpTh><ErpTh className="w-[200px] sticky right-0 bg-[#f5f7fa] z-10">操作</ErpTh></ErpThead><ErpTbody>
-    {items.map(i=>(<Fragment key={i.id}><ErpTr className={detailMode&&i.lines&&i.lines.length>0?'border-b-0':''}><ErpTd><Checkbox checked={sel.has(i.id)} onCheckedChange={(v:boolean)=>{const n=new Set(sel);v?n.add(i.id):n.delete(i.id);setSel(n);}}/></ErpTd><ErpTd><ErpApproval status={i.approvalStatus}/></ErpTd><ErpTd><span className="text-[13px]">{BS[i.businessStatus]||i.businessStatus||'-'}{i.lines?` (${i.lines.length}行)`:''}</span></ErpTd><ErpTd><ErpLink onClick={()=>router.push('/warehouse/inbound/'+i.id+'/edit')}>{i.orderNo}</ErpLink></ErpTd><ErpTd className="text-muted-foreground text-[12px]">{i.sourceType||'-'}</ErpTd><ErpTd className="text-muted-foreground text-[12px]">{i.sourceNo||'-'}</ErpTd><ErpTd>{i.materialName||'-'}</ErpTd><ErpTd className="text-muted-foreground">{i.specification||'-'}</ErpTd><ErpTd>{i.quantity?Number(i.quantity).toLocaleString():'-'}</ErpTd><ErpTd className="text-muted-foreground">{i.warehouseName||'-'}</ErpTd><ErpTd>{i.totalAmount?Number(i.totalAmount).toLocaleString():'-'}</ErpTd><ErpTd className="text-muted-foreground">{i.receiptDate?new Date(i.receiptDate).toLocaleDateString('zh-CN'):'-'}</ErpTd><ErpTd className="sticky right-0 bg-white z-10"><ErpAction><ErpActionBtn onClick={()=>router.push('/warehouse/inbound/'+i.id+'/edit')}><Pencil className="h-3.5 w-3.5"/>修改</ErpActionBtn>{i.approvalStatus==='DRAFT'&&<ErpActionBtn onClick={()=>{api.put(`/inbound-orders/${i.id}/submit`).then(fetch);}}>提交</ErpActionBtn>}{i.approvalStatus==='SUBMITTED'&&<ErpActionBtn onClick={()=>{api.put(`/inbound-orders/${i.id}/approve`).then(fetch);}}>审批</ErpActionBtn>}{i.approvalStatus==='APPROVED'&&(i.businessStatus==='CLOSED'||i.businessStatus==='RECEIVED')&&<ErpActionBtn onClick={()=>{if(window.confirm('确认撤销登卡？库存将回退。')){api.put(`/inbound-orders/${i.id}/cancel-approve`).then(fetch).catch((e:any)=>toast(e.response?.data?.message||'撤销失败','error'));}}}>撤销登卡</ErpActionBtn>}{i.approvalStatus==='APPROVED'&&i.businessStatus==='INSP_IN_PROGRESS'&&<ErpActionBtn disabled>质检中</ErpActionBtn>}{i.approvalStatus==='APPROVED'&&i.businessStatus==='INSPECTED'&&<ErpActionBtn disabled>已质检</ErpActionBtn>}<ErpActionBtn danger onClick={()=>setDel(i.id)}><Trash2 className="h-3.5 w-3.5"/>删除</ErpActionBtn></ErpAction></ErpTd></ErpTr>
-    {detailMode&&i.lines&&i.lines.map(l=>(<ErpTr key={l.id||l.lineNo} className="bg-[#f0f7ff]"><ErpTd/><ErpTd/><ErpTd className="text-[12px] text-muted-foreground">└ 行{l.lineNo}</ErpTd><ErpTd/><ErpTd/><ErpTd/><ErpTd className="text-[12px]">{[l.materialCode,l.materialName].filter(Boolean).join(' / ')||'-'}</ErpTd><ErpTd className="text-[12px] text-muted-foreground">{l.spec||'-'}</ErpTd><ErpTd className="text-[12px]">{l.quantity?Number(l.quantity).toLocaleString():'-'}{l.unit?` ${l.unit}`:''}</ErpTd><ErpTd className="text-[12px]">{l.warehouseCode||'-'}{l.locationCode?`/${l.locationCode}`:''}</ErpTd><ErpTd/><ErpTd/><ErpTd/></ErpTr>))}
-    </Fragment>))}
-    {items.length===0&&<ErpEmpty colSpan={13}/>}
-    </ErpTbody></ErpTable></div>
-    <ErpPagination page={pg} pageSize={ps} total={total} onPage={setPg} onPageSize={v=>setPs(+v)}/>
-    <AlertDialog open={!!del} onOpenChange={()=>setDel(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>确认删除？</AlertDialogTitle></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>取消</AlertDialogCancel><AlertDialogAction onClick={doDel} className="bg-[#f56c6c] text-white hover:bg-[#f56c6c]/90">删除</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
-  </div></TooltipProvider>);
+  );
 }
-function F({label,children}:{label:string;children:React.ReactNode}){return<div className="flex items-center gap-1.5"><span className="text-[13px] text-muted-foreground w-[80px] text-right shrink-0">{label}</span>{children}</div>;}
+
+function FI({label,v,onChange,ph}:{label:string;v:string;onChange:(v:string)=>void;ph:string}){
+  return <div className="flex items-center gap-1.5"><span className="text-[13px] text-muted-foreground w-[70px] text-right shrink-0">{label}</span><Input className="w-[140px] h-9 rounded-md border border-[#dcdfe6] bg-white px-3 text-[13px]" value={v} onChange={e=>onChange(e.target.value)} placeholder={ph}/></div>;
+}
+function FS({label,v,opts,onChange}:{label:string;v:string;opts:{v:string;l:string}[];onChange:(v:string)=>void}){
+  return <div className="flex items-center gap-1.5"><span className="text-[13px] text-muted-foreground w-[70px] text-right shrink-0">{label}</span><Select value={v||'ALL'} onValueChange={x=>onChange(!x||x==='ALL'?'':String(x))}><SelectTrigger className="w-[110px] h-9 rounded-md border border-[#dcdfe6] bg-white px-3 text-[13px]"><SelectValue/></SelectTrigger><SelectContent>{opts.map(o=><SelectItem key={o.v} value={o.v}>{o.l}</SelectItem>)}</SelectContent></Select></div>;
+}
