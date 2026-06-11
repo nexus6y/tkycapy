@@ -285,7 +285,7 @@ export default function ProductionOrderWorkbenchPage() {
         /* ═══ 主单+明细 (16 cols, product-level) ═══ */
         <ErpTable>
           <ErpThead>
-            <ErpTh className="w-[48px]"><Checkbox/></ErpTh>
+            <ErpTh className="w-[48px]"><Checkbox checked={false} disabled/></ErpTh>
             <ErpTh className="w-[80px]">阶层</ErpTh>
             <ErpTh className="w-[100px]">审批状态</ErpTh>
             <ErpTh className="w-[100px]">产品入库状态</ErpTh>
@@ -305,7 +305,7 @@ export default function ProductionOrderWorkbenchPage() {
           <ErpTbody>
             {items.map((item,idx) => (
               <ErpTr key={`${item.id}-${idx}`}>
-                <ErpTd><Checkbox/></ErpTd>
+                <ErpTd><Checkbox checked={false} disabled/></ErpTd>
                 <ErpTd className="text-[#909399]">{idx+1}</ErpTd>
                 <ErpTd><ErpApproval status={item.approvalStatus}/></ErpTd>
                 <ErpTd><span className="text-[13px] text-[#909399]">-</span></ErpTd>
