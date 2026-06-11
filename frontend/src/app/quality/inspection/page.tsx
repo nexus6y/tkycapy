@@ -156,7 +156,7 @@ export default function InspectionPage() {
             onClick={()=>{if(selItem&&selItem.approvalStatus==='DRAFT')setDelId(selItem.id);else toast('只有草稿状态可删除','error');}}><Trash2 className="h-3.5 w-3.5"/>删除</Button>
           {!isMain && <Button variant="outline" size="sm" className="gap-1" onClick={batchQualify}>质检</Button>}
           <Button variant="outline" size="sm" className="gap-1" disabled={!single}
-            onClick={()=>{if(selItem&&selItem.approvalStatus==='APPROVED')pushInbound(selItem.id);else toast('请选择已通过的质检单','info');}}>
+            onClick={()=>{if(selItem&&selItem.approvalStatus==='SUBMITTED'&&selItem.businessStatus==='COMPLETED')pushInbound(selItem.id);else toast('请选择已提交且质检完成的单','info');}}>
             <Download className="h-3.5 w-3.5 mr-0.5"/>下推入库单</Button>
           <Button variant="outline" size="sm" className="gap-1" onClick={()=>toast('导出待接入','info')}><Download className="h-3.5 w-3.5 mr-0.5"/>导出</Button>
           <Button variant="outline" size="sm" className="gap-1 text-[#67c23a]" disabled onClick={()=>toast('打印待接入','info')}><Printer className="h-3.5 w-3.5 mr-0.5"/>打印</Button>
@@ -244,7 +244,7 @@ export default function InspectionPage() {
                     <ErpActionBtn onClick={()=>router.push(`/quality/inspection/${i.id}/edit`)}><Pencil className="h-3.5 w-3.5"/>修改</ErpActionBtn>
                     {st==='DRAFT'&&<ErpActionBtn onClick={()=>wf(i.id,'submit')}>提交</ErpActionBtn>}
                     {st==='SUBMITTED'&&<ErpActionBtn onClick={()=>wf(i.id,'approve')}>审核通过</ErpActionBtn>}
-                    {st==='APPROVED'&&<ErpActionBtn onClick={()=>pushInbound(i.id)}>下推入库单</ErpActionBtn>}
+                    {st==='SUBMITTED'&&<ErpActionBtn onClick={()=>pushInbound(i.id)}>下推入库单</ErpActionBtn>}
                   </ErpAction>
                 </ErpTd>
               </ErpTr>);
